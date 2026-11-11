@@ -22,6 +22,15 @@ Record of work, newest first. Each entry says what a user would notice.
   the strip page through them.
 - Holding a dragged file over a taskbar button for a moment brings that
   window forward so you can drop the file into it.
+- Clicking the show desktop strip hides every app; clicking it again brings
+  back exactly the apps that were showing before. Activating any app yourself
+  starts over.
+- A taskbar button shows its app's Dock badge (for example an unread count)
+  as a small red label. It needs Accessibility access and shows nothing
+  without it.
+- `Hoboshell --show start` opens the shell with the Start menu open, and
+  `--show files` or `--show files=/some/path` opens a file explorer window on
+  the home folder or that folder. Handy for screenshots.
 - `Hoboshell --gallery` also shows the running and active marks, the group
   count and the unread badge.
 

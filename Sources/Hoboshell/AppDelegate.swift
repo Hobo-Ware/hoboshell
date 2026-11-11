@@ -12,6 +12,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let tracker = AppTracker()
     private let catalog = WindowCatalog()
     private let windowEvents = WindowEventObserver()
+    private let dockBadges = DockBadges()
+    private let showDesktop = TaskbarShowDesktop()
     private let hidesSystemUI = ProcessInfo.processInfo.environment["HOBOSHELL_HIDE_SYSTEM_UI"] == "1"
     private var variant = ShellVariant.resolve(
         arguments: CommandLine.arguments,
@@ -23,6 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var switcher: WindowSwitcherPanel?
     private var windowRefreshTimer: Timer?
     private var signalSources: [DispatchSourceSignal] = []
+    private var badges: [String: String] = [:]
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         terminateCleanlyOnSignals()
@@ -39,6 +42,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         tracker.onChange = { [weak self] in
             self?.refreshTaskbar()
         }
+        tracker.onUserActivation = { [weak self] in
+            self?.showDesktop.userActivatedApp()
+        }
         tracker.start()
         windowEvents.onChange = { [weak self] in
             self?.refreshTaskbar()
@@ -47,9 +53,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         windowRefreshTimer = Timer.scheduledTimer(withTimeInterval: Self.windowRefreshInterval, repeats: true) { [weak self] _ in
+            self?.refreshBadges()
             self?.refreshTaskbar()
         }
         registerHotKeys()
+        openRequestedWindows()
 
         NotificationCenter.default.addObserver(
             self,
@@ -93,7 +101,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 ExplorerWindow.open(at: FileManager.default.homeDirectoryForCurrentUser)
             },
             onShowDesktop: { [weak self] in
-                self?.tracker.taskbarApps.forEach { $0.hide() }
+                guard let self else { return }
+                self.showDesktop.toggle(apps: self.tracker.taskbarApps)
             },
             onSwitchVariant: { [weak self] in
                 self?.switchVariant()
@@ -110,17 +119,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         buildShell()
     }
 
+    private func openRequestedWindows() {
+        for target in ShowTarget.parse(arguments: CommandLine.arguments) {
+            switch target {
+            case .start:
+                guard let chrome, let startMenu else { continue }
+                startMenu.toggle(origin: chrome.startMenuOrigin(menuSize:))
+            case .files(let path):
+                let folder = path.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
+                ExplorerWindow.open(at: folder ?? FileManager.default.homeDirectoryForCurrentUser)
+            }
+        }
+    }
+
+    private func refreshBadges() {
+        dockBadges.load { [weak self] badges in
+            guard let self, badges != self.badges else { return }
+            self.badges = badges
+            self.refreshTaskbar()
+        }
+    }
+
     private func refreshTaskbar() {
         let apps = tracker.taskbarApps
         let entries = apps.map(Self.entry(for:))
         guard Accessibility.isTrusted else {
-            chrome?.update(snapshot: TaskbarSnapshot(items: apps.map(Self.item(for:)), apps: entries))
+            chrome?.update(snapshot: TaskbarSnapshot(items: apps.map(Self.item(for:)), apps: entries, badges: badges))
             return
         }
         windowEvents.watch(apps: appsWithWindows)
         catalog.load(apps: appsWithWindows) { [weak self] windows in
             guard let self else { return }
-            self.chrome?.update(snapshot: TaskbarSnapshot(items: windows.map(Self.item(for:)), apps: entries))
+            self.chrome?.update(snapshot: TaskbarSnapshot(items: windows.map(Self.item(for:)), apps: entries, badges: self.badges))
         }
     }
 
