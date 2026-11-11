@@ -4,6 +4,21 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+### Changed
+- The file explorer is rebuilt as a two-pane explorer. It has a clickable
+  path bar (Command+L to type a path), a search box, Back / Forward / Up /
+  Refresh, and a command row with New folder, Cut, Copy, Paste, Rename, Move
+  to Trash, Sort, a Details / Icons switch and a hidden-files toggle. The
+  side pane lists Quick access, Drives and Trash, and drives appear and
+  disappear as you mount and eject them. Details view sorts by clicking a
+  column header. Items rename in place (F2 or a slow second click), open with
+  Enter, go up with Backspace, preview with Space, and select by typing a
+  name. Copy and Cut share the Mac clipboard with Finder, a paste never
+  overwrites ("name copy"), and files can be dragged out to other apps and
+  onto folders. The status bar shows the item count and the selection size,
+  and the folder refreshes by itself when it changes on disk. Every failure
+  shows in the window.
+
 ### Fixed
 - Desktop icons now react: they light up under the pointer, select on a
   click, open on a double click and have a right-click menu. Finder's own

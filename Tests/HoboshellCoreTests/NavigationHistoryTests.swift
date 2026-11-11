@@ -42,6 +42,12 @@ import Testing
         #expect(history.goBack() == a)
     }
 
+    @Test func visitingTheCurrentFolderWithATrailingSlashChangesNothing() {
+        var history = NavigationHistory(start: URL(fileURLWithPath: "/a", isDirectory: true))
+        history.visit(URL(fileURLWithPath: "/a/", isDirectory: false))
+        #expect(!history.canGoBack)
+    }
+
     @Test func visitingTheCurrentFolderChangesNothing() {
         var history = NavigationHistory(start: a)
         history.visit(a)

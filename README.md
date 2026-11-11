@@ -19,9 +19,10 @@ APIs only. No System Integrity Protection changes, no private frameworks.
 - **Start menu** with a searchable list of your installed apps. Type, press
   Enter, done.
 - **Desktop** with your Desktop files as an icon grid. Double-click to open.
-- **File explorer** with a sidebar (Home, Desktop, Documents, Downloads,
-  Applications, drives), back / forward / up, an editable path bar, a details
-  list and an icon grid, plus Open, Rename, Move to Trash and New folder.
+- **File explorer** with a sidebar (Quick access, drives, Trash), back /
+  forward / up, a clickable path bar, search, a details list and an icon
+  grid, plus cut, copy, paste, rename in place, Move to Trash, sorting, drag
+  and drop and Quick Look.
 - **Window snapping** (keyboard): send the last used window to the left half, the right
   half, or the full area above the taskbar.
 
@@ -130,4 +131,3 @@ Coding and testing rules are in [AGENTS.md](AGENTS.md). Work done so far is in
 
 - Pinned apps on the taskbar
 - Volume control in the system tray
-- Drag and drop, and copy and paste of files, in the file explorer

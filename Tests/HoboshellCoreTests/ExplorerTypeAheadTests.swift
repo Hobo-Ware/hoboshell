@@ -19,6 +19,15 @@ import Testing
         #expect(typeAhead.append("c", at: start.addingTimeInterval(2)) == "c")
     }
 
+    @Test func prefixStaysActiveOnlyBriefly() {
+        var typeAhead = ExplorerTypeAhead()
+        let start = Date(timeIntervalSince1970: 100)
+        #expect(!typeAhead.isActive(at: start))
+        _ = typeAhead.append("b", at: start)
+        #expect(typeAhead.isActive(at: start.addingTimeInterval(0.5)))
+        #expect(!typeAhead.isActive(at: start.addingTimeInterval(2)))
+    }
+
     @Test func matchIgnoresCase() {
         #expect(ExplorerTypeAhead.match(prefix: "BAN", in: names, selected: nil) == 2)
     }
