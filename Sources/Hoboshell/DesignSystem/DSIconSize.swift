@@ -7,6 +7,12 @@ enum DSIconSize {
     static let startLogo: CGFloat = 32
     static let grid: CGFloat = 48
 
+    static func fit(_ image: NSImage?, side: CGFloat) -> NSImage? {
+        let resized = image?.copy() as? NSImage
+        resized?.size = NSSize(width: side, height: side)
+        return resized
+    }
+
     static func symbol(_ name: String, description: String? = nil) -> NSImage? {
         NSImage(systemSymbolName: name, accessibilityDescription: description)
     }

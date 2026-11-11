@@ -1,10 +1,9 @@
 import AppKit
 
-final class StartMenuPanel: NSPanel, NSTableViewDataSource, NSTableViewDelegate, NSSearchFieldDelegate {
+final class StartMenuPanel: NSPanel, NSTableViewDataSource, NSTableViewDelegate {
     private static let menuSize = NSSize(width: 360, height: 480)
-    private static let rowHeight: CGFloat = 30
 
-    private let search = NSSearchField()
+    private let search = DSSearchField(placeholder: "Search apps")
     private let table = NSTableView()
     private let installedApps: [URL]
     private var matches: [URL]
@@ -14,18 +13,11 @@ final class StartMenuPanel: NSPanel, NSTableViewDataSource, NSTableViewDelegate,
         matches = installedApps
         super.init(
             contentRect: NSRect(origin: .zero, size: Self.menuSize),
-            styleMask: [.borderless, .nonactivatingPanel],
+            styleMask: DSPanelStyle.styleMask,
             backing: .buffered,
             defer: false
         )
-        level = .statusBar
-        collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle, .fullScreenAuxiliary]
-        appearance = NSAppearance(named: .darkAqua)
-        hidesOnDeactivate = false
-        isOpaque = false
-        backgroundColor = .clear
-        hasShadow = true
-        buildContent()
+        buildContent(in: DSPanelStyle.apply(to: self, kind: .flyout))
     }
 
     override var canBecomeKey: Bool { true }
@@ -48,7 +40,7 @@ final class StartMenuPanel: NSPanel, NSTableViewDataSource, NSTableViewDelegate,
         filter()
         setFrameOrigin(origin(frame.size))
         makeKeyAndOrderFront(nil)
-        makeFirstResponder(search)
+        search.focus()
     }
 
     private static func findInstalledApps() -> [URL] {
@@ -70,24 +62,24 @@ final class StartMenuPanel: NSPanel, NSTableViewDataSource, NSTableViewDelegate,
         app.deletingPathExtension().lastPathComponent
     }
 
-    private func buildContent() {
-        let background = NSVisualEffectView(frame: NSRect(origin: .zero, size: Self.menuSize))
-        background.material = .hudWindow
-        background.blendingMode = .behindWindow
-        background.state = .active
-        background.wantsLayer = true
-        background.layer?.cornerRadius = 10
-        background.layer?.masksToBounds = true
-        contentView = background
-
-        search.placeholderString = "Search apps"
-        search.delegate = self
+    private func buildContent(in background: DSCard) {
+        search.onChange = { [weak self] _ in
+            self?.filter()
+        }
+        search.onSubmit = { [weak self] _ in
+            guard let self else { return }
+            self.launch(row: max(self.table.selectedRow, 0))
+        }
+        search.onCancel = { [weak self] in
+            self?.orderOut(nil)
+        }
         search.translatesAutoresizingMaskIntoConstraints = false
 
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("app"))
         table.addTableColumn(column)
         table.headerView = nil
-        table.rowHeight = Self.rowHeight
+        table.rowHeight = DSControlHeight.regular.value
+        table.intercellSpacing = .zero
         table.backgroundColor = .clear
         table.style = .plain
         table.dataSource = self
@@ -104,13 +96,13 @@ final class StartMenuPanel: NSPanel, NSTableViewDataSource, NSTableViewDelegate,
         background.addSubview(search)
         background.addSubview(scroll)
         NSLayoutConstraint.activate([
-            search.topAnchor.constraint(equalTo: background.topAnchor, constant: 12),
-            search.leadingAnchor.constraint(equalTo: background.leadingAnchor, constant: 12),
-            search.trailingAnchor.constraint(equalTo: background.trailingAnchor, constant: -12),
-            scroll.topAnchor.constraint(equalTo: search.bottomAnchor, constant: 8),
-            scroll.leadingAnchor.constraint(equalTo: background.leadingAnchor, constant: 4),
-            scroll.trailingAnchor.constraint(equalTo: background.trailingAnchor, constant: -4),
-            scroll.bottomAnchor.constraint(equalTo: background.bottomAnchor, constant: -8),
+            search.topAnchor.constraint(equalTo: background.topAnchor, constant: DSSpacing.m),
+            search.leadingAnchor.constraint(equalTo: background.leadingAnchor, constant: DSSpacing.m),
+            search.trailingAnchor.constraint(equalTo: background.trailingAnchor, constant: -DSSpacing.m),
+            scroll.topAnchor.constraint(equalTo: search.bottomAnchor, constant: DSSpacing.s),
+            scroll.leadingAnchor.constraint(equalTo: background.leadingAnchor, constant: DSSpacing.m),
+            scroll.trailingAnchor.constraint(equalTo: background.trailingAnchor, constant: -DSSpacing.m),
+            scroll.bottomAnchor.constraint(equalTo: background.bottomAnchor, constant: -DSSpacing.m),
         ])
     }
 
@@ -136,37 +128,14 @@ final class StartMenuPanel: NSPanel, NSTableViewDataSource, NSTableViewDelegate,
         matches.count
     }
 
+    func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? {
+        tableView.makeView(withIdentifier: DSTableRowView.identifier, owner: nil) as? DSTableRowView ?? DSTableRowView()
+    }
+
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         let app = matches[row]
-        let icon = NSImageView(image: NSWorkspace.shared.icon(forFile: app.path))
-        icon.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            icon.widthAnchor.constraint(equalToConstant: 22),
-            icon.heightAnchor.constraint(equalToConstant: 22),
-        ])
-        let name = NSTextField(labelWithString: Self.displayName(of: app))
-        name.textColor = .white
-        name.lineBreakMode = .byTruncatingTail
-        let rowView = NSStackView(views: [icon, name])
-        rowView.orientation = .horizontal
-        rowView.spacing = 8
-        rowView.edgeInsets = NSEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
+        let rowView = DSListRow(title: Self.displayName(of: app), image: NSWorkspace.shared.icon(forFile: app.path))
+        rowView.makeStatic()
         return rowView
-    }
-
-    func controlTextDidChange(_ notification: Notification) {
-        filter()
-    }
-
-    func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {
-        if selector == #selector(NSResponder.insertNewline(_:)) {
-            launch(row: max(table.selectedRow, 0))
-            return true
-        }
-        if selector == #selector(NSResponder.cancelOperation(_:)) {
-            orderOut(nil)
-            return true
-        }
-        return false
     }
 }

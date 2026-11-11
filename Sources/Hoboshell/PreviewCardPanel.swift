@@ -5,19 +5,16 @@ final class PreviewCardPanel: NSPanel {
     private static let previewLimit = CGSize(width: 240, height: 150)
     private static let showDelay: TimeInterval = 0.4
     private static let hideDelay: TimeInterval = 0.25
-    private static let gapAboveBar: CGFloat = 8
-    private static let screenMargin: CGFloat = 8
+    private static let gapAboveBar = DSSpacing.s
+    private static let screenMargin = DSSpacing.s
 
     private var pendingShow: DispatchWorkItem?
     private var pendingHide: DispatchWorkItem?
     private var presentation = 0
 
     init() {
-        super.init(contentRect: .zero, styleMask: ShellPanelStyle.styleMask, backing: .buffered, defer: true)
-        let background = ShellPanelStyle.apply(to: self)
-        background.wantsLayer = true
-        background.layer?.cornerRadius = 10
-        background.layer?.masksToBounds = true
+        super.init(contentRect: .zero, styleMask: DSPanelStyle.styleMask, backing: .buffered, defer: true)
+        DSPanelStyle.apply(to: self, kind: .flyout)
     }
 
     override var canBecomeKey: Bool { false }
@@ -53,7 +50,7 @@ final class PreviewCardPanel: NSPanel {
         presentation += 1
         let shown = presentation
         let card = PreviewCardView(item: item, previewSize: Self.previewLimit)
-        card.onActivate = { [weak self] in
+        card.onPress = { [weak self] in
             self?.dismiss()
             item.activate()
         }
@@ -70,7 +67,7 @@ final class PreviewCardPanel: NSPanel {
         }
         guard let background = contentView else { return }
         background.subviews.forEach { $0.removeFromSuperview() }
-        ShellPanelStyle.pin(card, to: background)
+        DSPanelStyle.pin(card, to: background)
 
         let size = card.fittingSize
         let origin = PreviewCardLayout.origin(
