@@ -201,7 +201,7 @@ final class TaskbarPanel: NSPanel, ShellChrome {
             self?.actions.onStart?()
         }
 
-        let filesButton = DSButton(symbol: "folder.fill", tip: "Files", height: .taskbar)
+        let filesButton = DSButton(image: HoboIcon.files.image(side: DSIconSize.startLogo), height: .taskbar, tip: "Files")
         filesButton.onPress = { [weak self] in
             self?.actions.onFiles?()
         }

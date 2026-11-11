@@ -24,7 +24,7 @@ final class ExplorerIconItem: NSCollectionViewItem {
 
     func show(_ file: URL, name: String) {
         cancelThumbnail()
-        tile.show(name: name, icon: NSWorkspace.shared.icon(forFile: file.path))
+        tile.show(name: name, icon: HoboIcon.image(forFile: file.path))
 
         let request = QLThumbnailGenerator.Request(
             fileAt: file,

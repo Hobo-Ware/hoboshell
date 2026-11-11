@@ -97,7 +97,7 @@ final class DesktopGridView: NSView {
 
     private func makeCell(for file: URL) -> DSGridCell {
         let cell = DSGridCell()
-        cell.show(name: file.lastPathComponent, icon: NSWorkspace.shared.icon(forFile: file.path))
+        cell.show(name: file.lastPathComponent, icon: HoboIcon.image(forFile: file.path))
         cell.toolTip = file.lastPathComponent
         cell.onSelect = { [weak self, weak cell] in
             self?.select(cell)

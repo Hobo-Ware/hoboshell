@@ -90,7 +90,7 @@ private struct InstalledApp {
         guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) else { return nil }
         self.url = url
         name = url.deletingPathExtension().lastPathComponent
-        icon = NSWorkspace.shared.icon(forFile: url.path)
+        icon = HoboIcon.image(forFile: url.path)
     }
 
     func launch() {

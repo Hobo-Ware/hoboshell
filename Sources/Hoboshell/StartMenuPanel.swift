@@ -134,7 +134,7 @@ final class StartMenuPanel: NSPanel, NSTableViewDataSource, NSTableViewDelegate 
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         let app = matches[row]
-        let rowView = DSListRow(title: Self.displayName(of: app), image: NSWorkspace.shared.icon(forFile: app.path))
+        let rowView = DSListRow(title: Self.displayName(of: app), image: HoboIcon.image(forFile: app.path))
         rowView.makeStatic()
         return rowView
     }

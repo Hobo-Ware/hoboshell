@@ -5,6 +5,10 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Added
+- Hoboshell's own icon set, drawn in a hobo theme: a bindle for Files, taped
+  cardboard folders with stitched patches for places, a cardboard shelter for
+  Home, a tin can for drives, a rusty barrel for the Trash that burns when it
+  holds something, and an app icon made from the Hoboware logo.
 - The taskbar can pin apps. Right-click a button and pick "Pin to taskbar"
   (or "Unpin from taskbar"). Pinned apps stay on the bar as an icon when they
   are not running, open on a click, come first, and drag sideways to reorder;

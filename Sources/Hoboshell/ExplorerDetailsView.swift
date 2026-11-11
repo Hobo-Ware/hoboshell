@@ -98,7 +98,7 @@ final class ExplorerDetailsView: NSScrollView, ExplorerItemsView, NSTableViewDat
         let entry = entries[row]
         if column == .name {
             let cell = tableView.makeView(withIdentifier: ExplorerNameCell.identifier, owner: nil) as? ExplorerNameCell ?? ExplorerNameCell()
-            cell.show(name: entry.name, icon: NSWorkspace.shared.icon(forFile: entry.url.path))
+            cell.show(name: entry.name, icon: HoboIcon.image(forFile: entry.url.path))
             return cell
         }
         let cell = tableView.makeView(withIdentifier: ExplorerTextCell.identifier, owner: nil) as? ExplorerTextCell ?? ExplorerTextCell()
