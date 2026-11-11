@@ -7,9 +7,9 @@ final class DSRunMark: NSView {
         case active
     }
 
-    static let height: CGFloat = 2
-    static let runningWidth: CGFloat = 8
-    static let activeWidth: CGFloat = 16
+    static let height: CGFloat = 3
+    static let runningWidth: CGFloat = 12
+    static let activeWidth: CGFloat = 20
 
     var state = State.none {
         didSet {
@@ -39,6 +39,6 @@ final class DSRunMark: NSView {
     private func refresh() {
         isHidden = state == .none
         widthConstraint?.constant = state == .active ? Self.activeWidth : Self.runningWidth
-        layer?.backgroundColor = (state == .active ? DSColor.accent : DSColor.dimText).cgColor
+        layer?.backgroundColor = (state == .active ? DSColor.accent : DSColor.runMark).cgColor
     }
 }

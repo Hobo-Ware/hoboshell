@@ -1,4 +1,5 @@
 import AppKit
+import HoboshellCore
 
 class DSTaskbarButton: DSButton {
     var runState: DSRunMark.State {
@@ -34,9 +35,10 @@ class DSTaskbarButton: DSButton {
     ) {
         super.init(title: title, image: image, views: views, height: height, width: width, alignment: alignment, tip: tip)
         addSubview(runMark)
+        let barMargin = (ShellLayout.taskbarHeight - self.height.value) / 2
         NSLayoutConstraint.activate([
             runMark.centerXAnchor.constraint(equalTo: centerXAnchor),
-            runMark.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -DSSpacing.xxs),
+            runMark.bottomAnchor.constraint(equalTo: bottomAnchor, constant: DSSpacing.xxs - barMargin),
         ])
     }
 

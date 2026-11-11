@@ -26,7 +26,7 @@ enum GalleryContent {
             ("accent", DSColor.accent), ("onAccent", DSColor.onAccent), ("danger", DSColor.danger), ("focusRing", DSColor.focusRing),
         ]
         let overlays: [(String, NSColor)] = [
-            ("faint", DSColor.faint), ("hover", DSColor.hover), ("pressed", DSColor.pressed), ("selected", DSColor.selected), ("accentTint", DSColor.accentTint),
+            ("faint", DSColor.faint), ("hover", DSColor.hover), ("pressed", DSColor.pressed), ("selected", DSColor.selected), ("accentTint", DSColor.accentTint), ("runMark", DSColor.runMark),
         ]
         let desktops: [(String, NSColor)] = ShellVariant.allCases.map { ($0.displayName, DSColor.desktop(for: $0)) }
         return GalleryRow.section("Colour roles", [

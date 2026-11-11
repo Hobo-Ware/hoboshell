@@ -216,11 +216,13 @@ final class TaskbarPanel: NSPanel, ShellChrome {
     private func buildContent(in background: DSCard, switchTitle: String) {
         let logo = HobowareLogo.image(height: DSIconSize.startLogo, style: .official, ink: .forDarkBackground)
         let startButton = DSButton(title: logo == nil ? "⊞" : "", image: logo, height: .taskbar, tip: "Start")
+        startButton.iconSide = DSIconSize.startLogo
         startButton.onPress = { [weak self] in
             self?.actions.onStart?()
         }
 
         let filesButton = DSButton(image: HoboIcon.files.image(side: DSIconSize.startLogo), height: .taskbar, tip: "Files")
+        filesButton.iconSide = DSIconSize.startLogo
         filesButton.onPress = { [weak self] in
             self?.actions.onFiles?()
         }
