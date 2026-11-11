@@ -43,11 +43,11 @@ enum GalleryContent {
         ]
         let radii: [(String, CGFloat)] = [("control 4", DSRadius.control), ("card 8", DSRadius.card), ("panel 12", DSRadius.panel)]
         let heights: [(String, CGFloat)] = [
-            ("compact 24", DSControlHeight.compact.value), ("regular 32", DSControlHeight.regular.value),
+            ("compact 24", DSControlHeight.compact.value), ("row 28", DSControlHeight.row.value), ("regular 32", DSControlHeight.regular.value),
             ("taskbar 40", DSControlHeight.taskbar.value),
         ]
         let icons: [(String, CGFloat)] = [
-            ("inline 16", DSIconSize.inline), ("toolbar 20", DSIconSize.toolbar),
+            ("inline 16", DSIconSize.inline), ("row 18", DSIconSize.row), ("toolbar 20", DSIconSize.toolbar),
             ("taskbar 24", DSIconSize.taskbar), ("grid 48", DSIconSize.grid),
             ("picture 96", DSIconSize.picture),
         ]

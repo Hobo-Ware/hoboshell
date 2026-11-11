@@ -38,8 +38,8 @@ final class ExplorerContentView: NSView {
         status.translatesAutoresizingMaskIntoConstraints = false
         statusBar.addSubview(status)
         NSLayoutConstraint.activate([
-            status.leadingAnchor.constraint(equalTo: statusBar.leadingAnchor, constant: DSSpacing.s),
-            status.trailingAnchor.constraint(equalTo: statusBar.trailingAnchor, constant: -DSSpacing.s),
+            status.leadingAnchor.constraint(equalTo: statusBar.leadingAnchor, constant: DSSpacing.m),
+            status.trailingAnchor.constraint(equalTo: statusBar.trailingAnchor, constant: -DSSpacing.m),
             status.centerYAnchor.constraint(equalTo: statusBar.centerYAnchor),
         ])
 

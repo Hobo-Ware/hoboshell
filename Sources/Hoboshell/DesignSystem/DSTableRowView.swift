@@ -3,6 +3,10 @@ import AppKit
 final class DSTableRowView: NSTableRowView {
     static let identifier = NSUserInterfaceItemIdentifier("DSTableRowView")
 
+    var selectionFill = DSColor.selected
+    var radius = DSRadius.control
+    var inset = NSSize.zero
+
     private let hoverSync = DSHoverSync()
 
     private var isHovered = false {
@@ -55,7 +59,14 @@ final class DSTableRowView: NSTableRowView {
     }
 
     override func drawSelection(in dirtyRect: NSRect) {
-        fill(DSColor.selected)
+        fill(selectionFill)
+    }
+
+    func useAccentStyle() {
+        selectionFill = DSColor.accentTint
+        radius = DSRadius.card
+        inset = NSSize(width: DSSpacing.xs, height: DSSpacing.xxs)
+        needsDisplay = true
     }
 
     private func matchHoverToPointer() {
@@ -67,6 +78,6 @@ final class DSTableRowView: NSTableRowView {
 
     private func fill(_ color: NSColor) {
         color.setFill()
-        NSBezierPath(roundedRect: bounds, xRadius: DSRadius.control, yRadius: DSRadius.control).fill()
+        NSBezierPath(roundedRect: bounds.insetBy(dx: inset.width, dy: inset.height), xRadius: radius, yRadius: radius).fill()
     }
 }

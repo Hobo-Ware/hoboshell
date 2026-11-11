@@ -62,6 +62,13 @@ Record of work, newest first. Each entry says what a user would notice.
   video thumbnails, an accent-tinted tile when selected with the name on an
   accent pill, and an even grid. Renaming in place shows a text field exactly
   as wide as the tile and the tile no longer changes height.
+- The explorer's Details view has quieter column titles lined up with the
+  text beneath them (Size lines up with the sizes) under a hairline, with the
+  sort arrow beside the title. Rows are 28 high with 20 pt icons, dates follow
+  your region's format (medium date, short time), and the selected row and the
+  current place in the side pane share the accent-tinted highlight. Side pane
+  rows are 28 high with section titles in small dim text, and the status bar
+  has more breathing room.
 - The explorer's two toolbar rows are redone. The address bar shows the
   current folder's icon and clickable path chips separated by arrows; paths
   inside your home folder start at Home instead of Computer > Users > name,

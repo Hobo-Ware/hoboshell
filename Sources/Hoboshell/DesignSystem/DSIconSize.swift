@@ -2,6 +2,7 @@ import AppKit
 
 enum DSIconSize {
     static let inline: CGFloat = 16
+    static let row: CGFloat = 18
     static let toolbar: CGFloat = 20
     static let taskbar: CGFloat = 24
     static let startLogo: CGFloat = 32

@@ -33,9 +33,24 @@ import Testing
         #expect(ExplorerFormat.dateText(nil) == "")
     }
 
+    private let date = DateComponents(calendar: .current, year: 2026, month: 3, day: 5, hour: 14, minute: 7).date
+
+    @Test func dateUsesTheMediumDateAndShortTimeOfTheLocale() {
+        let german = Locale(identifier: "de_DE")
+        let expected = DateFormatter()
+        expected.locale = german
+        expected.dateStyle = .medium
+        expected.timeStyle = .short
+        #expect(ExplorerFormat.dateText(date, locale: german) == date.map { expected.string(from: $0) })
+    }
+
     @Test func dateShowsDayAndMinutesInLocalTime() {
-        let parts = DateComponents(calendar: .current, year: 2026, month: 3, day: 5, hour: 14, minute: 7)
-        let date = parts.date
-        #expect(ExplorerFormat.dateText(date) == "2026-03-05 14:07")
+        let text = ExplorerFormat.dateText(date, locale: Locale(identifier: "de_DE"))
+        #expect(text.contains("05.03.2026"))
+        #expect(text.contains("14:07"))
+    }
+
+    @Test func dateFollowsTheUsersLocaleWhenNoneIsGiven() {
+        #expect(ExplorerFormat.dateText(date) == ExplorerFormat.dateText(date, locale: .autoupdatingCurrent))
     }
 }

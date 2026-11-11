@@ -3,12 +3,7 @@ import Foundation
 public enum ExplorerFormat {
     private static let units = ["KB", "MB", "GB", "TB"]
 
-    private static let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "yyyy-MM-dd HH:mm"
-        return formatter
-    }()
+    private static let userDateFormatter = dateFormatter(locale: .autoupdatingCurrent)
 
     public static func sizeText(_ bytes: Int?) -> String {
         guard let bytes else { return "" }
@@ -24,7 +19,18 @@ public enum ExplorerFormat {
         return String(format: digits, rounded) + " " + units[unit]
     }
 
-    public static func dateText(_ date: Date?) -> String {
-        date.map { dateFormatter.string(from: $0) } ?? ""
+    public static func dateText(_ date: Date?, locale: Locale? = nil) -> String {
+        guard let date else { return "" }
+        guard let locale else { return userDateFormatter.string(from: date) }
+        return dateFormatter(locale: locale).string(from: date)
+    }
+
+    private static func dateFormatter(locale: Locale) -> DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.timeZone = .autoupdatingCurrent
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter
     }
 }
