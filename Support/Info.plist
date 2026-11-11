@@ -18,5 +18,11 @@
     <true/>
     <key>NSDesktopFolderUsageDescription</key>
     <string>Hoboshell shows the files on your Desktop.</string>
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>Hoboshell's file explorer shows your Documents folder.</string>
+    <key>NSDownloadsFolderUsageDescription</key>
+    <string>Hoboshell's file explorer shows your Downloads folder.</string>
+    <key>NSRemovableVolumesUsageDescription</key>
+    <string>Hoboshell's file explorer shows your external drives.</string>
 </dict>
 </plist>

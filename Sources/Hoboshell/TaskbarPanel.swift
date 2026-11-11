@@ -1,4 +1,5 @@
 import AppKit
+import HoboshellCore
 
 final class TaskbarPanel: NSPanel {
     static let barHeight: CGFloat = 48
@@ -6,6 +7,7 @@ final class TaskbarPanel: NSPanel {
     private static let iconSize: CGFloat = 28
 
     var onStart: (() -> Void)?
+    var onFiles: (() -> Void)?
     var onSnap: ((SnapRegion) -> Void)?
 
     private let appStack = NSStackView()
@@ -68,6 +70,12 @@ final class TaskbarPanel: NSPanel {
         let startButton = makeButton(title: "⊞", action: #selector(startPressed))
         startButton.toolTip = "Start"
 
+        let filesButton = makeButton(
+            image: NSImage(systemSymbolName: "folder.fill", accessibilityDescription: "Files"),
+            action: #selector(filesPressed)
+        )
+        filesButton.toolTip = "Files"
+
         appStack.orientation = .horizontal
         appStack.spacing = 4
 
@@ -80,6 +88,7 @@ final class TaskbarPanel: NSPanel {
         root.edgeInsets = NSEdgeInsets(top: 0, left: 8, bottom: 0, right: 12)
         root.translatesAutoresizingMaskIntoConstraints = false
         root.addView(startButton, in: .leading)
+        root.addView(filesButton, in: .leading)
         root.addView(appStack, in: .leading)
         let snapButtons: [(String, SnapRegion, String)] = [
             ("◧", .leftHalf, "Snap left"),
@@ -138,6 +147,10 @@ final class TaskbarPanel: NSPanel {
 
     @objc private func startPressed() {
         onStart?()
+    }
+
+    @objc private func filesPressed() {
+        onFiles?()
     }
 
     @objc private func snapPressed(_ sender: NSButton) {

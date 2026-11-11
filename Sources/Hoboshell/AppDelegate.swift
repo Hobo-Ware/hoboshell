@@ -1,4 +1,5 @@
 import AppKit
+import HoboshellCore
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let tracker = AppTracker()
@@ -27,6 +28,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         taskbar.onStart = { [weak self] in
             guard let self, let taskbar = self.taskbar else { return }
             self.startMenu?.toggle(above: taskbar.frame)
+        }
+        taskbar.onFiles = {
+            ExplorerWindow.open(at: FileManager.default.homeDirectoryForCurrentUser)
         }
         taskbar.onSnap = { [weak self] region in
             self?.snapLastActiveWindow(to: region)
