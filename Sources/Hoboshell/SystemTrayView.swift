@@ -15,7 +15,10 @@ final class SystemTrayView: NSStackView {
     private let networkMonitor = NWPathMonitor()
     private var refreshTimer: Timer?
 
-    init() {
+    private let clockOnOneLine: Bool
+
+    init(clockOnOneLine: Bool) {
+        self.clockOnOneLine = clockOnOneLine
         super.init(frame: .zero)
         orientation = .horizontal
         spacing = 8
@@ -29,7 +32,7 @@ final class SystemTrayView: NSStackView {
         batteryLabel.font = .monospacedDigitSystemFont(ofSize: 11, weight: .regular)
         clock.font = .monospacedDigitSystemFont(ofSize: 11, weight: .regular)
         clock.alignment = .right
-        clock.maximumNumberOfLines = 2
+        clock.maximumNumberOfLines = clockOnOneLine ? 1 : 2
 
         [networkIcon, batteryIcon, batteryLabel, clock].forEach(addArrangedSubview)
 
@@ -64,7 +67,8 @@ final class SystemTrayView: NSStackView {
 
     private func refresh() {
         let now = Date()
-        clock.stringValue = "\(timeFormatter.string(from: now))\n\(dateFormatter.string(from: now))"
+        let separator = clockOnOneLine ? "  " : "\n"
+        clock.stringValue = timeFormatter.string(from: now) + separator + dateFormatter.string(from: now)
 
         let battery = Self.readBattery()
         batteryIcon.isHidden = battery == nil
