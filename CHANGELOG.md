@@ -5,6 +5,8 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Added
+- GitHub Actions check that builds the app and runs the tests on every pull
+  request that is ready for review, and on every push to `main`.
 - Second look: a slim top bar with an Activities button and the system tray,
   plus an icon dock down the left edge. Switch looks from the right-click menu
   on any bar, or start with `--variant top-bar-dock`. The choice is remembered.
