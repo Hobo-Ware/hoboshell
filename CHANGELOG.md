@@ -23,6 +23,11 @@ Record of work, newest first. Each entry says what a user would notice.
   Control+Option+Left, Right and Up.
 
 ### Added
+- Rest the pointer on a window's taskbar button to get a card with a live
+  picture of the window, its title and a close button. Click the card to
+  bring the window forward. The picture needs the Screen Recording
+  permission; without it the card shows the app icon.
+- Right-click a window's taskbar button to close the window or quit its app.
 - Taskbar buttons, tray items and dock buttons light up under the pointer.
 - Right-click a bar to hide the Mac Dock and Finder's desktop icons. The old
   settings come back when Hoboshell quits.

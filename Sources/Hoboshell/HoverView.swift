@@ -16,8 +16,13 @@ class HoverView: NSView {
         didSet { showBackground() }
     }
 
+    var onHoverChange: ((Bool) -> Void)?
+
     private var isHovered = false {
-        didSet { showBackground() }
+        didSet {
+            showBackground()
+            onHoverChange?(isHovered)
+        }
     }
 
     override init(frame frameRect: NSRect) {

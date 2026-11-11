@@ -6,6 +6,10 @@ struct TaskbarItem {
     let title: String
     let isActive: Bool
     let activate: () -> Void
+    var preview: ((CGSize, @escaping (NSImage?) -> Void) -> Void)?
+    var close: (() -> Void)?
+    var quit: (() -> Void)?
+    var appName: String?
 }
 
 struct ShellActions {
