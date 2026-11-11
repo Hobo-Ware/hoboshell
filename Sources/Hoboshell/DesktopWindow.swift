@@ -13,10 +13,10 @@ final class DesktopWindow: NSWindow {
         isOpaque = true
         backgroundColor = color
         let insets = NSEdgeInsets(
-            top: screen.frame.maxY - screen.visibleFrame.maxY + reserved.top + 12,
-            left: reserved.left + 12,
-            bottom: reserved.bottom + 12,
-            right: reserved.right + 12
+            top: screen.frame.maxY - screen.visibleFrame.maxY + reserved.top + DSSpacing.m,
+            left: reserved.left + DSSpacing.m,
+            bottom: reserved.bottom + DSSpacing.m,
+            right: reserved.right + DSSpacing.m
         )
         contentView = DesktopGridView(
             frame: NSRect(origin: .zero, size: screen.frame.size),
@@ -34,7 +34,7 @@ final class DesktopWindow: NSWindow {
 }
 
 final class DesktopGridView: NSView {
-    private static let cellSize = NSSize(width: 96, height: 92)
+    private static let cellSize = DSGridCell.size
 
     private let folder: URL
     private let insets: NSEdgeInsets
@@ -63,9 +63,9 @@ final class DesktopGridView: NSView {
         select(nil)
     }
 
-    func select(_ icon: DesktopIconView?) {
-        for case let other as DesktopIconView in subviews {
-            other.isSelected = other === icon
+    func select(_ cell: DSGridCell?) {
+        for case let other as DSGridCell in subviews {
+            other.isSelected = other === cell
         }
     }
 
@@ -77,7 +77,7 @@ final class DesktopGridView: NSView {
             options: .skipsHiddenFiles
         )) ?? []
         for file in files.sorted(by: { $0.lastPathComponent.localizedCaseInsensitiveCompare($1.lastPathComponent) == .orderedAscending }) {
-            addSubview(DesktopIconView(file: file, size: Self.cellSize))
+            addSubview(makeCell(for: file))
         }
         layoutIcons()
     }
@@ -94,59 +94,30 @@ final class DesktopGridView: NSView {
             ))
         }
     }
-}
 
-final class DesktopIconView: HoverView {
-    private static let selectedBackground = NSColor.white.withAlphaComponent(0.28).cgColor
-
-    private let file: URL
-
-    var isSelected = false {
-        didSet { restingBackground = isSelected ? Self.selectedBackground : nil }
-    }
-
-    init(file: URL, size: NSSize) {
-        self.file = file
-        super.init(frame: NSRect(origin: .zero, size: size))
-        toolTip = file.lastPathComponent
-
-        let icon = NSImageView(image: NSWorkspace.shared.icon(forFile: file.path))
-        icon.frame = NSRect(x: (size.width - 48) / 2, y: 4, width: 48, height: 48)
-
-        let label = NSTextField(wrappingLabelWithString: file.lastPathComponent)
-        label.frame = NSRect(x: 2, y: 54, width: size.width - 4, height: 34)
-        label.alignment = .center
-        label.textColor = .white
-        label.font = .systemFont(ofSize: 11)
-        label.isSelectable = false
-        label.maximumNumberOfLines = 2
-        label.cell?.truncatesLastVisibleLine = true
-
-        addSubview(icon)
-        addSubview(label)
-
-        let menu = NSMenu()
-        menu.addItem(withTitle: "Open", action: #selector(open), keyEquivalent: "").target = self
-        menu.addItem(.separator())
-        menu.addItem(withTitle: "Move to Trash", action: #selector(moveToTrash), keyEquivalent: "").target = self
-        self.menu = menu
-    }
-
-    override var isFlipped: Bool { true }
-
-    override func mouseDown(with event: NSEvent) {
-        (superview as? DesktopGridView)?.select(self)
-        if event.clickCount == 2 {
-            open()
+    private func makeCell(for file: URL) -> DSGridCell {
+        let cell = DSGridCell()
+        cell.show(name: file.lastPathComponent, icon: NSWorkspace.shared.icon(forFile: file.path))
+        cell.toolTip = file.lastPathComponent
+        cell.onSelect = { [weak self, weak cell] in
+            self?.select(cell)
         }
+        cell.onOpen = { [weak self] in
+            self?.open(file)
+        }
+        cell.menu = DSMenu.make([
+            DSMenuItem("Open") { [weak self] in
+                self?.open(file)
+            },
+            DSMenu.separator(),
+            DSMenuItem("Move to Trash") { [weak self] in
+                self?.moveToTrash(file)
+            },
+        ])
+        return cell
     }
 
-    override func rightMouseDown(with event: NSEvent) {
-        (superview as? DesktopGridView)?.select(self)
-        super.rightMouseDown(with: event)
-    }
-
-    @objc private func open() {
+    private func open(_ file: URL) {
         if FileEntry.isBrowsableFolder(file) {
             ExplorerWindow.open(at: file)
             return
@@ -154,12 +125,12 @@ final class DesktopIconView: HoverView {
         NSWorkspace.shared.open(file)
     }
 
-    @objc private func moveToTrash() {
+    private func moveToTrash(_ file: URL) {
         do {
             try FileManager.default.trashItem(at: file, resultingItemURL: nil)
-            (superview as? DesktopGridView)?.reload()
+            reload()
         } catch {
-            NSAlert(error: error).runModal()
+            DSDialog.showError(error)
         }
     }
 }
