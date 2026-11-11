@@ -4,6 +4,10 @@ final class DSFieldBox: NSView {
     private static let borderWidth: CGFloat = 1
     private static let focusWidth: CGFloat = 2
 
+    var radius = DSRadius.control {
+        didSet { layer?.cornerRadius = radius }
+    }
+
     var isFocused = false {
         didSet { showBorder() }
     }

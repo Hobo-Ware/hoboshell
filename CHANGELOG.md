@@ -62,6 +62,14 @@ Record of work, newest first. Each entry says what a user would notice.
   video thumbnails, an accent-tinted tile when selected with the name on an
   accent pill, and an even grid. Renaming in place shows a text field exactly
   as wide as the tile and the tile no longer changes height.
+- The explorer's two toolbar rows are redone. The address bar shows the
+  current folder's icon and clickable path chips separated by arrows; paths
+  inside your home folder start at Home instead of Computer > Users > name,
+  and when the path is too long the leftmost folders fold into a "..." menu.
+  Command+L or a click on empty space still lets you type a path. Search is a
+  rounded field with a clear button, and the command row uses one icon weight,
+  a Rename pencil, a Sort menu button with an arrow, and a Details / Icons
+  switch and hidden-files toggle that light up in the accent colour.
 - Every screen now uses one shared set of sizes, spacing and colours, so the
   taskbar, tray, Start menu, preview cards, window switcher, desktop icons,
   top bar, side dock and file explorer line up: toolbars have the same height

@@ -2,25 +2,29 @@ import AppKit
 import HoboshellCore
 
 final class ExplorerAddressBar: NSView {
-    private static let inset = DSSpacing.xs
     private static let separatorWidth = DSSpacing.m
+    private static let collapsedTitle = "..."
 
     var onNavigate: ((URL) -> Void)?
     var onSubmit: ((String) -> Void)?
     var onFinish: (() -> Void)?
 
     private let box = DSFieldBox()
-    private let editor = DSTextField()
+    private let folderIcon = DSIconView(side: DSIconSize.inline)
+    private let editorIcon = DSIconView(side: DSIconSize.inline)
+    private let editor: DSTextField
     private let crumbs = NSView()
+    private let collapsed = ExplorerCrumb(title: collapsedTitle)
     private var segments: [BreadcrumbSegment] = []
-    private var crumbButtons: [DSButton] = []
-    private var separators: [DSLabel] = []
-    private let ellipsis = DSButton(title: "...", height: .compact)
-    private var ellipsisTarget = 0
+    private var chips: [ExplorerCrumb] = []
+    private var separators: [DSIconView] = []
+    private var hiddenSegments = 0
     private(set) var isEditing = false
 
     override init(frame frameRect: NSRect) {
+        editor = DSTextField(height: .regular, leading: editorIcon, radius: DSRadius.card)
         super.init(frame: frameRect)
+        box.radius = DSRadius.card
         editor.field.lineBreakMode = .byTruncatingHead
         editor.isHidden = true
         editor.onSubmit = { [weak self] text in
@@ -36,15 +40,14 @@ final class ExplorerAddressBar: NSView {
             guard self?.isEditing == true else { return }
             self?.endEditing()
         }
-        ellipsis.onPress = { [weak self] in
-            guard let self else { return }
-            self.navigate(to: self.ellipsisTarget)
+        collapsed.onPress = { [weak self] in
+            self?.showCollapsedMenu()
         }
-        ellipsis.isHidden = true
-        crumbs.addSubview(ellipsis)
-        addSubview(box)
-        addSubview(crumbs)
-        addSubview(editor)
+        collapsed.isHidden = true
+        crumbs.addSubview(collapsed)
+        for view in [box, folderIcon, crumbs, editor] {
+            addSubview(view)
+        }
     }
 
     @available(*, unavailable)
@@ -57,22 +60,32 @@ final class ExplorerAddressBar: NSView {
     }
 
     func show(_ folder: URL) {
-        segments = Breadcrumbs.segments(for: folder)
-        crumbButtons.forEach { $0.removeFromSuperview() }
+        segments = Breadcrumbs.segments(for: folder, home: FileManager.default.homeDirectoryForCurrentUser)
+        let icon = HoboIcon.image(forFile: folder.path)
+        folderIcon.image = icon
+        editorIcon.image = icon
+        chips.forEach { $0.removeFromSuperview() }
         separators.forEach { $0.removeFromSuperview() }
-        crumbButtons = segments.enumerated().map { index, segment in
-            let button = DSButton(title: segment.name, height: .compact)
-            button.onPress = { [weak self] in
+        chips = segments.enumerated().map { index, segment in
+            let chip = ExplorerCrumb(
+                title: segment.name,
+                symbol: segment.isHome ? "house" : nil,
+                isCurrent: index == segments.count - 1
+            )
+            chip.onPress = { [weak self] in
                 self?.navigate(to: index)
             }
-            crumbs.addSubview(button)
-            return button
+            crumbs.addSubview(chip)
+            return chip
         }
         separators = segments.dropFirst().map { _ in
-            let label = DSLabel(">", style: .caption, color: DSColor.dimText)
-            label.alignment = .center
-            crumbs.addSubview(label)
-            return label
+            let separator = DSIconView(
+                side: Self.separatorWidth,
+                image: DSIconSize.symbol("chevron.right", weight: .semibold, pointSize: DSIconSize.chevron),
+                tint: DSColor.dimText
+            )
+            crumbs.addSubview(separator)
+            return separator
         }
         needsLayout = true
     }
@@ -83,8 +96,14 @@ final class ExplorerAddressBar: NSView {
         editor.stringValue = url.path
         editor.isHidden = false
         crumbs.isHidden = true
+        folderIcon.isHidden = true
         editor.focus()
         editor.field.currentEditor()?.selectAll(nil)
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        guard let hit = super.hitTest(point) else { return nil }
+        return isEditing || hit is DSControl ? hit : self
     }
 
     override func mouseDown(with event: NSEvent) {
@@ -96,6 +115,8 @@ final class ExplorerAddressBar: NSView {
         box.frame = bounds
         editor.frame = bounds
         crumbs.frame = bounds
+        let iconY = (bounds.height - DSIconSize.inline) / 2
+        folderIcon.frame = NSRect(x: DSSpacing.s, y: iconY, width: DSIconSize.inline, height: DSIconSize.inline)
         layoutCrumbs()
     }
 
@@ -108,47 +129,50 @@ final class ExplorerAddressBar: NSView {
         isEditing = false
         editor.isHidden = true
         crumbs.isHidden = false
+        folderIcon.isHidden = false
+    }
+
+    private func showCollapsedMenu() {
+        let items = segments.prefix(hiddenSegments).enumerated().map { index, segment in
+            DSMenuItem(segment.name, symbol: segment.isHome ? "house" : nil) { [weak self] in
+                self?.navigate(to: index)
+            }
+        }
+        DSMenu.popUp(DSMenu.make(items), below: collapsed)
     }
 
     private func layoutCrumbs() {
-        let widths = crumbButtons.map { $0.intrinsicContentSize.width }
-        let ellipsisWidth = ellipsis.intrinsicContentSize.width
-        let available = bounds.width - 2 * Self.inset
-        var used: CGFloat = 0
-        var firstShown = crumbButtons.count
-        for index in crumbButtons.indices.reversed() {
-            let needed = widths[index] + (index > 0 ? Self.separatorWidth : 0)
-            let reserve = index > 0 ? ellipsisWidth : 0
-            if used + needed + reserve > available && firstShown < crumbButtons.count { break }
-            used += needed
-            firstShown = index
+        let start = folderIcon.frame.maxX + DSSpacing.xs
+        let widths = chips.map { $0.intrinsicContentSize.width }
+        let collapsedWidth = collapsed.intrinsicContentSize.width
+        hiddenSegments = Breadcrumbs.hiddenCount(
+            widths: widths,
+            separatorWidth: Self.separatorWidth,
+            collapsedWidth: collapsedWidth,
+            available: bounds.width - start - DSSpacing.xs
+        )
+        let height = DSControlHeight.compact.value
+        let y = (bounds.height - height) / 2
+        let separatorY = (bounds.height - Self.separatorWidth) / 2
+        var x = start
+        collapsed.isHidden = hiddenSegments == 0
+        if hiddenSegments > 0 {
+            collapsed.frame = NSRect(x: x, y: y, width: collapsedWidth, height: height)
+            x += collapsedWidth
         }
-        let crumbHeight = DSControlHeight.compact.value
-        let y = (bounds.height - crumbHeight) / 2
-        var x = Self.inset
-        ellipsis.isHidden = firstShown == 0
-        if firstShown > 0 {
-            ellipsisTarget = firstShown - 1
-            ellipsis.frame = NSRect(x: x, y: y, width: ellipsisWidth, height: crumbHeight)
-            x += ellipsisWidth
-        }
-        for index in crumbButtons.indices {
-            let visible = index >= firstShown
-            crumbButtons[index].isHidden = !visible
-            if index > 0 { separators[index - 1].isHidden = !visible }
-            guard visible else { continue }
+        for index in chips.indices {
+            let isShown = index >= hiddenSegments
+            chips[index].isHidden = !isShown
             if index > 0 {
-                let separator = separators[index - 1]
-                let separatorHeight = separator.intrinsicContentSize.height
-                separator.frame = NSRect(
-                    x: x,
-                    y: (bounds.height - separatorHeight) / 2,
-                    width: Self.separatorWidth,
-                    height: separatorHeight
-                )
+                separators[index - 1].isHidden = !isShown
+            }
+        }
+        for index in chips.indices where index >= hiddenSegments {
+            if index > 0 {
+                separators[index - 1].frame = NSRect(x: x, y: separatorY, width: Self.separatorWidth, height: Self.separatorWidth)
                 x += Self.separatorWidth
             }
-            crumbButtons[index].frame = NSRect(x: x, y: y, width: widths[index], height: crumbHeight)
+            chips[index].frame = NSRect(x: x, y: y, width: widths[index], height: height)
             x += widths[index]
         }
     }

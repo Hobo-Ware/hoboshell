@@ -1,12 +1,12 @@
 import AppKit
 
 final class ExplorerToolbar {
-    private static let searchWidth: CGFloat = 200
+    private static let searchWidth: CGFloat = 220
     private static let minimumAddressWidth: CGFloat = 160
 
     let view: DSToolbar
     let addressBar = ExplorerAddressBar()
-    let searchField = DSSearchField(placeholder: "Search this folder")
+    let searchField = DSSearchField(placeholder: "Search", radius: DSRadius.card)
 
     private let backButton: DSButton
     private let forwardButton: DSButton
@@ -45,7 +45,7 @@ final class ExplorerToolbar {
     }
 
     private static func button(_ symbol: String, tip: String, action: @escaping () -> Void) -> DSButton {
-        let button = DSButton(symbol: symbol, tip: tip)
+        let button = DSButton(symbol: symbol, tip: tip, weight: .medium)
         button.onPress = action
         return button
     }

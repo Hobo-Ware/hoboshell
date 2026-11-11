@@ -56,8 +56,8 @@ class DSButton: DSControl {
         arrange()
     }
 
-    convenience init(symbol: String, tip: String, height: DSControlHeight = .regular) {
-        self.init(image: DSIconSize.symbol(symbol, description: tip), height: height, tip: tip)
+    convenience init(symbol: String, tip: String, height: DSControlHeight = .regular, weight: DSTextWeight? = nil) {
+        self.init(image: DSIconSize.symbol(symbol, description: tip, weight: weight), height: height, tip: tip)
     }
 
     override var intrinsicContentSize: NSSize {

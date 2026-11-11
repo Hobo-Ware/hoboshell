@@ -109,6 +109,7 @@ enum GalleryContent {
         let text: [(String, NSView)] = [
             ("rest", sized(DSTextField(placeholder: "Name"))), ("filled", sized(filled)),
             ("focus", sized(focused)), ("disabled", sized(disabled)),
+            ("card radius", sized(DSTextField(placeholder: "Name", radius: DSRadius.card))),
         ]
         let searchFilled = DSSearchField(placeholder: "Search")
         searchFilled.stringValue = "report"
@@ -119,6 +120,7 @@ enum GalleryContent {
         let search: [(String, NSView)] = [
             ("rest", sized(DSSearchField(placeholder: "Search"))), ("filled", sized(searchFilled)),
             ("focus", sized(searchFocused)), ("disabled", sized(searchDisabled)),
+            ("card radius", sized(DSSearchField(placeholder: "Search", radius: DSRadius.card))),
         ]
         return GalleryRow.section("DSTextField and DSSearchField", [
             GalleryRow.make("text field", text), GalleryRow.make("search field", search),
