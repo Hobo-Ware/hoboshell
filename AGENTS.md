@@ -17,6 +17,9 @@ Integrity Protection, and never use private frameworks.
 | `scripts/bundle.sh` | Builds a signed `dist/Hoboshell.app`. Delete `dist/` when you are done with it. |
 | `.github/workflows/ci.yml` | Build and test check, required on `main`. Runs on macOS and skips draft pull requests, so unfinished work does not use runner time. |
 | `LICENSE` | GNU GPL v3.0. Do not add code or assets whose license does not allow that. |
+| `scripts/bundle.sh` | Builds a signed `dist/Hoboshell.app`. Signs with the local certificate named `Hoboshell Dev` when the keychain has one, so macOS permissions survive rebuilds; otherwise ad-hoc. Delete `dist/` when you are done with it. |
+| `scripts/capture.sh` | Saves a picture of each Hoboshell window that is on screen into a folder, for checking work by eye. Captures Hoboshell's own windows only. |
+| `.github/workflows/ci.yml` | Build and test check. Runs on macOS, which is billed at a higher rate on a private repo, so it skips draft pull requests. |
 | `CHANGELOG.md` | Record of work, newest first. |
 
 ## Commands
