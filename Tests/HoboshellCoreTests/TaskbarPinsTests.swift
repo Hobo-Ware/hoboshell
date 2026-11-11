@@ -63,3 +63,21 @@ import Testing
         #expect(TaskbarReorder.anchor(draggedCenter: 10, others: []) == nil)
     }
 }
+
+@Suite struct TaskbarAppIDTests {
+    @Test func anAppWithABundleIdentifierUsesIt() {
+        let id = TaskbarAppID.make(bundleIdentifier: "com.example.app", pid: 42)
+        #expect(id == "com.example.app")
+        #expect(TaskbarAppID.isPinnable(id))
+    }
+
+    @Test func anAppWithoutOneFallsBackToItsProcessAndCannotBePinned() {
+        let id = TaskbarAppID.make(bundleIdentifier: nil, pid: 42)
+        #expect(id == "pid:42")
+        #expect(!TaskbarAppID.isPinnable(id))
+    }
+
+    @Test func anEmptyBundleIdentifierCountsAsMissing() {
+        #expect(TaskbarAppID.make(bundleIdentifier: "", pid: 7) == "pid:7")
+    }
+}

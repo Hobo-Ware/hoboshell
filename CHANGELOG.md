@@ -4,6 +4,27 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+### Added
+- The taskbar can pin apps. Right-click a button and pick "Pin to taskbar"
+  (or "Unpin from taskbar"). Pinned apps stay on the bar as an icon when they
+  are not running, open on a click, come first, and drag sideways to reorder;
+  the order is remembered.
+- Taskbar buttons show a short line under running apps and a wider accent
+  line under the focused window.
+- Windows of one app can fold into a single button with a count. Right-click
+  an empty part of the bar and pick "Group windows": Never, When the taskbar
+  is full (the default) or Always. Clicking a grouped button opens a strip of
+  preview cards, one per window with its own live picture, title and close
+  button, and the strip scrolls sideways when there are many.
+- Right-click a taskbar button for Close window, Close all windows (groups),
+  Quit, Pin or Unpin, and Open for a pinned app that is not running.
+- When the buttons no longer fit even as icons, small arrows at each end of
+  the strip page through them.
+- Holding a dragged file over a taskbar button for a moment brings that
+  window forward so you can drop the file into it.
+- `Hoboshell --gallery` also shows the running and active marks, the group
+  count and the unread badge.
+
 ### Changed
 - Every screen now uses one shared set of sizes, spacing and colours, so the
   taskbar, tray, Start menu, preview cards, window switcher, desktop icons,

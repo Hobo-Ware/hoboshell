@@ -173,6 +173,10 @@ class DSControl: NSView {
         onPress?()
     }
 
+    func cancelPress() {
+        isPressed = false
+    }
+
     func preview(_ state: DSControlState) {
         isPreviewing = true
         isEnabled = state != .disabled

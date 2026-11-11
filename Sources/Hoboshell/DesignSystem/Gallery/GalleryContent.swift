@@ -4,12 +4,13 @@ import HoboshellCore
 enum GalleryContent {
     private static let fieldWidth: CGFloat = 200
     private static let rowWidth: CGFloat = 150
+    private static let taskbarButtonWidth: CGFloat = 120
     private static let toolbarWidth: CGFloat = 640
     private static let cardSize = NSSize(width: 240, height: 96)
 
     static func page() -> NSView {
         let sections = [
-            colors(), scales(), text(), buttons(), toggles(), fields(), menus(), rows(), grid(), chrome(), dialogs(),
+            colors(), scales(), text(), buttons(), toggles(), fields(), menus(), rows(), grid(), chrome(), taskbar(), dialogs(),
         ]
         let stack = NSStackView(views: [DSLabel("Hoboshell design system", style: .title, weight: .semibold)] + sections)
         stack.orientation = .vertical
@@ -194,6 +195,40 @@ enum GalleryContent {
             GalleryRow.make("DSCard", [("radius 8, border, shadow", card)]),
             GalleryRow.make("DSBadge", badges),
         ])
+    }
+
+    private static func taskbar() -> NSView {
+        let folder = NSImage(named: NSImage.folderName)
+        let marks: [(String, NSView)] = [
+            ("none", DSRunMark()), ("running", mark(.running)), ("active", mark(.active)),
+        ]
+        func button(_ configure: @escaping (DSTaskbarButton) -> Void) -> () -> DSControl {
+            {
+                let button = DSTaskbarButton(title: "Documents", image: folder, width: taskbarButtonWidth, alignment: .leading)
+                configure(button)
+                return button
+            }
+        }
+        return GalleryRow.section("DSRunMark and DSTaskbarButton", [
+            GalleryRow.make("DSRunMark", marks),
+            GalleryRow.states("pinned, not running", button { _ in }),
+            GalleryRow.states("running", button { $0.runState = .running }),
+            GalleryRow.states("active window", button { $0.runState = .active }),
+            GalleryRow.states("group with count", button {
+                $0.runState = .running
+                $0.countText = "3"
+            }),
+            GalleryRow.states("unread badge", button {
+                $0.runState = .running
+                $0.notificationText = "12"
+            }),
+        ])
+    }
+
+    private static func mark(_ state: DSRunMark.State) -> DSRunMark {
+        let mark = DSRunMark()
+        mark.state = state
+        return mark
     }
 
     private static func dialogs() -> NSView {
