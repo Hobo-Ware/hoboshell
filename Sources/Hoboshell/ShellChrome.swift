@@ -36,9 +36,6 @@ extension ShellLayout {
 
 extension ShellVariant {
     var desktopColor: NSColor {
-        switch self {
-        case .bottomTaskbar: return NSColor(calibratedRed: 0.0, green: 0.32, blue: 0.55, alpha: 1)
-        case .topBarWithDock: return NSColor(calibratedRed: 0.27, green: 0.12, blue: 0.30, alpha: 1)
-        }
+        DSColor.desktop(for: self)
     }
 }
