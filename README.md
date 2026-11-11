@@ -109,6 +109,9 @@ swift build          # compile
 ./scripts/bundle.sh  # build a signed dist/Hoboshell.app
 ```
 
+Every pull request that is ready for review gets the same build and test run
+on GitHub Actions.
+
 Use `./scripts/test.sh`, not plain `swift test`: it also works on machines
 that have the Command Line Tools but not full Xcode.
 
