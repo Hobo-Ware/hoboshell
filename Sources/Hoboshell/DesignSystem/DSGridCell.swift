@@ -1,14 +1,17 @@
 import AppKit
+import HoboshellCore
 
-final class DSGridCell: DSControl {
+final class DSGridCell: DSControl, NSDraggingSource {
     static let size = NSSize(width: 96, height: 96)
 
     var onSelect: (() -> Void)?
     var onOpen: (() -> Void)?
+    var dragItem: (() -> NSPasteboardWriting)?
 
     let label: NSTextField
 
     private let iconView = DSIconView(side: DSIconSize.grid)
+    private var pressLocation: NSPoint?
 
     init(label: NSTextField? = nil) {
         self.label = label ?? DSLabel()
@@ -50,6 +53,7 @@ final class DSGridCell: DSControl {
     }
 
     override func mouseDown(with event: NSEvent) {
+        pressLocation = event.locationInWindow
         super.mouseDown(with: event)
         guard handlesClicks else { return }
         onSelect?()
@@ -63,5 +67,31 @@ final class DSGridCell: DSControl {
             onSelect?()
         }
         super.rightMouseDown(with: event)
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        guard let dragItem, let start = pressLocation,
+              hypot(event.locationInWindow.x - start.x, event.locationInWindow.y - start.y) >= TaskbarReorder.dragThreshold
+        else {
+            super.mouseDragged(with: event)
+            return
+        }
+        pressLocation = nil
+        cancelPress()
+        let item = NSDraggingItem(pasteboardWriter: dragItem())
+        item.setDraggingFrame(bounds, contents: snapshot())
+        beginDraggingSession(with: [item], event: event, source: self)
+    }
+
+    func draggingSession(_ session: NSDraggingSession, sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
+        .move
+    }
+
+    private func snapshot() -> NSImage? {
+        guard let bitmap = bitmapImageRepForCachingDisplay(in: bounds) else { return nil }
+        cacheDisplay(in: bounds, to: bitmap)
+        let image = NSImage(size: bounds.size)
+        image.addRepresentation(bitmap)
+        return image
     }
 }

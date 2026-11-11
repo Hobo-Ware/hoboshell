@@ -5,6 +5,7 @@ final class DSTextField: NSView, NSTextFieldDelegate {
     var onSubmit: ((String) -> Void)?
     var onCancel: (() -> Void)?
     var onEndEditing: (() -> Void)?
+    var onCommand: ((Selector) -> Bool)?
 
     var showsFocus: Bool {
         get { box.isFocused }
@@ -95,6 +96,9 @@ final class DSTextField: NSView, NSTextFieldDelegate {
     }
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+        if onCommand?(commandSelector) == true {
+            return true
+        }
         if commandSelector == #selector(NSResponder.insertNewline(_:)), let onSubmit {
             onSubmit(field.stringValue)
             return true

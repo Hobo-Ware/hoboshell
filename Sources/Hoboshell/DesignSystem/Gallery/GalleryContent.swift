@@ -10,7 +10,7 @@ enum GalleryContent {
 
     static func page() -> NSView {
         let sections = [
-            colors(), scales(), text(), buttons(), toggles(), fields(), menus(), rows(), grid(), chrome(), taskbar(), dialogs(),
+            colors(), scales(), text(), buttons(), toggles(), fields(), menus(), rows(), grid(), startMenu(), chrome(), taskbar(), dialogs(),
         ]
         let stack = NSStackView(views: [DSLabel("Hoboshell design system", style: .title, weight: .semibold)] + sections)
         stack.orientation = .vertical
@@ -157,6 +157,31 @@ enum GalleryContent {
                 cell.heightAnchor.constraint(equalToConstant: DSGridCell.size.height).isActive = true
                 return cell
             },
+        ])
+    }
+
+    private static func startMenu() -> NSView {
+        let application = NSImage(named: NSImage.applicationIconName) ?? NSImage()
+        let letter = DSLetterHeader("A")
+        letter.translatesAutoresizingMaskIntoConstraints = false
+        letter.widthAnchor.constraint(equalToConstant: rowWidth).isActive = true
+        return GalleryRow.section("Start menu pieces", [
+            GalleryRow.states("rail button") {
+                DSButton(image: HoboIcon.home.image(side: DSIconSize.toolbar), height: .regular, tip: "Home")
+            },
+            GalleryRow.states("pinned tile") {
+                let cell = DSGridCell()
+                cell.show(name: "Safari", icon: application)
+                cell.translatesAutoresizingMaskIntoConstraints = false
+                cell.widthAnchor.constraint(equalToConstant: DSGridCell.size.width).isActive = true
+                cell.heightAnchor.constraint(equalToConstant: DSGridCell.size.height).isActive = true
+                return cell
+            },
+            GalleryRow.states("result row") {
+                sized(DSListRow(title: "Quarterly plan.pdf", image: NSImage(named: NSImage.folderName), detail: "Documents"), width: toolbarWidth / 2)
+            },
+            GalleryRow.make("letter header", [("A", letter)]),
+            GalleryRow.make("avatar", [("picture", DSAvatar(side: DSIconSize.taskbar, image: application)), ("none", DSAvatar(side: DSIconSize.taskbar))]),
         ])
     }
 

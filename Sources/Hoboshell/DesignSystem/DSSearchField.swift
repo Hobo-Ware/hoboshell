@@ -5,6 +5,11 @@ final class DSSearchField: NSView {
     var onSubmit: ((String) -> Void)?
     var onCancel: (() -> Void)?
 
+    var onCommand: ((Selector) -> Bool)? {
+        get { input.onCommand }
+        set { input.onCommand = newValue }
+    }
+
     var stringValue: String {
         get { input.stringValue }
         set {
