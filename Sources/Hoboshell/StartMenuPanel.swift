@@ -20,6 +20,7 @@ final class StartMenuPanel: NSPanel, NSTableViewDataSource, NSTableViewDelegate,
         )
         level = .statusBar
         collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle, .fullScreenAuxiliary]
+        appearance = NSAppearance(named: .darkAqua)
         hidesOnDeactivate = false
         isOpaque = false
         backgroundColor = .clear

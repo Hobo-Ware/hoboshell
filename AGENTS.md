@@ -14,6 +14,7 @@ Integrity Protection, and never use private frameworks.
 | `Tests/HoboshellCoreTests` | Swift Testing suites for `HoboshellCore`. |
 | `Support/Info.plist` | Keys for the packaged `.app` (`LSUIElement`, folder access texts). |
 | `scripts/test.sh` | The one way to run tests. Works with or without full Xcode. |
+| `scripts/bundle.sh` | Builds a signed `dist/Hoboshell.app`. Delete `dist/` when you are done with it. |
 | `CHANGELOG.md` | Record of work, newest first. |
 
 ## Commands

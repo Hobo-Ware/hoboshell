@@ -1,20 +1,29 @@
 import AppKit
 import HoboshellCore
 
+struct TaskbarItem {
+    let icon: NSImage?
+    let title: String
+    let isActive: Bool
+    let activate: () -> Void
+}
+
 final class TaskbarPanel: NSPanel {
     static let barHeight: CGFloat = 48
-    private static let buttonSize: CGFloat = 40
-    private static let iconSize: CGFloat = 28
+    private static let buttonHeight: CGFloat = 40
+    private static let iconSize: CGFloat = 24
+    private static let itemSpacing: CGFloat = 4
+    private static let showDesktopWidth: CGFloat = 10
+    private static let widthUsedByFixedControls: CGFloat = 520
 
     var onStart: (() -> Void)?
     var onFiles: (() -> Void)?
+    var onShowDesktop: (() -> Void)?
     var onSnap: ((SnapRegion) -> Void)?
 
-    private let appStack = NSStackView()
-    private let clock = NSTextField(labelWithString: "")
-    private let clockFormatter = DateFormatter()
-    private var clockTimer: Timer?
-    private var apps: [NSRunningApplication] = []
+    private let itemStack = NSStackView()
+    private var items: [TaskbarItem] = []
+    private var shownItems: [String] = []
 
     init(screen: NSScreen) {
         super.init(
@@ -25,6 +34,7 @@ final class TaskbarPanel: NSPanel {
         )
         level = .statusBar
         collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle, .fullScreenAuxiliary]
+        appearance = NSAppearance(named: .darkAqua)
         isFloatingPanel = true
         hidesOnDeactivate = false
         isMovable = false
@@ -32,7 +42,6 @@ final class TaskbarPanel: NSPanel {
         isOpaque = false
         backgroundColor = .clear
         buildContent()
-        startClock()
     }
 
     override var canBecomeKey: Bool { false }
@@ -40,19 +49,37 @@ final class TaskbarPanel: NSPanel {
 
     func reposition(on screen: NSScreen) {
         setFrame(Self.frame(on: screen), display: true)
+        shownItems = []
+        update(items: items)
     }
 
-    func update(apps: [NSRunningApplication]) {
-        self.apps = apps
-        appStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        for (index, app) in apps.enumerated() {
-            let icon = app.icon?.copy() as? NSImage ?? NSImage()
-            icon.size = NSSize(width: Self.iconSize, height: Self.iconSize)
-            let button = makeButton(image: icon, action: #selector(toggleApp(_:)))
+    func update(items: [TaskbarItem]) {
+        self.items = items
+        let described = items.map { "\($0.title)|\($0.isActive)" }
+        guard described != shownItems else { return }
+        shownItems = described
+
+        let width = TaskbarLayout.buttonWidth(
+            buttonCount: items.count,
+            availableWidth: frame.width - Self.widthUsedByFixedControls,
+            spacing: Self.itemSpacing
+        )
+        let showsTitle = TaskbarLayout.showsTitle(atWidth: width)
+        itemStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        for (index, item) in items.enumerated() {
+            let icon = item.icon?.copy() as? NSImage
+            icon?.size = NSSize(width: Self.iconSize, height: Self.iconSize)
+            let button = makeButton(
+                title: showsTitle ? item.title : "",
+                image: icon,
+                width: width,
+                fontSize: 12,
+                action: #selector(itemPressed(_:))
+            )
             button.tag = index
-            button.toolTip = app.localizedName
-            button.layer?.backgroundColor = app.isActive ? NSColor.white.withAlphaComponent(0.22).cgColor : nil
-            appStack.addArrangedSubview(button)
+            button.toolTip = item.title
+            button.layer?.backgroundColor = item.isActive ? NSColor.white.withAlphaComponent(0.22).cgColor : nil
+            itemStack.addArrangedSubview(button)
         }
     }
 
@@ -76,24 +103,22 @@ final class TaskbarPanel: NSPanel {
         )
         filesButton.toolTip = "Files"
 
-        appStack.orientation = .horizontal
-        appStack.spacing = 4
-
-        clock.font = .monospacedDigitSystemFont(ofSize: 13, weight: .regular)
-        clock.textColor = .white
+        itemStack.orientation = .horizontal
+        itemStack.spacing = Self.itemSpacing
 
         let root = NSStackView()
         root.orientation = .horizontal
         root.spacing = 6
-        root.edgeInsets = NSEdgeInsets(top: 0, left: 8, bottom: 0, right: 12)
+        root.edgeInsets = NSEdgeInsets(top: 0, left: 8, bottom: 0, right: 0)
         root.translatesAutoresizingMaskIntoConstraints = false
         root.addView(startButton, in: .leading)
         root.addView(filesButton, in: .leading)
-        root.addView(appStack, in: .leading)
+        root.addView(itemStack, in: .leading)
+
         let snapButtons: [(String, SnapRegion, String)] = [
-            ("◧", .leftHalf, "Snap left"),
-            ("◨", .rightHalf, "Snap right"),
-            ("▢", .maximize, "Maximize"),
+            ("◧", .leftHalf, "Snap left (Control+Option+Left)"),
+            ("◨", .rightHalf, "Snap right (Control+Option+Right)"),
+            ("▢", .maximize, "Maximize (Control+Option+Up)"),
         ]
         for (title, region, tip) in snapButtons {
             let button = makeButton(title: title, action: #selector(snapPressed(_:)))
@@ -101,7 +126,13 @@ final class TaskbarPanel: NSPanel {
             button.toolTip = tip
             root.addView(button, in: .trailing)
         }
-        root.addView(clock, in: .trailing)
+        root.addView(SystemTrayView(), in: .trailing)
+
+        let showDesktopButton = makeButton(width: Self.showDesktopWidth, action: #selector(showDesktopPressed))
+        showDesktopButton.toolTip = "Show desktop"
+        showDesktopButton.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.12).cgColor
+        showDesktopButton.layer?.cornerRadius = 0
+        root.addView(showDesktopButton, in: .trailing)
 
         background.addSubview(root)
         NSLayoutConstraint.activate([
@@ -116,33 +147,30 @@ final class TaskbarPanel: NSPanel {
         background.menu = menu
     }
 
-    private func makeButton(title: String = "", image: NSImage? = nil, action: Selector) -> NSButton {
+    private func makeButton(
+        title: String = "",
+        image: NSImage? = nil,
+        width: CGFloat = TaskbarLayout.iconOnlyWidth,
+        fontSize: CGFloat = 18,
+        action: Selector
+    ) -> NSButton {
         let button = NSButton(title: title, target: self, action: action)
+        let isLabelled = image != nil && !title.isEmpty
         button.image = image
-        button.imagePosition = image == nil ? .noImage : .imageOnly
+        button.imagePosition = image == nil ? .noImage : (isLabelled ? .imageLeading : .imageOnly)
+        button.alignment = isLabelled ? .left : .center
+        button.cell?.lineBreakMode = .byTruncatingTail
         button.isBordered = false
-        button.font = .systemFont(ofSize: 18)
+        button.font = .systemFont(ofSize: fontSize)
         button.contentTintColor = .white
         button.wantsLayer = true
         button.layer?.cornerRadius = 6
         button.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            button.widthAnchor.constraint(equalToConstant: Self.buttonSize),
-            button.heightAnchor.constraint(equalToConstant: Self.buttonSize),
+            button.widthAnchor.constraint(equalToConstant: width),
+            button.heightAnchor.constraint(equalToConstant: Self.buttonHeight),
         ])
         return button
-    }
-
-    private func startClock() {
-        clockFormatter.dateFormat = "HH:mm"
-        updateClock()
-        clockTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
-            self?.updateClock()
-        }
-    }
-
-    private func updateClock() {
-        clock.stringValue = clockFormatter.string(from: Date())
     }
 
     @objc private func startPressed() {
@@ -153,19 +181,17 @@ final class TaskbarPanel: NSPanel {
         onFiles?()
     }
 
+    @objc private func showDesktopPressed() {
+        onShowDesktop?()
+    }
+
     @objc private func snapPressed(_ sender: NSButton) {
         guard let region = SnapRegion(rawValue: sender.tag) else { return }
         onSnap?(region)
     }
 
-    @objc private func toggleApp(_ sender: NSButton) {
-        guard apps.indices.contains(sender.tag) else { return }
-        let app = apps[sender.tag]
-        if app.isActive {
-            app.hide()
-        } else {
-            app.unhide()
-            app.activate()
-        }
+    @objc private func itemPressed(_ sender: NSButton) {
+        guard items.indices.contains(sender.tag) else { return }
+        items[sender.tag].activate()
     }
 }
