@@ -10,8 +10,12 @@ APIs only. No System Integrity Protection changes, no private frameworks.
 ## What you get
 
 - **Taskbar** along the bottom of the screen, on every desktop: Start button,
-  file explorer button, one button per running app, window snap buttons and a
-  clock. Click an app's button to bring it forward; click it again to hide it.
+  file explorer button, one button per open window, window snap buttons and a
+  show desktop strip. Click a window's button to bring it forward; click it
+  again to minimise it.
+- **System tray** with network state, battery level, and a clock with the date.
+- **Window switcher**: hold Option and press Tab to step through open windows,
+  release Option to switch.
 - **Start menu** with a searchable list of your installed apps. Type, press
   Enter, done.
 - **Desktop** with your Desktop files as an icon grid. Double-click to open.
@@ -20,6 +24,15 @@ APIs only. No System Integrity Protection changes, no private frameworks.
   list and an icon grid, plus Open, Rename, Move to Trash and New folder.
 - **Window snapping**: send the last used window to the left half, the right
   half, or the full area above the taskbar.
+
+## Keyboard shortcuts
+
+| Keys | What happens |
+| --- | --- |
+| Option+Tab | Step through open windows; release Option to switch |
+| Control+Option+Left | Snap the last used window to the left half |
+| Control+Option+Right | Snap it to the right half |
+| Control+Option+Up | Fill the area above the taskbar |
 
 ## Requirements
 
@@ -41,7 +54,7 @@ or press Ctrl+C in the terminal.
 
 | Prompt | Why |
 | --- | --- |
-| Accessibility | To move and resize other apps' windows when you snap them. |
+| Accessibility | To list other apps' windows on the taskbar, switch between them, and move them when you snap. Without it the taskbar shows one button per app. |
 | Desktop, Documents, Downloads folders | To show their files on the desktop and in the file explorer. |
 
 When you start it from a terminal, the Accessibility switch appears under your
@@ -72,15 +85,18 @@ overlay, not a replacement:
 - Windows you maximise yourself can slide under the taskbar. The snap buttons
   keep clear of it.
 - The file explorer does not appear in Cmd+Tab, because Hoboshell runs as a
-  background agent.
-- There is no Edit menu yet, so Cmd+C / Cmd+V do not work inside Hoboshell's
-  own text fields.
+  background agent. It does appear on the taskbar and in Option+Tab.
+- The system tray shows Hoboshell's own indicators. macOS does not let another
+  app host the real menu bar icons.
+- The window list is refreshed every second or two, so a new window can take a
+  moment to appear on the taskbar.
 
 ## Development
 
 ```sh
 swift build          # compile
 ./scripts/test.sh    # run the tests
+./scripts/bundle.sh  # build a signed dist/Hoboshell.app
 ```
 
 Use `./scripts/test.sh`, not plain `swift test`: it also works on machines
@@ -97,9 +113,7 @@ Coding and testing rules are in [AGENTS.md](AGENTS.md). Work done so far is in
 
 ## Roadmap
 
-- One taskbar button per window, not per app
-- System tray area
-- Alt-Tab style window switcher
-- Keyboard shortcuts for snapping
-- A script that packages a proper `.app`
 - Other looks, such as a top bar with a side dock
+- Pinned apps on the taskbar
+- Volume control in the system tray
+- Drag and drop, and copy and paste of files, in the file explorer
