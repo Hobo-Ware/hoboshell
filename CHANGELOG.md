@@ -5,6 +5,8 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Fixed
+- Window buttons on the taskbar have padding inside, so the highlight on the
+  selected one no longer hugs its icon.
 - The system tray and snap buttons now sit at the right end of the taskbar.
   They were being pushed toward the middle.
 - Snapping now also works for apps that report no focused window, and each
@@ -13,6 +15,8 @@ Record of work, newest first. Each entry says what a user would notice.
 ### Added
 - GPL v3.0 license. Hoboshell is open source, and versions built on it must
   stay open too.
+- The Start button now shows the official Hoboware logo: red cap, with the
+  face in white so it reads on the dark taskbar.
 - Clicking the network, battery or clock in the tray opens the matching page
   in System Settings.
 - GitHub Actions check that builds the app and runs the tests on every pull

@@ -4,6 +4,7 @@ import HoboshellCore
 final class TaskbarPanel: NSPanel, ShellChrome {
     private static let buttonHeight: CGFloat = 40
     private static let iconSize: CGFloat = 24
+    private static let startLogoHeight: CGFloat = 32
     private static let itemSpacing: CGFloat = 4
     private static let showDesktopWidth: CGFloat = 10
     private static let widthUsedByFixedControls: CGFloat = 520
@@ -54,22 +55,22 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         let showsTitle = TaskbarLayout.showsTitle(atWidth: width)
         itemStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         for (index, item) in items.enumerated() {
-            let button = makeButton(
-                title: showsTitle ? item.title : "",
-                image: ShellButton.icon(item.icon, side: Self.iconSize),
-                width: width,
-                fontSize: 12,
-                action: #selector(itemPressed(_:))
-            )
-            button.tag = index
-            button.toolTip = item.title
-            button.layer?.backgroundColor = item.isActive ? ShellButton.activeBackground : nil
-            itemStack.addArrangedSubview(button)
+            let itemView = TaskbarItemView(
+                icon: ShellButton.icon(item.icon, side: Self.iconSize),
+                title: showsTitle ? item.title : nil,
+                isActive: item.isActive,
+                size: NSSize(width: width, height: Self.buttonHeight)
+            ) { [weak self] in
+                self?.activateItem(at: index)
+            }
+            itemView.toolTip = item.title
+            itemStack.addArrangedSubview(itemView)
         }
     }
 
     private func buildContent(in background: NSVisualEffectView, switchTitle: String) {
-        let startButton = makeButton(title: "⊞", action: #selector(startPressed))
+        let logo = HobowareLogo.image(height: Self.startLogoHeight, style: .official, ink: .forDarkBackground)
+        let startButton = makeButton(title: logo == nil ? "⊞" : "", image: logo, action: #selector(startPressed))
         startButton.toolTip = "Start"
 
         let filesButton = makeButton(
@@ -119,14 +120,12 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         title: String = "",
         image: NSImage? = nil,
         width: CGFloat = TaskbarLayout.iconOnlyWidth,
-        fontSize: CGFloat = 18,
         action: Selector
     ) -> NSButton {
         ShellButton.make(
             title: title,
             image: image,
             size: NSSize(width: width, height: Self.buttonHeight),
-            fontSize: fontSize,
             target: self,
             action: action
         )
@@ -149,8 +148,8 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         actions.onSnap?(region)
     }
 
-    @objc private func itemPressed(_ sender: NSButton) {
-        guard items.indices.contains(sender.tag) else { return }
-        items[sender.tag].activate()
+    private func activateItem(at index: Int) {
+        guard items.indices.contains(index) else { return }
+        items[index].activate()
     }
 }
