@@ -14,6 +14,8 @@ enum DSColor {
     static let hover = NSColor.white.withAlphaComponent(0.12)
     static let pressed = NSColor.white.withAlphaComponent(0.20)
     static let selected = NSColor.white.withAlphaComponent(0.28)
+    static let accentTint = accent.withAlphaComponent(0.22)
+    static let onAccent = NSColor.white
     static let focusRing = accent
     static let disabledAlpha: CGFloat = 0.4
 

@@ -3,12 +3,15 @@ import AppKit
 final class ExplorerNameField: NSTextField, NSTextFieldDelegate {
     var onCommit: ((String) -> Void)?
     var onCancel: (() -> Void)?
+    var onBeginRenaming: (() -> Void)?
+    var onEndRenaming: (() -> Void)?
 
     private var cancelled = false
     private var originalName = ""
     private var isRenaming = false
 
     func beginRenaming(stemLength: Int) -> Bool {
+        onBeginRenaming?()
         originalName = stringValue
         cancelled = false
         isRenaming = true
@@ -22,6 +25,7 @@ final class ExplorerNameField: NSTextField, NSTextFieldDelegate {
             isEditable = false
             isSelectable = false
             drawsBackground = false
+            onEndRenaming?()
             return false
         }
         editor.selectedRange = NSRange(location: 0, length: stemLength)
@@ -40,6 +44,7 @@ final class ExplorerNameField: NSTextField, NSTextFieldDelegate {
         if wasCancelled {
             stringValue = originalName
         }
+        onEndRenaming?()
         DispatchQueue.main.async { [weak self] in
             if wasCancelled {
                 self?.onCancel?()

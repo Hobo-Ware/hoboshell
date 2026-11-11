@@ -57,6 +57,11 @@ Record of work, newest first. Each entry says what a user would notice.
   count and the unread badge.
 
 ### Changed
+- The explorer's Icons view is redrawn: bigger 96 pt pictures, names up to two
+  lines that shorten in the middle, a hairline frame around real photo and
+  video thumbnails, an accent-tinted tile when selected with the name on an
+  accent pill, and an even grid. Renaming in place shows a text field exactly
+  as wide as the tile and the tile no longer changes height.
 - Every screen now uses one shared set of sizes, spacing and colours, so the
   taskbar, tray, Start menu, preview cards, window switcher, desktop icons,
   top bar, side dock and file explorer line up: toolbars have the same height

@@ -5,7 +5,7 @@ final class ExplorerIconItem: NSCollectionViewItem {
     static let identifier = NSUserInterfaceItemIdentifier("ExplorerIconItem")
 
     let nameField = ExplorerNameField(labelWithString: "")
-    private lazy var tile = DSGridCell(label: nameField)
+    private lazy var tile = DSTile(label: nameField)
     private var thumbnailRequest: QLThumbnailGenerator.Request?
 
     override func loadView() {
@@ -24,11 +24,11 @@ final class ExplorerIconItem: NSCollectionViewItem {
 
     func show(_ file: URL, name: String) {
         cancelThumbnail()
-        tile.show(name: name, icon: HoboIcon.image(forFile: file.path))
+        tile.show(name: name, image: HoboIcon.image(forFile: file.path, side: DSIconSize.picture), isPicture: false)
 
         let request = QLThumbnailGenerator.Request(
             fileAt: file,
-            size: CGSize(width: DSIconSize.grid, height: DSIconSize.grid),
+            size: CGSize(width: DSIconSize.picture, height: DSIconSize.picture),
             scale: view.window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 1,
             representationTypes: .thumbnail
         )
@@ -37,7 +37,7 @@ final class ExplorerIconItem: NSCollectionViewItem {
             guard let thumbnail else { return }
             DispatchQueue.main.async {
                 guard let self, self.thumbnailRequest === request else { return }
-                self.tile.show(name: name, icon: thumbnail.nsImage)
+                self.tile.showPicture(thumbnail.nsImage, isPicture: true)
             }
         }
     }
