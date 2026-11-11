@@ -20,10 +20,22 @@ final class TaskbarPanel: NSPanel, ShellChrome {
     private var page = TaskbarPage(range: 0..<0, overflows: false, hasPrevious: false, hasNext: false)
     private var buttons: [(model: TaskbarButtonModel, view: TaskbarButton)] = []
     private let previewCard = PreviewCardPanel()
+    private var pinObserver: NSObjectProtocol?
 
     init(layout: ShellLayout, switchTitle: String) {
         super.init(contentRect: layout.bar, styleMask: DSPanelStyle.styleMask, backing: .buffered, defer: false)
         buildContent(in: DSPanelStyle.apply(to: self, kind: .bar), switchTitle: switchTitle)
+        pinObserver = NotificationCenter.default.addObserver(
+            forName: TaskbarPinStore.didChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.reloadPins()
+        }
+    }
+
+    deinit {
+        if let pinObserver {
+            NotificationCenter.default.removeObserver(pinObserver)
+        }
     }
 
     override var canBecomeKey: Bool { false }
@@ -170,6 +182,13 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         } else {
             model.launch?()
         }
+    }
+
+    private func reloadPins() {
+        let stored = TaskbarPinStore.loadPins()
+        guard stored != pins else { return }
+        pins = stored
+        rebuild(force: true)
     }
 
     private func togglePin(_ appID: String) {

@@ -3,6 +3,8 @@ import HoboshellCore
 
 enum TaskbarPinStore {
     private static let pinsKey = "TaskbarPins"
+    static let didChange = Notification.Name("HoboshellTaskbarPinsDidChange")
+
     private static let groupingKey = "TaskbarGrouping"
 
     static func loadPins() -> TaskbarPins {
@@ -11,6 +13,7 @@ enum TaskbarPinStore {
 
     static func save(_ pins: TaskbarPins) {
         UserDefaults.standard.set(pins.ids, forKey: pinsKey)
+        NotificationCenter.default.post(name: didChange, object: nil)
     }
 
     static func loadGrouping() -> TaskbarGrouping {

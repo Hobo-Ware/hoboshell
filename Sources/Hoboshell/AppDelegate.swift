@@ -94,8 +94,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             : TopBarDockChrome(layout: layout, switchTitle: switchTitle)
         chrome.actions = ShellActions(
             onStart: { [weak self] in
-                guard let self, let chrome = self.chrome else { return }
-                self.startMenu?.toggle(origin: chrome.startMenuOrigin(menuSize:))
+                self?.toggleStartMenu()
             },
             onFiles: {
                 ExplorerWindow.open(at: FileManager.default.homeDirectoryForCurrentUser)
@@ -123,13 +122,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for target in ShowTarget.parse(arguments: CommandLine.arguments) {
             switch target {
             case .start:
-                guard let chrome, let startMenu else { continue }
-                startMenu.toggle(origin: chrome.startMenuOrigin(menuSize:))
+                showStartMenu(.pinned)
+            case .startAll:
+                showStartMenu(.allApps)
+            case .startSearch(let text):
+                showStartMenu(.search(text))
             case .files(let path):
                 let folder = path.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
                 ExplorerWindow.open(at: folder ?? FileManager.default.homeDirectoryForCurrentUser)
             }
         }
+    }
+
+    private func toggleStartMenu() {
+        guard let chrome else { return }
+        startMenu?.toggle(origin: chrome.startMenuOrigin(menuSize:))
+    }
+
+    private func showStartMenu(_ opening: StartMenuOpening) {
+        guard let chrome else { return }
+        startMenu?.staysOpenForCapture = true
+        startMenu?.present(origin: chrome.startMenuOrigin(menuSize:), opening: opening)
     }
 
     private func refreshBadges() {
@@ -231,6 +244,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         HotKeyCenter.shared.register(keyCode: kVK_Tab, modifiers: optionKey) { [weak self] in
             self?.cycleWindows()
+        }
+        HotKeyCenter.shared.register(keyCode: kVK_Space, modifiers: optionKey) { [weak self] in
+            self?.toggleStartMenu()
         }
     }
 
