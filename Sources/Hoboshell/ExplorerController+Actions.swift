@@ -16,7 +16,7 @@ extension ExplorerController {
         case .trash: trashSelection()
         case .newFolder: newFolder()
         case .focusAddress: toolbar.addressBar.beginEditing()
-        case .focusSearch: window?.makeFirstResponder(toolbar.searchField)
+        case .focusSearch: toolbar.searchField.focus()
         case .quickLook: quickLook()
         case .refresh: refresh()
         case .closeWindow: window?.performClose(nil)
@@ -116,16 +116,8 @@ extension ExplorerController {
         reload()
     }
 
-    @objc func viewModeChanged(_ sender: NSSegmentedControl) {
-        setMode(sender.selectedSegment == 0 ? .details : .icons)
-    }
-
-    @objc func chooseViewMode(_ sender: NSMenuItem) {
-        setMode(sender.tag == 0 ? .details : .icons)
-    }
-
-    @objc func searchChanged(_ sender: NSSearchField) {
-        query = sender.stringValue
+    func searchChanged(_ text: String) {
+        query = text
         showEntries(selecting: selectedPaths)
     }
 

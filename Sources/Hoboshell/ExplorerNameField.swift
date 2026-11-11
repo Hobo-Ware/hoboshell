@@ -16,7 +16,7 @@ final class ExplorerNameField: NSTextField, NSTextFieldDelegate {
         isEditable = true
         isSelectable = true
         drawsBackground = true
-        backgroundColor = NSColor(white: 0.08, alpha: 1)
+        backgroundColor = DSColor.field
         guard window?.makeFirstResponder(self) == true, let editor = currentEditor() else {
             isRenaming = false
             isEditable = false

@@ -1,45 +1,50 @@
 import AppKit
 import HoboshellCore
 
-final class ExplorerAddressBar: NSView, NSTextFieldDelegate {
-    private static let inset: CGFloat = 6
-    private static let separatorWidth: CGFloat = 12
-    private static let crumbPadding: CGFloat = 12
-    private static let ellipsisWidth: CGFloat = 28
-    private static let crumbHeight: CGFloat = 24
+final class ExplorerAddressBar: NSView {
+    private static let inset = DSSpacing.xs
+    private static let separatorWidth = DSSpacing.m
 
     var onNavigate: ((URL) -> Void)?
     var onSubmit: ((String) -> Void)?
     var onFinish: (() -> Void)?
 
-    private let field = NSTextField()
+    private let box = DSFieldBox()
+    private let editor = DSTextField()
     private let crumbs = NSView()
     private var segments: [BreadcrumbSegment] = []
-    private var crumbButtons: [HoverButton] = []
-    private var separators: [NSTextField] = []
-    private let ellipsis = AddressBarButtons.make(title: "...")
+    private var crumbButtons: [DSButton] = []
+    private var separators: [DSLabel] = []
+    private let ellipsis = DSButton(title: "...", height: .compact)
+    private var ellipsisTarget = 0
     private(set) var isEditing = false
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
-        wantsLayer = true
-        layer?.cornerRadius = 6
-        layer?.backgroundColor = ExplorerTheme.fieldBackground
-        layer?.borderColor = ExplorerTheme.fieldBorder
-        layer?.borderWidth = 1
-        field.isBordered = false
-        field.drawsBackground = false
-        field.focusRingType = .none
-        field.font = .systemFont(ofSize: 13)
-        field.lineBreakMode = .byTruncatingHead
-        field.delegate = self
-        field.isHidden = true
-        ellipsis.target = self
-        ellipsis.action = #selector(crumbClicked(_:))
+        editor.field.lineBreakMode = .byTruncatingHead
+        editor.isHidden = true
+        editor.onSubmit = { [weak self] text in
+            self?.endEditing()
+            self?.onSubmit?(text)
+            self?.onFinish?()
+        }
+        editor.onCancel = { [weak self] in
+            self?.endEditing()
+            self?.onFinish?()
+        }
+        editor.onEndEditing = { [weak self] in
+            guard self?.isEditing == true else { return }
+            self?.endEditing()
+        }
+        ellipsis.onPress = { [weak self] in
+            guard let self else { return }
+            self.navigate(to: self.ellipsisTarget)
+        }
         ellipsis.isHidden = true
         crumbs.addSubview(ellipsis)
+        addSubview(box)
         addSubview(crumbs)
-        addSubview(field)
+        addSubview(editor)
     }
 
     @available(*, unavailable)
@@ -47,22 +52,24 @@ final class ExplorerAddressBar: NSView, NSTextFieldDelegate {
         fatalError("init(coder:) is not supported")
     }
 
+    override var intrinsicContentSize: NSSize {
+        NSSize(width: NSView.noIntrinsicMetric, height: DSControlHeight.regular.value)
+    }
+
     func show(_ folder: URL) {
         segments = Breadcrumbs.segments(for: folder)
         crumbButtons.forEach { $0.removeFromSuperview() }
         separators.forEach { $0.removeFromSuperview() }
         crumbButtons = segments.enumerated().map { index, segment in
-            let button = AddressBarButtons.make(title: segment.name)
-            button.tag = index
-            button.target = self
-            button.action = #selector(crumbClicked(_:))
+            let button = DSButton(title: segment.name, height: .compact)
+            button.onPress = { [weak self] in
+                self?.navigate(to: index)
+            }
             crumbs.addSubview(button)
             return button
         }
         separators = segments.dropFirst().map { _ in
-            let label = NSTextField(labelWithString: ">")
-            label.textColor = .tertiaryLabelColor
-            label.font = .systemFont(ofSize: 11)
+            let label = DSLabel(">", style: .caption, color: DSColor.dimText)
             label.alignment = .center
             crumbs.addSubview(label)
             return label
@@ -73,11 +80,11 @@ final class ExplorerAddressBar: NSView, NSTextFieldDelegate {
     func beginEditing() {
         guard let url = segments.last?.url else { return }
         isEditing = true
-        field.stringValue = url.path
-        field.isHidden = false
+        editor.stringValue = url.path
+        editor.isHidden = false
         crumbs.isHidden = true
-        window?.makeFirstResponder(field)
-        field.currentEditor()?.selectAll(nil)
+        editor.focus()
+        editor.field.currentEditor()?.selectAll(nil)
     }
 
     override func mouseDown(with event: NSEvent) {
@@ -86,63 +93,44 @@ final class ExplorerAddressBar: NSView, NSTextFieldDelegate {
 
     override func layout() {
         super.layout()
-        field.frame = NSRect(x: Self.inset + 4, y: (bounds.height - 20) / 2, width: bounds.width - 2 * Self.inset - 8, height: 20)
+        box.frame = bounds
+        editor.frame = bounds
         crumbs.frame = bounds
         layoutCrumbs()
     }
 
-    func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-        if commandSelector == #selector(NSResponder.insertNewline(_:)) {
-            let text = field.stringValue
-            endEditing()
-            onSubmit?(text)
-            onFinish?()
-            return true
-        }
-        if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
-            endEditing()
-            onFinish?()
-            return true
-        }
-        return false
-    }
-
-    func controlTextDidEndEditing(_ obj: Notification) {
-        if isEditing {
-            endEditing()
-        }
-    }
-
-    @objc private func crumbClicked(_ sender: NSButton) {
-        guard segments.indices.contains(sender.tag) else { return }
-        onNavigate?(segments[sender.tag].url)
+    private func navigate(to index: Int) {
+        guard segments.indices.contains(index) else { return }
+        onNavigate?(segments[index].url)
     }
 
     private func endEditing() {
         isEditing = false
-        field.isHidden = true
+        editor.isHidden = true
         crumbs.isHidden = false
     }
 
     private func layoutCrumbs() {
-        let widths = crumbButtons.map { $0.intrinsicContentSize.width + Self.crumbPadding }
+        let widths = crumbButtons.map { $0.intrinsicContentSize.width }
+        let ellipsisWidth = ellipsis.intrinsicContentSize.width
         let available = bounds.width - 2 * Self.inset
         var used: CGFloat = 0
         var firstShown = crumbButtons.count
         for index in crumbButtons.indices.reversed() {
             let needed = widths[index] + (index > 0 ? Self.separatorWidth : 0)
-            let reserve = index > 0 ? Self.ellipsisWidth : 0
+            let reserve = index > 0 ? ellipsisWidth : 0
             if used + needed + reserve > available && firstShown < crumbButtons.count { break }
             used += needed
             firstShown = index
         }
-        let y = (bounds.height - Self.crumbHeight) / 2
+        let crumbHeight = DSControlHeight.compact.value
+        let y = (bounds.height - crumbHeight) / 2
         var x = Self.inset
         ellipsis.isHidden = firstShown == 0
         if firstShown > 0 {
-            ellipsis.tag = firstShown - 1
-            ellipsis.frame = NSRect(x: x, y: y, width: Self.ellipsisWidth, height: Self.crumbHeight)
-            x += Self.ellipsisWidth
+            ellipsisTarget = firstShown - 1
+            ellipsis.frame = NSRect(x: x, y: y, width: ellipsisWidth, height: crumbHeight)
+            x += ellipsisWidth
         }
         for index in crumbButtons.indices {
             let visible = index >= firstShown
@@ -150,24 +138,18 @@ final class ExplorerAddressBar: NSView, NSTextFieldDelegate {
             if index > 0 { separators[index - 1].isHidden = !visible }
             guard visible else { continue }
             if index > 0 {
-                separators[index - 1].frame = NSRect(x: x, y: y + 2, width: Self.separatorWidth, height: Self.crumbHeight - 6)
+                let separator = separators[index - 1]
+                let separatorHeight = separator.intrinsicContentSize.height
+                separator.frame = NSRect(
+                    x: x,
+                    y: (bounds.height - separatorHeight) / 2,
+                    width: Self.separatorWidth,
+                    height: separatorHeight
+                )
                 x += Self.separatorWidth
             }
-            crumbButtons[index].frame = NSRect(x: x, y: y, width: widths[index], height: Self.crumbHeight)
+            crumbButtons[index].frame = NSRect(x: x, y: y, width: widths[index], height: crumbHeight)
             x += widths[index]
         }
-    }
-}
-
-private enum AddressBarButtons {
-    static func make(title: String) -> HoverButton {
-        let button = HoverButton(title: title, target: nil, action: nil)
-        button.isBordered = false
-        button.font = .systemFont(ofSize: 12)
-        button.contentTintColor = .white
-        button.wantsLayer = true
-        button.layer?.cornerRadius = 4
-        button.lineBreakMode = .byTruncatingTail
-        return button
     }
 }

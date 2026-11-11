@@ -20,15 +20,15 @@ final class ExplorerController: NSObject {
     let sidebar = ExplorerSidebarView()
     let details = ExplorerDetailsView()
     let icons = ExplorerIconsView()
-    let statusLabel = NSTextField(labelWithString: "")
+    let statusLabel = DSLabel(style: .caption, color: DSColor.dimText)
     let watcher = ExplorerFolderWatcher()
     let clipboard = ExplorerClipboard.shared
 
     lazy var toolbar = ExplorerToolbar(target: self)
     lazy var commandBar = ExplorerCommandBar(target: self)
     lazy var contentView = ExplorerContentView(
-        toolbar: toolbar,
-        commandBar: commandBar,
+        toolbar: toolbar.view,
+        commandBar: commandBar.view,
         sidebar: sidebar,
         items: [details, icons],
         status: statusLabel
@@ -66,8 +66,6 @@ final class ExplorerController: NSObject {
         watcher.onChange = { [weak self] in
             self?.folderChangedOnDisk()
         }
-        statusLabel.font = .systemFont(ofSize: 11)
-        statusLabel.lineBreakMode = .byTruncatingTail
         statusLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         applyMode()
         do {
@@ -131,7 +129,7 @@ final class ExplorerController: NSObject {
             mode: mode
         )
         statusLabel.stringValue = statusError ?? ExplorerStatusText.text(itemCount: visibleEntries.count, selection: selection)
-        statusLabel.textColor = statusError == nil ? .secondaryLabelColor : .systemRed
+        statusLabel.textColor = statusError == nil ? DSColor.dimText : DSColor.danger
         reloadQuickLook()
     }
 
@@ -142,7 +140,7 @@ final class ExplorerController: NSObject {
     func report(_ message: String) {
         statusError = message
         statusLabel.stringValue = message
-        statusLabel.textColor = .systemRed
+        statusLabel.textColor = DSColor.danger
     }
 
     func reportFailures(_ failures: [String]) {
