@@ -69,6 +69,11 @@ class DSButton: DSControl {
         return NSSize(width: width, height: height.value)
     }
 
+    var iconSide: CGFloat {
+        get { iconView.side }
+        set { iconView.side = newValue }
+    }
+
     var title: String {
         get { titleLabel.stringValue }
         set {

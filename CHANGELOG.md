@@ -57,6 +57,10 @@ Record of work, newest first. Each entry says what a user would notice.
   count and the unread badge.
 
 ### Changed
+- Taskbar running marks are easier to see: a 12 wide white line under running
+  apps and a 20 wide accent line under the focused window, both a little
+  thicker. The Start logo and the Files bindle are drawn at 32 pt instead of
+  being squeezed into 24.
 - The explorer's Icons view is redrawn: bigger 96 pt pictures, names up to two
   lines that shorten in the middle, a hairline frame around real photo and
   video thumbnails, an accent-tinted tile when selected with the name on an
