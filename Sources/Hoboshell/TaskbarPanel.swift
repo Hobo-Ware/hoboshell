@@ -80,6 +80,7 @@ final class TaskbarPanel: NSPanel, ShellChrome {
 
         itemStack.orientation = .horizontal
         itemStack.spacing = Self.itemSpacing
+        itemStack.setHuggingPriority(.defaultHigh, for: .horizontal)
 
         let root = NSStackView()
         root.orientation = .horizontal
