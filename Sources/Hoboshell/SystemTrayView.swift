@@ -5,6 +5,9 @@ import Network
 
 final class SystemTrayView: NSStackView {
     private static let refreshInterval: TimeInterval = 5
+    private static let networkSettings = "x-apple.systempreferences:com.apple.wifi-settings-extension"
+    private static let batterySettings = "x-apple.systempreferences:com.apple.Battery-Settings.extension"
+    private static let dateSettings = "x-apple.systempreferences:com.apple.Date-Time-Settings.extension"
 
     private let networkIcon = NSImageView()
     private let batteryIcon = NSImageView()
@@ -13,15 +16,15 @@ final class SystemTrayView: NSStackView {
     private let timeFormatter = DateFormatter()
     private let dateFormatter = DateFormatter()
     private let networkMonitor = NWPathMonitor()
-    private var refreshTimer: Timer?
-
     private let clockOnOneLine: Bool
+    private var refreshTimer: Timer?
 
     init(clockOnOneLine: Bool) {
         self.clockOnOneLine = clockOnOneLine
         super.init(frame: .zero)
         orientation = .horizontal
         spacing = 8
+        setHuggingPriority(.required, for: .horizontal)
         timeFormatter.dateFormat = "HH:mm"
         dateFormatter.dateStyle = .short
 
@@ -35,6 +38,11 @@ final class SystemTrayView: NSStackView {
         clock.maximumNumberOfLines = clockOnOneLine ? 1 : 2
 
         [networkIcon, batteryIcon, batteryLabel, clock].forEach(addArrangedSubview)
+
+        open(#selector(openNetworkSettings), whenClicking: networkIcon, tip: "Network settings")
+        open(#selector(openBatterySettings), whenClicking: batteryIcon, tip: "Battery settings")
+        open(#selector(openBatterySettings), whenClicking: batteryLabel, tip: "Battery settings")
+        open(#selector(openDateSettings), whenClicking: clock, tip: "Date and time settings")
 
         showNetwork(isOnline: true)
         networkMonitor.pathUpdateHandler = { [weak self] path in
@@ -60,9 +68,13 @@ final class SystemTrayView: NSStackView {
         networkMonitor.cancel()
     }
 
+    private func open(_ action: Selector, whenClicking view: NSView, tip: String) {
+        view.addGestureRecognizer(NSClickGestureRecognizer(target: self, action: action))
+        view.toolTip = tip
+    }
+
     private func showNetwork(isOnline: Bool) {
         networkIcon.image = NSImage(systemSymbolName: isOnline ? "wifi" : "wifi.slash", accessibilityDescription: "Network")
-        networkIcon.toolTip = isOnline ? "Connected" : "No connection"
     }
 
     private func refresh() {
@@ -77,6 +89,23 @@ final class SystemTrayView: NSStackView {
             batteryIcon.image = NSImage(systemSymbolName: battery.symbolName, accessibilityDescription: "Battery")
             batteryLabel.stringValue = battery.label
         }
+    }
+
+    private static func openSettings(_ pane: String) {
+        guard let url = URL(string: pane) else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    @objc private func openNetworkSettings() {
+        Self.openSettings(Self.networkSettings)
+    }
+
+    @objc private func openBatterySettings() {
+        Self.openSettings(Self.batterySettings)
+    }
+
+    @objc private func openDateSettings() {
+        Self.openSettings(Self.dateSettings)
     }
 
     private static func readBattery() -> BatteryStatus? {

@@ -4,7 +4,15 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+### Fixed
+- The system tray and snap buttons now sit at the right end of the taskbar.
+  They were being pushed toward the middle.
+- Snapping now also works for apps that report no focused window, and each
+  attempt writes its result to the system log.
+
 ### Added
+- Clicking the network, battery or clock in the tray opens the matching page
+  in System Settings.
 - GitHub Actions check that builds the app and runs the tests on every pull
   request that is ready for review, and on every push to `main`.
 - Second look: a slim top bar with an Activities button and the system tray,

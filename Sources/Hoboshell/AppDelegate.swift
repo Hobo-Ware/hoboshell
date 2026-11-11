@@ -1,10 +1,12 @@
 import AppKit
 import Carbon.HIToolbox
 import HoboshellCore
+import os
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private static let windowRefreshInterval: TimeInterval = 1.5
     private static let savedVariantKey = "ShellVariant"
+    private static let snapLog = Logger(subsystem: "dev.hoboware.hoboshell", category: "snap")
 
     private let tracker = AppTracker()
     private let catalog = WindowCatalog()
@@ -169,12 +171,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func snapLastActiveWindow(to region: SnapRegion) {
         guard Accessibility.isTrusted else {
+            Self.snapLog.notice("snap skipped: Accessibility access is off")
             Accessibility.requestTrust()
             return
         }
-        guard let app = tracker.lastActiveApp, let screen = NSScreen.main else { return }
+        guard let app = tracker.lastActiveApp ?? NSWorkspace.shared.frontmostApplication, let screen = NSScreen.main else {
+            Self.snapLog.notice("snap skipped: no app has been active yet")
+            return
+        }
         let reserved = ShellLayout(variant: variant, screen: screen).reserved
-        WindowSnapper.snapFocusedWindow(of: app, to: region, on: screen, reserved: reserved)
+        let outcome = WindowSnapper.snapFrontWindow(of: app, to: region, on: screen, reserved: reserved)
+        let appName = app.localizedName ?? "unknown app"
+        Self.snapLog.notice("snap region \(region.rawValue) on \(appName, privacy: .public): \(outcome.description, privacy: .public)")
     }
 
     private func terminateCleanlyOnSignals() {
