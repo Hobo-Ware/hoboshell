@@ -2,20 +2,21 @@ import AppKit
 import HoboshellCore
 
 final class DesktopWindow: NSWindow {
-    init(screen: NSScreen, reservedBottom: CGFloat) {
+    init(screen: NSScreen, reserved: ShellInsets, color: NSColor) {
         super.init(contentRect: screen.frame, styleMask: .borderless, backing: .buffered, defer: false)
         // Finder draws its own icons at this level; one step lower and the system wallpaper would cover us.
         level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopIconWindow)))
         collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         isMovable = false
         hasShadow = false
+        isReleasedWhenClosed = false
         isOpaque = true
-        backgroundColor = NSColor(calibratedRed: 0.0, green: 0.32, blue: 0.55, alpha: 1)
+        backgroundColor = color
         let insets = NSEdgeInsets(
-            top: screen.frame.maxY - screen.visibleFrame.maxY + 12,
-            left: 12,
-            bottom: reservedBottom + 12,
-            right: 12
+            top: screen.frame.maxY - screen.visibleFrame.maxY + reserved.top + 12,
+            left: reserved.left + 12,
+            bottom: reserved.bottom + 12,
+            right: reserved.right + 12
         )
         contentView = DesktopGridView(
             frame: NSRect(origin: .zero, size: screen.frame.size),

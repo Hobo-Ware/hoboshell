@@ -12,14 +12,13 @@ public enum SnapGeometry {
         visibleFrame: CGRect,
         screenFrame: CGRect,
         primaryScreenHeight: CGFloat,
-        reservedBottom: CGFloat
+        reserved: ShellInsets
     ) -> CGRect {
-        var usable = visibleFrame
-        let floor = screenFrame.minY + reservedBottom
-        if usable.minY < floor {
-            usable.size.height -= floor - usable.minY
-            usable.origin.y = floor
-        }
+        let left = max(visibleFrame.minX, screenFrame.minX + reserved.left)
+        let right = min(visibleFrame.maxX, screenFrame.maxX - reserved.right)
+        let bottom = max(visibleFrame.minY, screenFrame.minY + reserved.bottom)
+        let top = visibleFrame.maxY - reserved.top
+        var usable = CGRect(x: left, y: bottom, width: right - left, height: top - bottom)
         switch region {
         case .leftHalf:
             usable.size.width /= 2

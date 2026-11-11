@@ -8,7 +8,7 @@ enum WindowSnapper {
         of app: NSRunningApplication,
         to region: SnapRegion,
         on screen: NSScreen,
-        reservedBottom: CGFloat
+        reserved: ShellInsets
     ) -> Bool {
         guard let window = focusedWindow(of: app) else { return false }
         var frame = SnapGeometry.accessibilityFrame(
@@ -16,7 +16,7 @@ enum WindowSnapper {
             visibleFrame: screen.visibleFrame,
             screenFrame: screen.frame,
             primaryScreenHeight: NSScreen.screens.first?.frame.height ?? screen.frame.height,
-            reservedBottom: reservedBottom
+            reserved: reserved
         )
         guard let position = AXValueCreate(.cgPoint, &frame.origin),
               let size = AXValueCreate(.cgSize, &frame.size) else { return false }

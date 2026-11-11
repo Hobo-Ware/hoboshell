@@ -4,11 +4,16 @@ import HoboshellCore
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private static let windowRefreshInterval: TimeInterval = 1.5
+    private static let savedVariantKey = "ShellVariant"
 
     private let tracker = AppTracker()
     private let catalog = WindowCatalog()
     private let hidesSystemUI = ProcessInfo.processInfo.environment["HOBOSHELL_HIDE_SYSTEM_UI"] == "1"
-    private var taskbar: TaskbarPanel?
+    private var variant = ShellVariant.resolve(
+        arguments: CommandLine.arguments,
+        saved: UserDefaults.standard.string(forKey: AppDelegate.savedVariantKey)
+    )
+    private var chrome: ShellChrome?
     private var desktop: DesktopWindow?
     private var startMenu: StartMenuPanel?
     private var switcher: WindowSwitcherPanel?
@@ -16,7 +21,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var signalSources: [DispatchSourceSignal] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        guard let screen = NSScreen.main else { return }
         terminateCleanlyOnSignals()
         if hidesSystemUI {
             SystemChrome.hide()
@@ -24,35 +28,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Accessibility.requestTrust()
         MainMenu.install()
 
-        let desktop = DesktopWindow(screen: screen, reservedBottom: TaskbarPanel.barHeight)
-        desktop.orderFront(nil)
-        self.desktop = desktop
-
         startMenu = StartMenuPanel()
         switcher = WindowSwitcherPanel()
-
-        let taskbar = TaskbarPanel(screen: screen)
-        taskbar.onStart = { [weak self] in
-            guard let self, let taskbar = self.taskbar else { return }
-            self.startMenu?.toggle(above: taskbar.frame)
-        }
-        taskbar.onFiles = {
-            ExplorerWindow.open(at: FileManager.default.homeDirectoryForCurrentUser)
-        }
-        taskbar.onShowDesktop = { [weak self] in
-            self?.tracker.taskbarApps.forEach { $0.hide() }
-        }
-        taskbar.onSnap = { [weak self] region in
-            self?.snapLastActiveWindow(to: region)
-        }
-        taskbar.orderFrontRegardless()
-        self.taskbar = taskbar
+        buildShell()
 
         tracker.onChange = { [weak self] in
             self?.refreshTaskbar()
         }
         tracker.start()
-        refreshTaskbar()
         windowRefreshTimer = Timer.scheduledTimer(withTimeInterval: Self.windowRefreshInterval, repeats: true) { [weak self] _ in
             self?.refreshTaskbar()
         }
@@ -76,13 +59,57 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         tracker.taskbarApps + [.current]
     }
 
+    private func buildShell() {
+        guard let screen = NSScreen.main else { return }
+        chrome?.dismiss()
+        desktop?.orderOut(nil)
+        startMenu?.orderOut(nil)
+
+        let layout = ShellLayout(variant: variant, screen: screen)
+        let desktop = DesktopWindow(screen: screen, reserved: layout.reserved, color: variant.desktopColor)
+        desktop.orderFront(nil)
+        self.desktop = desktop
+
+        let switchTitle = "Switch to \(variant.other.displayName)"
+        let chrome: ShellChrome = variant == .bottomTaskbar
+            ? TaskbarPanel(layout: layout, switchTitle: switchTitle)
+            : TopBarDockChrome(layout: layout, switchTitle: switchTitle)
+        chrome.actions = ShellActions(
+            onStart: { [weak self] in
+                guard let self, let chrome = self.chrome else { return }
+                self.startMenu?.toggle(origin: chrome.startMenuOrigin(menuSize:))
+            },
+            onFiles: {
+                ExplorerWindow.open(at: FileManager.default.homeDirectoryForCurrentUser)
+            },
+            onShowDesktop: { [weak self] in
+                self?.tracker.taskbarApps.forEach { $0.hide() }
+            },
+            onSnap: { [weak self] region in
+                self?.snapLastActiveWindow(to: region)
+            },
+            onSwitchVariant: { [weak self] in
+                self?.switchVariant()
+            }
+        )
+        chrome.show()
+        self.chrome = chrome
+        refreshTaskbar()
+    }
+
+    private func switchVariant() {
+        variant = variant.other
+        UserDefaults.standard.set(variant.rawValue, forKey: Self.savedVariantKey)
+        buildShell()
+    }
+
     private func refreshTaskbar() {
         guard Accessibility.isTrusted else {
-            taskbar?.update(items: tracker.taskbarApps.map(Self.item(for:)))
+            chrome?.update(items: tracker.taskbarApps.map(Self.item(for:)))
             return
         }
         catalog.load(apps: appsWithWindows) { [weak self] windows in
-            self?.taskbar?.update(items: windows.map(Self.item(for:)))
+            self?.chrome?.update(items: windows.map(Self.item(for:)))
         }
     }
 
@@ -146,7 +173,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         guard let app = tracker.lastActiveApp, let screen = NSScreen.main else { return }
-        WindowSnapper.snapFocusedWindow(of: app, to: region, on: screen, reservedBottom: TaskbarPanel.barHeight)
+        let reserved = ShellLayout(variant: variant, screen: screen).reserved
+        WindowSnapper.snapFocusedWindow(of: app, to: region, on: screen, reserved: reserved)
     }
 
     private func terminateCleanlyOnSignals() {
@@ -162,8 +190,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func screensChanged() {
-        guard let screen = NSScreen.main else { return }
-        taskbar?.reposition(on: screen)
-        desktop?.reposition(on: screen)
+        buildShell()
     }
 }

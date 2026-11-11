@@ -12,7 +12,7 @@ import Testing
             visibleFrame: visible ?? belowMenuBar,
             screenFrame: screen ?? self.screen,
             primaryScreenHeight: 900,
-            reservedBottom: 48
+            reserved: ShellInsets(bottom: 48)
         )
     }
 
