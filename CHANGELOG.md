@@ -44,6 +44,8 @@ Record of work, newest first. Each entry says what a user would notice.
   Control+Option+Left, Right and Up.
 
 ### Added
+- The explorer's icons view shows a small picture of each image, video and
+  document instead of a generic file icon.
 - Rest the pointer on a window's taskbar button to get a card with a live
   picture of the window, its title and a close button. Click the card to
   bring the window forward. The picture needs the Screen Recording
