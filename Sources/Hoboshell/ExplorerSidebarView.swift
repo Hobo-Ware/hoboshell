@@ -116,7 +116,7 @@ final class ExplorerSidebarView: NSScrollView, NSTableViewDataSource, NSTableVie
     private static func placeCell(_ place: ExplorerPlace) -> NSView {
         let cell = DSListRow(
             title: place.name,
-            image: NSWorkspace.shared.icon(forFile: place.url.path),
+            image: HoboIcon.image(forFile: place.url.path),
             height: .compact
         )
         cell.makeStatic()
