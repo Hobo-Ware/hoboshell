@@ -23,10 +23,10 @@ enum GalleryContent {
         let roles: [(String, NSColor)] = [
             ("surface", DSColor.surface), ("raisedSurface", DSColor.raisedSurface), ("field", DSColor.field),
             ("border", DSColor.border), ("text", DSColor.text), ("dimText", DSColor.dimText),
-            ("accent", DSColor.accent), ("danger", DSColor.danger), ("focusRing", DSColor.focusRing),
+            ("accent", DSColor.accent), ("onAccent", DSColor.onAccent), ("danger", DSColor.danger), ("focusRing", DSColor.focusRing),
         ]
         let overlays: [(String, NSColor)] = [
-            ("faint", DSColor.faint), ("hover", DSColor.hover), ("pressed", DSColor.pressed), ("selected", DSColor.selected),
+            ("faint", DSColor.faint), ("hover", DSColor.hover), ("pressed", DSColor.pressed), ("selected", DSColor.selected), ("accentTint", DSColor.accentTint),
         ]
         let desktops: [(String, NSColor)] = ShellVariant.allCases.map { ($0.displayName, DSColor.desktop(for: $0)) }
         return GalleryRow.section("Colour roles", [
@@ -49,6 +49,7 @@ enum GalleryContent {
         let icons: [(String, CGFloat)] = [
             ("inline 16", DSIconSize.inline), ("toolbar 20", DSIconSize.toolbar),
             ("taskbar 24", DSIconSize.taskbar), ("grid 48", DSIconSize.grid),
+            ("picture 96", DSIconSize.picture),
         ]
         return GalleryRow.section("Values", [
             GalleryRow.make("spacing", spacing.map { ($0.0, block(width: $0.1, height: DSSpacing.l, radius: DSRadius.none)) }),
@@ -148,7 +149,22 @@ enum GalleryContent {
 
     private static func grid() -> NSView {
         let folder = NSImage(named: NSImage.folderName) ?? NSImage()
-        return GalleryRow.section("DSGridCell", [
+        let photo = NSImage(size: NSSize(width: 96, height: 64), flipped: false) { rect in
+            DSColor.accent.setFill()
+            rect.fill()
+            return true
+        }
+        func tile(_ name: String, _ image: NSImage, isPicture: Bool) -> () -> DSControl {
+            {
+                let tile = DSTile()
+                tile.show(name: name, image: image, isPicture: isPicture)
+                tile.translatesAutoresizingMaskIntoConstraints = false
+                tile.widthAnchor.constraint(equalToConstant: DSTile.size.width).isActive = true
+                tile.heightAnchor.constraint(equalToConstant: DSTile.size.height).isActive = true
+                return tile
+            }
+        }
+        return GalleryRow.section("DSGridCell and DSTile", [
             GalleryRow.states("DSGridCell") {
                 let cell = DSGridCell()
                 cell.show(name: "Documents", icon: folder)
@@ -157,6 +173,8 @@ enum GalleryContent {
                 cell.heightAnchor.constraint(equalToConstant: DSGridCell.size.height).isActive = true
                 return cell
             },
+            GalleryRow.states("DSTile icon", tile("Documents", folder, isPicture: false)),
+            GalleryRow.states("DSTile picture", tile("Holiday photo from the beach in Portugal 2026.jpeg", photo, isPicture: true)),
         ])
     }
 

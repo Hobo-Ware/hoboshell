@@ -40,6 +40,10 @@ class DSControl: NSView {
         didSet { refresh() }
     }
 
+    var selectedFill = DSColor.selected {
+        didSet { refresh() }
+    }
+
     var isEnabled = true {
         didSet {
             guard oldValue != isEnabled else { return }
@@ -198,7 +202,7 @@ class DSControl: NSView {
 
     private var fill: NSColor? {
         if isPressed { return DSColor.pressed }
-        if isSelected { return DSColor.selected }
+        if isSelected { return selectedFill }
         if isHovered { return DSColor.hover }
         return restingFill
     }
