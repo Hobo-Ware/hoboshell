@@ -10,8 +10,8 @@ APIs only. No System Integrity Protection changes, no private frameworks.
 ## What you get
 
 - **Taskbar** along the bottom of the screen, on every desktop: Start button,
-  file explorer button, one button per open window, window snap buttons and a
-  show desktop strip. Click a window's button to bring it forward; click it
+  file explorer button, one button per open window, the tray and a show
+  desktop strip. Everything on it lights up under the pointer. Click a window's button to bring it forward; click it
   again to minimise it.
 - **System tray** with network state, battery level, and a clock with the date.
 - **Window switcher**: hold Option and press Tab to step through open windows,
@@ -22,7 +22,7 @@ APIs only. No System Integrity Protection changes, no private frameworks.
 - **File explorer** with a sidebar (Home, Desktop, Documents, Downloads,
   Applications, drives), back / forward / up, an editable path bar, a details
   list and an icon grid, plus Open, Rename, Move to Trash and New folder.
-- **Window snapping**: send the last used window to the left half, the right
+- **Window snapping** (keyboard): send the last used window to the left half, the right
   half, or the full area above the taskbar.
 
 ## Looks
@@ -32,7 +32,7 @@ is remembered.
 
 | Look | What you see | Start with |
 | --- | --- | --- |
-| Bottom taskbar (default) | One bar along the bottom with Start, window buttons, snap buttons and the tray | `swift run Hoboshell --variant bottom-taskbar` |
+| Bottom taskbar (default) | One bar along the bottom with Start, window buttons and the tray | `swift run Hoboshell --variant bottom-taskbar` |
 | Top bar and side dock | A slim bar under the Mac menu bar with Activities and the tray, plus an icon dock on the left | `swift run Hoboshell --variant top-bar-dock` |
 
 ## Keyboard shortcuts
@@ -72,7 +72,8 @@ terminal app's name in System Settings > Privacy & Security > Accessibility.
 
 ### Hiding the real Dock and desktop icons
 
-Off by default. Turn it on for one run:
+Off by default. Right-click a bar and tick "Hide the Mac Dock and desktop
+icons"; the choice is remembered. Or turn it on for one run:
 
 ```sh
 HOBOSHELL_HIDE_SYSTEM_UI=1 swift run
@@ -92,7 +93,7 @@ macOS does not let another app replace Finder or the Dock, so Hoboshell is an
 overlay, not a replacement:
 
 - The Mac menu bar stays at the top of the screen.
-- Windows you maximise yourself can slide under the taskbar. The snap buttons
+- Windows you maximise yourself can slide under the taskbar. The snap shortcuts
   keep clear of it.
 - The file explorer does not appear in Cmd+Tab, because Hoboshell runs as a
   background agent. It does appear on the taskbar and in Option+Tab.

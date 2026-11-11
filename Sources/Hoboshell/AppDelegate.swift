@@ -5,11 +5,13 @@ import os
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private static let windowRefreshInterval: TimeInterval = 1.5
+    private static let windowEventSettleDelay: TimeInterval = 0.15
     private static let savedVariantKey = "ShellVariant"
     private static let snapLog = Logger(subsystem: "dev.hoboware.hoboshell", category: "snap")
 
     private let tracker = AppTracker()
     private let catalog = WindowCatalog()
+    private let windowEvents = WindowEventObserver()
     private let hidesSystemUI = ProcessInfo.processInfo.environment["HOBOSHELL_HIDE_SYSTEM_UI"] == "1"
     private var variant = ShellVariant.resolve(
         arguments: CommandLine.arguments,
@@ -24,7 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         terminateCleanlyOnSignals()
-        if hidesSystemUI {
+        if hidesSystemUI || SystemChrome.isWanted {
             SystemChrome.hide()
         }
         Accessibility.requestTrust()
@@ -38,6 +40,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.refreshTaskbar()
         }
         tracker.start()
+        windowEvents.onChange = { [weak self] in
+            self?.refreshTaskbar()
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.windowEventSettleDelay) {
+                self?.refreshTaskbar()
+            }
+        }
         windowRefreshTimer = Timer.scheduledTimer(withTimeInterval: Self.windowRefreshInterval, repeats: true) { [weak self] _ in
             self?.refreshTaskbar()
         }
@@ -52,7 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        if hidesSystemUI {
+        if SystemChrome.isHidden {
             SystemChrome.restore()
         }
     }
@@ -87,9 +95,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onShowDesktop: { [weak self] in
                 self?.tracker.taskbarApps.forEach { $0.hide() }
             },
-            onSnap: { [weak self] region in
-                self?.snapLastActiveWindow(to: region)
-            },
             onSwitchVariant: { [weak self] in
                 self?.switchVariant()
             }
@@ -110,6 +115,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             chrome?.update(items: tracker.taskbarApps.map(Self.item(for:)))
             return
         }
+        windowEvents.watch(apps: appsWithWindows)
         catalog.load(apps: appsWithWindows) { [weak self] windows in
             self?.chrome?.update(items: windows.map(Self.item(for:)))
         }

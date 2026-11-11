@@ -16,7 +16,25 @@ enum SystemChrome {
         Setting(domain: "com.apple.finder", key: "CreateDesktop", type: "-bool", hiddenValue: "false"),
     ]
     private static let savedValuesKey = "SystemChromeSavedValues"
+    private static let wantedKey = "HideSystemUI"
     private static let absent = ""
+
+    static var isHidden: Bool {
+        UserDefaults.standard.dictionary(forKey: savedValuesKey) != nil
+    }
+
+    static var isWanted: Bool {
+        UserDefaults.standard.bool(forKey: wantedKey)
+    }
+
+    static func setWanted(_ wanted: Bool) {
+        UserDefaults.standard.set(wanted, forKey: wantedKey)
+        if wanted {
+            hide()
+        } else {
+            restore()
+        }
+    }
 
     static func hide() {
         if UserDefaults.standard.dictionary(forKey: savedValuesKey) == nil {

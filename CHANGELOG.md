@@ -5,14 +5,27 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Fixed
+- Desktop icons now react: they light up under the pointer, select on a
+  click, open on a double click and have a right-click menu. Finder's own
+  desktop was sitting on top and taking every click; it is now covered.
+- A closed window leaves the taskbar right away instead of up to a second
+  and a half later.
+- Long names under desktop icons wrap onto two lines.
 - Window buttons on the taskbar have padding inside, so the highlight on the
   selected one no longer hugs its icon.
-- The system tray and snap buttons now sit at the right end of the taskbar.
-  They were being pushed toward the middle.
+- The system tray now sits at the right end of the taskbar.
+  It was being pushed toward the middle.
 - Snapping now also works for apps that report no focused window, and each
   attempt writes its result to the system log.
 
+### Removed
+- The three snap buttons on the taskbar. Snapping stays on the keyboard:
+  Control+Option+Left, Right and Up.
+
 ### Added
+- Taskbar buttons, tray items and dock buttons light up under the pointer.
+- Right-click a bar to hide the Mac Dock and Finder's desktop icons. The old
+  settings come back when Hoboshell quits.
 - The Start button now shows the official Hoboware logo: red cap, with the
   face in white so it reads on the dark taskbar.
 - Clicking the network, battery or clock in the tray opens the matching page

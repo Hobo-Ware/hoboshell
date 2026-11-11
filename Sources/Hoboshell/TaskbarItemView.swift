@@ -1,6 +1,6 @@
 import AppKit
 
-final class TaskbarItemView: NSView {
+final class TaskbarItemView: HoverView {
     private static let sidePadding: CGFloat = 10
     private static let iconToTitleGap: CGFloat = 8
 
@@ -9,9 +9,7 @@ final class TaskbarItemView: NSView {
     init(icon: NSImage?, title: String?, isActive: Bool, size: NSSize, onClick: @escaping () -> Void) {
         self.onClick = onClick
         super.init(frame: NSRect(origin: .zero, size: size))
-        wantsLayer = true
-        layer?.cornerRadius = 6
-        layer?.backgroundColor = isActive ? ShellButton.activeBackground : nil
+        restingBackground = isActive ? ShellButton.activeBackground : nil
         translatesAutoresizingMaskIntoConstraints = false
 
         let content = NSStackView()
@@ -42,15 +40,6 @@ final class TaskbarItemView: NSView {
             constraints.append(content.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -Self.sidePadding))
         }
         NSLayoutConstraint.activate(constraints)
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) is not supported")
-    }
-
-    override func hitTest(_ point: NSPoint) -> NSView? {
-        super.hitTest(point) == nil ? nil : self
     }
 
     override func mouseUp(with event: NSEvent) {

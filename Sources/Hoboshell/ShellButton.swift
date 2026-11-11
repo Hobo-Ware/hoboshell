@@ -2,6 +2,7 @@ import AppKit
 
 enum ShellButton {
     static let activeBackground = NSColor.white.withAlphaComponent(0.22).cgColor
+    static let hoverBackground = NSColor.white.withAlphaComponent(0.12).cgColor
 
     static func make(
         title: String = "",
@@ -10,8 +11,8 @@ enum ShellButton {
         fontSize: CGFloat = 18,
         target: AnyObject,
         action: Selector
-    ) -> NSButton {
-        let button = NSButton(title: title, target: target, action: action)
+    ) -> HoverButton {
+        let button = HoverButton(title: title, target: target, action: action)
         let isLabelled = image != nil && !title.isEmpty
         button.image = image
         button.imagePosition = image == nil ? .noImage : (isLabelled ? .imageLeading : .imageOnly)
