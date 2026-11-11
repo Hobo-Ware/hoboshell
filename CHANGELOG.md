@@ -5,6 +5,7 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Added
+- The explorer remembers whether you last used the details or the icons view.
 - The Start menu is now a full flyout. A grid of pinned apps (Safari, Mail,
   Calendar, Notes, Music, Photos, System Settings and Terminal to begin with)
   drags to reorder and remembers its order. "All apps" lists every app A to Z

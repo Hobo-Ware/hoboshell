@@ -128,6 +128,7 @@ extension ExplorerController {
         }
         let keep = selectedPaths
         mode = newMode
+        newMode.save()
         applyMode()
         showEntries(selecting: keep)
         focusItems()
