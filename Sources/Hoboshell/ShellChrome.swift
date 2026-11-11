@@ -12,7 +12,6 @@ struct ShellActions {
     var onStart: (() -> Void)?
     var onFiles: (() -> Void)?
     var onShowDesktop: (() -> Void)?
-    var onSnap: ((SnapRegion) -> Void)?
     var onSwitchVariant: (() -> Void)?
 }
 

@@ -7,7 +7,7 @@ final class TaskbarPanel: NSPanel, ShellChrome {
     private static let startLogoHeight: CGFloat = 32
     private static let itemSpacing: CGFloat = 4
     private static let showDesktopWidth: CGFloat = 10
-    private static let widthUsedByFixedControls: CGFloat = 520
+    private static let widthUsedByFixedControls: CGFloat = 380
 
     var actions = ShellActions()
 
@@ -91,22 +91,11 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         root.addView(filesButton, in: .leading)
         root.addView(itemStack, in: .leading)
 
-        let snapButtons: [(String, SnapRegion, String)] = [
-            ("◧", .leftHalf, "Snap left (Control+Option+Left)"),
-            ("◨", .rightHalf, "Snap right (Control+Option+Right)"),
-            ("▢", .maximize, "Maximize (Control+Option+Up)"),
-        ]
-        for (title, region, tip) in snapButtons {
-            let button = makeButton(title: title, action: #selector(snapPressed(_:)))
-            button.tag = region.rawValue
-            button.toolTip = tip
-            root.addView(button, in: .trailing)
-        }
         root.addView(SystemTrayView(clockOnOneLine: false), in: .trailing)
 
         let showDesktopButton = makeButton(width: Self.showDesktopWidth, action: #selector(showDesktopPressed))
         showDesktopButton.toolTip = "Show desktop"
-        showDesktopButton.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.12).cgColor
+        showDesktopButton.restingBackground = NSColor.white.withAlphaComponent(0.06).cgColor
         showDesktopButton.layer?.cornerRadius = 0
         root.addView(showDesktopButton, in: .trailing)
 
@@ -121,7 +110,7 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         image: NSImage? = nil,
         width: CGFloat = TaskbarLayout.iconOnlyWidth,
         action: Selector
-    ) -> NSButton {
+    ) -> HoverButton {
         ShellButton.make(
             title: title,
             image: image,
@@ -141,11 +130,6 @@ final class TaskbarPanel: NSPanel, ShellChrome {
 
     @objc private func showDesktopPressed() {
         actions.onShowDesktop?()
-    }
-
-    @objc private func snapPressed(_ sender: NSButton) {
-        guard let region = SnapRegion(rawValue: sender.tag) else { return }
-        actions.onSnap?(region)
     }
 
     private func activateItem(at index: Int) {

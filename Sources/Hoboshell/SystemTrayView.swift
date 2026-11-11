@@ -18,12 +18,13 @@ final class SystemTrayView: NSStackView {
     private let networkMonitor = NWPathMonitor()
     private let clockOnOneLine: Bool
     private var refreshTimer: Timer?
+    private var batteryItem: TrayItemView?
 
     init(clockOnOneLine: Bool) {
         self.clockOnOneLine = clockOnOneLine
         super.init(frame: .zero)
         orientation = .horizontal
-        spacing = 8
+        spacing = 2
         setHuggingPriority(.required, for: .horizontal)
         timeFormatter.dateFormat = "HH:mm"
         dateFormatter.dateStyle = .short
@@ -37,12 +38,18 @@ final class SystemTrayView: NSStackView {
         clock.alignment = .right
         clock.maximumNumberOfLines = clockOnOneLine ? 1 : 2
 
-        [networkIcon, batteryIcon, batteryLabel, clock].forEach(addArrangedSubview)
-
-        open(#selector(openNetworkSettings), whenClicking: networkIcon, tip: "Network settings")
-        open(#selector(openBatterySettings), whenClicking: batteryIcon, tip: "Battery settings")
-        open(#selector(openBatterySettings), whenClicking: batteryLabel, tip: "Battery settings")
-        open(#selector(openDateSettings), whenClicking: clock, tip: "Date and time settings")
+        batteryItem = TrayItemView([batteryIcon, batteryLabel], tip: "Battery settings") {
+            Self.openSettings(Self.batterySettings)
+        }
+        addArrangedSubview(TrayItemView([networkIcon], tip: "Network settings") {
+            Self.openSettings(Self.networkSettings)
+        })
+        if let batteryItem {
+            addArrangedSubview(batteryItem)
+        }
+        addArrangedSubview(TrayItemView([clock], tip: "Date and time settings") {
+            Self.openSettings(Self.dateSettings)
+        })
 
         showNetwork(isOnline: true)
         networkMonitor.pathUpdateHandler = { [weak self] path in
@@ -68,11 +75,6 @@ final class SystemTrayView: NSStackView {
         networkMonitor.cancel()
     }
 
-    private func open(_ action: Selector, whenClicking view: NSView, tip: String) {
-        view.addGestureRecognizer(NSClickGestureRecognizer(target: self, action: action))
-        view.toolTip = tip
-    }
-
     private func showNetwork(isOnline: Bool) {
         networkIcon.image = NSImage(systemSymbolName: isOnline ? "wifi" : "wifi.slash", accessibilityDescription: "Network")
     }
@@ -83,8 +85,7 @@ final class SystemTrayView: NSStackView {
         clock.stringValue = timeFormatter.string(from: now) + separator + dateFormatter.string(from: now)
 
         let battery = Self.readBattery()
-        batteryIcon.isHidden = battery == nil
-        batteryLabel.isHidden = battery == nil
+        batteryItem?.isHidden = battery == nil
         if let battery {
             batteryIcon.image = NSImage(systemSymbolName: battery.symbolName, accessibilityDescription: "Battery")
             batteryLabel.stringValue = battery.label
@@ -94,18 +95,6 @@ final class SystemTrayView: NSStackView {
     private static func openSettings(_ pane: String) {
         guard let url = URL(string: pane) else { return }
         NSWorkspace.shared.open(url)
-    }
-
-    @objc private func openNetworkSettings() {
-        Self.openSettings(Self.networkSettings)
-    }
-
-    @objc private func openBatterySettings() {
-        Self.openSettings(Self.batterySettings)
-    }
-
-    @objc private func openDateSettings() {
-        Self.openSettings(Self.dateSettings)
     }
 
     private static func readBattery() -> BatteryStatus? {
@@ -122,5 +111,39 @@ final class SystemTrayView: NSStackView {
             )
         }
         return nil
+    }
+}
+
+private final class TrayItemView: HoverView {
+    private static let sidePadding: CGFloat = 8
+    private static let edgePadding: CGFloat = 4
+
+    private let onClick: () -> Void
+
+    init(_ views: [NSView], tip: String, onClick: @escaping () -> Void) {
+        self.onClick = onClick
+        super.init(frame: .zero)
+        toolTip = tip
+        translatesAutoresizingMaskIntoConstraints = false
+
+        let content = NSStackView(views: views)
+        content.orientation = .horizontal
+        content.spacing = 6
+        content.setHuggingPriority(.required, for: .horizontal)
+        views.forEach { $0.setContentHuggingPriority(.required, for: .horizontal) }
+        content.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(content)
+        NSLayoutConstraint.activate([
+            content.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Self.sidePadding),
+            content.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Self.sidePadding),
+            content.topAnchor.constraint(equalTo: topAnchor, constant: Self.edgePadding),
+            content.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -Self.edgePadding),
+        ])
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        if bounds.contains(convert(event.locationInWindow, from: nil)) {
+            onClick()
+        }
     }
 }

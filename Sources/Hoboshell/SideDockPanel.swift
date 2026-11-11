@@ -51,7 +51,7 @@ final class SideDockPanel: NSPanel {
             )
             button.tag = index
             button.toolTip = item.title
-            button.layer?.backgroundColor = item.isActive ? ShellButton.activeBackground : nil
+            button.restingBackground = item.isActive ? ShellButton.activeBackground : nil
             itemStack.addArrangedSubview(button)
         }
     }

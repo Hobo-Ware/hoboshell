@@ -4,8 +4,8 @@ import HoboshellCore
 final class DesktopWindow: NSWindow {
     init(screen: NSScreen, reserved: ShellInsets, color: NSColor) {
         super.init(contentRect: screen.frame, styleMask: .borderless, backing: .buffered, defer: false)
-        // Finder draws its own icons at this level; one step lower and the system wallpaper would cover us.
-        level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopIconWindow)))
+        // Finder's own desktop sits at desktopIconWindow and takes every click there, so we sit one step above it.
+        level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopIconWindow)) + 1)
         collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         isMovable = false
         hasShadow = false
@@ -59,6 +59,16 @@ final class DesktopGridView: NSView {
         layoutIcons()
     }
 
+    override func mouseDown(with event: NSEvent) {
+        select(nil)
+    }
+
+    func select(_ icon: DesktopIconView?) {
+        for case let other as DesktopIconView in subviews {
+            other.isSelected = other === icon
+        }
+    }
+
     func reload() {
         subviews.forEach { $0.removeFromSuperview() }
         let files = (try? FileManager.default.contentsOfDirectory(
@@ -86,38 +96,55 @@ final class DesktopGridView: NSView {
     }
 }
 
-final class DesktopIconView: NSView {
+final class DesktopIconView: HoverView {
+    private static let selectedBackground = NSColor.white.withAlphaComponent(0.28).cgColor
+
     private let file: URL
+
+    var isSelected = false {
+        didSet { restingBackground = isSelected ? Self.selectedBackground : nil }
+    }
 
     init(file: URL, size: NSSize) {
         self.file = file
         super.init(frame: NSRect(origin: .zero, size: size))
+        toolTip = file.lastPathComponent
 
         let icon = NSImageView(image: NSWorkspace.shared.icon(forFile: file.path))
         icon.frame = NSRect(x: (size.width - 48) / 2, y: 4, width: 48, height: 48)
 
-        let label = NSTextField(labelWithString: file.lastPathComponent)
+        let label = NSTextField(wrappingLabelWithString: file.lastPathComponent)
         label.frame = NSRect(x: 2, y: 54, width: size.width - 4, height: 34)
         label.alignment = .center
         label.textColor = .white
         label.font = .systemFont(ofSize: 11)
+        label.isSelectable = false
         label.maximumNumberOfLines = 2
-        label.lineBreakMode = .byTruncatingMiddle
+        label.cell?.truncatesLastVisibleLine = true
 
         addSubview(icon)
         addSubview(label)
 
-        let doubleClick = NSClickGestureRecognizer(target: self, action: #selector(open))
-        doubleClick.numberOfClicksRequired = 2
-        addGestureRecognizer(doubleClick)
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) is not supported")
+        let menu = NSMenu()
+        menu.addItem(withTitle: "Open", action: #selector(open), keyEquivalent: "").target = self
+        menu.addItem(.separator())
+        menu.addItem(withTitle: "Move to Trash", action: #selector(moveToTrash), keyEquivalent: "").target = self
+        self.menu = menu
     }
 
     override var isFlipped: Bool { true }
+
+    override func mouseDown(with event: NSEvent) {
+        (superview as? DesktopGridView)?.select(self)
+        if event.clickCount == 2 {
+            open()
+        }
+    }
+
+    override func rightMouseDown(with event: NSEvent) {
+        (superview as? DesktopGridView)?.select(self)
+        super.rightMouseDown(with: event)
+    }
 
     @objc private func open() {
         if FileEntry.isBrowsableFolder(file) {
@@ -125,5 +152,14 @@ final class DesktopIconView: NSView {
             return
         }
         NSWorkspace.shared.open(file)
+    }
+
+    @objc private func moveToTrash() {
+        do {
+            try FileManager.default.trashItem(at: file, resultingItemURL: nil)
+            (superview as? DesktopGridView)?.reload()
+        } catch {
+            NSAlert(error: error).runModal()
+        }
     }
 }
