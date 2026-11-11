@@ -5,6 +5,11 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Added
+- Second look: a slim top bar with an Activities button and the system tray,
+  plus an icon dock down the left edge. Switch looks from the right-click menu
+  on any bar, or start with `--variant top-bar-dock`. The choice is remembered.
+- Window snapping and the desktop icon grid keep clear of whichever bars the
+  current look shows.
 - Taskbar shows one button per open window, with its title. Click to bring a
   window forward, click the active one to minimise it. Buttons shrink, then
   drop their titles, as the bar fills up.
@@ -23,7 +28,7 @@ Record of work, newest first. Each entry says what a user would notice.
 - File explorer button on the taskbar. Folders on the desktop now open in the
   file explorer.
 - Unit tests for taskbar button sizing, switcher selection and battery
-  display (20 tests in total).
+  display, and for the layout and choice of look (29 tests in total).
 - Unit tests for window snap geometry and folder listing (8 tests), and
   `scripts/test.sh` to run them with or without full Xcode.
 - Repository rules (`AGENTS.md`), this changelog and a README.
@@ -34,7 +39,8 @@ Record of work, newest first. Each entry says what a user would notice.
 ### Not verified
 - The interface has not been checked on a live run: taskbar, Start menu,
   desktop, file explorer, snapping, window buttons, system tray, window
-  switcher, keyboard shortcuts, and hiding and restoring the Dock.
+  switcher, keyboard shortcuts, both looks and switching between them, and
+  hiding and restoring the Dock.
 
 ## 0.1.0 - first commit
 

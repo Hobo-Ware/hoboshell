@@ -25,6 +25,16 @@ APIs only. No System Integrity Protection changes, no private frameworks.
 - **Window snapping**: send the last used window to the left half, the right
   half, or the full area above the taskbar.
 
+## Looks
+
+Hoboshell has two looks. Right-click any Hoboshell bar to switch; your choice
+is remembered.
+
+| Look | What you see | Start with |
+| --- | --- | --- |
+| Bottom taskbar (default) | One bar along the bottom with Start, window buttons, snap buttons and the tray | `swift run Hoboshell --variant bottom-taskbar` |
+| Top bar and side dock | A slim bar under the Mac menu bar with Activities and the tray, plus an icon dock on the left | `swift run Hoboshell --variant top-bar-dock` |
+
 ## Keyboard shortcuts
 
 | Keys | What happens |
@@ -113,7 +123,6 @@ Coding and testing rules are in [AGENTS.md](AGENTS.md). Work done so far is in
 
 ## Roadmap
 
-- Other looks, such as a top bar with a side dock
 - Pinned apps on the taskbar
 - Volume control in the system tray
 - Drag and drop, and copy and paste of files, in the file explorer

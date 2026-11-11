@@ -39,14 +39,14 @@ final class StartMenuPanel: NSPanel, NSTableViewDataSource, NSTableViewDelegate,
         orderOut(nil)
     }
 
-    func toggle(above taskbar: NSRect) {
+    func toggle(origin: (NSSize) -> NSPoint) {
         if isVisible {
             orderOut(nil)
             return
         }
         search.stringValue = ""
         filter()
-        setFrameOrigin(NSPoint(x: taskbar.minX + 8, y: taskbar.maxY + 8))
+        setFrameOrigin(origin(frame.size))
         makeKeyAndOrderFront(nil)
         makeFirstResponder(search)
     }
