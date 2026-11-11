@@ -5,6 +5,8 @@ let package = Package(
     name: "Hoboshell",
     platforms: [.macOS(.v13)],
     targets: [
-        .executableTarget(name: "Hoboshell", path: "Sources/Hoboshell")
+        .target(name: "HoboshellCore", path: "Sources/HoboshellCore"),
+        .executableTarget(name: "Hoboshell", dependencies: ["HoboshellCore"], path: "Sources/Hoboshell"),
+        .testTarget(name: "HoboshellCoreTests", dependencies: ["HoboshellCore"], path: "Tests/HoboshellCoreTests"),
     ]
 )
