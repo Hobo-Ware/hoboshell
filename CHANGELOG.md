@@ -5,6 +5,12 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Changed
+- Every screen now uses one shared set of sizes, spacing and colours, so the
+  taskbar, tray, Start menu, preview cards, window switcher, desktop icons,
+  top bar, side dock and file explorer line up: toolbars have the same height
+  and padding, buttons share heights, tray items hug their content, and every
+  button shows a pressed look. `Hoboshell --gallery` opens one window that
+  shows every component in every state.
 - The file explorer is rebuilt as a two-pane explorer. It has a clickable
   path bar (Command+L to type a path), a search box, Back / Forward / Up /
   Refresh, and a command row with New folder, Cut, Copy, Paste, Rename, Move
