@@ -4,6 +4,7 @@ enum DSIconSize {
     static let inline: CGFloat = 16
     static let toolbar: CGFloat = 20
     static let taskbar: CGFloat = 24
+    static let startLogo: CGFloat = 32
     static let grid: CGFloat = 48
 
     static func symbol(_ name: String, description: String? = nil) -> NSImage? {

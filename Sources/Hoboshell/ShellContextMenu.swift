@@ -1,22 +1,20 @@
 import AppKit
 
 final class ShellContextMenu: NSMenu, NSMenuDelegate {
-    private let onSwitchVariant: () -> Void
-    private let hideSystemUIItem = NSMenuItem(
-        title: "Hide the Mac Dock and desktop icons",
-        action: #selector(hideSystemUIPressed),
-        keyEquivalent: ""
-    )
+    private let hideSystemUIItem = DSMenuItem("Hide the Mac Dock and desktop icons") {
+        SystemChrome.setWanted(!SystemChrome.isWanted)
+    }
 
     init(switchTitle: String, onSwitchVariant: @escaping () -> Void) {
-        self.onSwitchVariant = onSwitchVariant
         super.init(title: "")
-        addItem(withTitle: switchTitle, action: #selector(switchVariantPressed), keyEquivalent: "").target = self
+        DSMenu.style(self)
+        addItem(DSMenuItem(switchTitle, handler: onSwitchVariant))
         addItem(hideSystemUIItem)
-        hideSystemUIItem.target = self
         delegate = self
-        addItem(.separator())
-        addItem(withTitle: "Quit Hoboshell", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "")
+        addItem(DSMenu.separator())
+        addItem(DSMenuItem("Quit Hoboshell") {
+            NSApp.terminate(nil)
+        })
     }
 
     @available(*, unavailable)
@@ -26,13 +24,5 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         hideSystemUIItem.state = SystemChrome.isWanted ? .on : .off
-    }
-
-    @objc private func hideSystemUIPressed() {
-        SystemChrome.setWanted(!SystemChrome.isWanted)
-    }
-
-    @objc private func switchVariantPressed() {
-        onSwitchVariant()
     }
 }
