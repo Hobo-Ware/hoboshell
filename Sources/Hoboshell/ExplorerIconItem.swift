@@ -1,10 +1,12 @@
 import AppKit
+import QuickLookThumbnailing
 
 final class ExplorerIconItem: NSCollectionViewItem {
     static let identifier = NSUserInterfaceItemIdentifier("ExplorerIconItem")
 
     let nameField = ExplorerNameField(labelWithString: "")
     private lazy var tile = DSGridCell(label: nameField)
+    private var thumbnailRequest: QLThumbnailGenerator.Request?
 
     override func loadView() {
         tile.handlesClicks = false
@@ -15,7 +17,35 @@ final class ExplorerIconItem: NSCollectionViewItem {
         didSet { tile.isSelected = isSelected }
     }
 
-    func show(name: String, icon: NSImage) {
-        tile.show(name: name, icon: icon)
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        cancelThumbnail()
+    }
+
+    func show(_ file: URL, name: String) {
+        cancelThumbnail()
+        tile.show(name: name, icon: NSWorkspace.shared.icon(forFile: file.path))
+
+        let request = QLThumbnailGenerator.Request(
+            fileAt: file,
+            size: CGSize(width: DSIconSize.grid, height: DSIconSize.grid),
+            scale: view.window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 1,
+            representationTypes: .thumbnail
+        )
+        thumbnailRequest = request
+        QLThumbnailGenerator.shared.generateBestRepresentation(for: request) { [weak self] thumbnail, _ in
+            guard let thumbnail else { return }
+            DispatchQueue.main.async {
+                guard let self, self.thumbnailRequest === request else { return }
+                self.tile.show(name: name, icon: thumbnail.nsImage)
+            }
+        }
+    }
+
+    private func cancelThumbnail() {
+        if let thumbnailRequest {
+            QLThumbnailGenerator.shared.cancel(thumbnailRequest)
+        }
+        thumbnailRequest = nil
     }
 }

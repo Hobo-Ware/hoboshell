@@ -75,7 +75,7 @@ final class ExplorerIconsView: NSScrollView, ExplorerItemsView, NSCollectionView
         let item = collectionView.makeItem(withIdentifier: ExplorerIconItem.identifier, for: indexPath)
         if let item = item as? ExplorerIconItem, entries.indices.contains(indexPath.item) {
             let entry = entries[indexPath.item]
-            item.show(name: entry.name, icon: NSWorkspace.shared.icon(forFile: entry.url.path))
+            item.show(entry.url, name: entry.name)
         }
         return item
     }
