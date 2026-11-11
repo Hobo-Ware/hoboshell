@@ -1,11 +1,19 @@
 import Foundation
 
-public struct FileEntry {
+public struct FileEntry: Equatable {
     public let url: URL
     public let isFolder: Bool
     public let modified: Date?
     public let size: Int?
     public let kind: String
+
+    public init(url: URL, isFolder: Bool, modified: Date?, size: Int?, kind: String) {
+        self.url = url
+        self.isFolder = isFolder
+        self.modified = modified
+        self.size = size
+        self.kind = kind
+    }
 
     public var name: String { url.lastPathComponent }
 
@@ -22,29 +30,31 @@ public struct FileEntry {
         return (values?.isDirectory ?? false) && !(values?.isPackage ?? false)
     }
 
-    public static func contents(of folder: URL) throws -> [FileEntry] {
+    public static func contents(
+        of folder: URL,
+        showHidden: Bool = false,
+        sort: ExplorerSort = .standard
+    ) throws -> [FileEntry] {
         let urls = try FileManager.default.contentsOfDirectory(
             at: folder,
             includingPropertiesForKeys: resourceKeys,
-            options: .skipsHiddenFiles
+            options: showHidden ? [] : .skipsHiddenFiles
         )
-        return urls
-            .map { url in
-                let values = try? url.resourceValues(forKeys: Set(resourceKeys))
-                let isFolder = (values?.isDirectory ?? false) && !(values?.isPackage ?? false)
-                return FileEntry(
-                    url: url,
+        let entries = urls.map { url in
+            let values = try? url.resourceValues(forKeys: Set(resourceKeys))
+            let isFolder = (values?.isDirectory ?? false) && !(values?.isPackage ?? false)
+            return FileEntry(
+                url: url,
+                isFolder: isFolder,
+                modified: values?.contentModificationDate,
+                size: isFolder ? nil : values?.fileSize,
+                kind: FileTypeLabel.label(
                     isFolder: isFolder,
-                    modified: values?.contentModificationDate,
-                    size: isFolder ? nil : values?.fileSize,
-                    kind: values?.localizedTypeDescription ?? ""
+                    localizedDescription: values?.localizedTypeDescription,
+                    fileExtension: url.pathExtension
                 )
-            }
-            .sorted { first, second in
-                if first.isFolder != second.isFolder {
-                    return first.isFolder
-                }
-                return first.name.localizedStandardCompare(second.name) == .orderedAscending
-            }
+            )
+        }
+        return sort.apply(to: entries)
     }
 }
