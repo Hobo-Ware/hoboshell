@@ -5,6 +5,7 @@ struct ShellWindow {
     let app: NSRunningApplication
     let element: AXUIElement
     let title: String
+    let frame: CGRect?
     let isMinimized: Bool
     let isFocused: Bool
 }
@@ -35,6 +36,24 @@ final class WindowCatalog {
         _ = AXUIElementSetAttributeValue(window.element, kAXMinimizedAttribute as CFString, kCFBooleanTrue)
     }
 
+    static func close(_ window: ShellWindow) {
+        guard let button = attribute(kAXCloseButtonAttribute, of: window.element),
+              CFGetTypeID(button) == AXUIElementGetTypeID() else { return }
+        _ = AXUIElementPerformAction(button as! AXUIElement, kAXPressAction as CFString)
+    }
+
+    private static func frame(of element: AXUIElement) -> CGRect? {
+        guard let position = attribute(kAXPositionAttribute, of: element),
+              let size = attribute(kAXSizeAttribute, of: element),
+              CFGetTypeID(position) == AXValueGetTypeID(),
+              CFGetTypeID(size) == AXValueGetTypeID() else { return nil }
+        var origin = CGPoint.zero
+        var extent = CGSize.zero
+        guard AXValueGetValue(position as! AXValue, .cgPoint, &origin),
+              AXValueGetValue(size as! AXValue, .cgSize, &extent) else { return nil }
+        return CGRect(origin: origin, size: extent)
+    }
+
     private static func windows(of app: NSRunningApplication, isFrontmost: Bool) -> [ShellWindow] {
         let appElement = AXUIElementCreateApplication(app.processIdentifier)
         // An app that has stopped responding would otherwise hold each call for the system default of 6 seconds.
@@ -49,6 +68,7 @@ final class WindowCatalog {
                 app: app,
                 element: element,
                 title: title.isEmpty ? appName : title,
+                frame: frame(of: element),
                 isMinimized: attribute(kAXMinimizedAttribute, of: element) as? Bool ?? false,
                 isFocused: isFrontmost && focused.map { CFEqual($0, element) } ?? false
             )

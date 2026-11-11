@@ -122,7 +122,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private static func item(for app: NSRunningApplication) -> TaskbarItem {
-        TaskbarItem(icon: app.icon, title: app.localizedName ?? "", isActive: app.isActive) {
+        var item = TaskbarItem(icon: app.icon, title: app.localizedName ?? "", isActive: app.isActive) {
             if app.isActive {
                 app.hide()
             } else {
@@ -130,16 +130,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 app.activate()
             }
         }
+        item.quit = { app.terminate() }
+        item.appName = app.localizedName
+        return item
     }
 
     private static func item(for window: ShellWindow) -> TaskbarItem {
-        TaskbarItem(icon: window.app.icon, title: window.title, isActive: window.isFocused) {
+        var item = TaskbarItem(icon: window.app.icon, title: window.title, isActive: window.isFocused) {
             if window.isFocused {
                 WindowCatalog.minimize(window)
             } else {
                 WindowCatalog.focus(window)
             }
         }
+        if let frame = window.frame, !window.isMinimized {
+            let pid = window.app.processIdentifier
+            item.preview = { limit, completion in
+                WindowPreview.capture(pid: pid, frame: frame, limit: limit, completion: completion)
+            }
+        }
+        item.close = { WindowCatalog.close(window) }
+        item.quit = { window.app.terminate() }
+        item.appName = window.app.localizedName
+        return item
     }
 
     private func registerHotKeys() {

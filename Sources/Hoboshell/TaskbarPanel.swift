@@ -14,6 +14,7 @@ final class TaskbarPanel: NSPanel, ShellChrome {
     private let itemStack = NSStackView()
     private var items: [TaskbarItem] = []
     private var shownItems: [String] = []
+    private let previewCard = PreviewCardPanel()
 
     init(layout: ShellLayout, switchTitle: String) {
         super.init(contentRect: layout.bar, styleMask: ShellPanelStyle.styleMask, backing: .buffered, defer: false)
@@ -28,6 +29,7 @@ final class TaskbarPanel: NSPanel, ShellChrome {
     }
 
     func dismiss() {
+        previewCard.dismiss()
         orderOut(nil)
     }
 
@@ -54,6 +56,7 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         )
         let showsTitle = TaskbarLayout.showsTitle(atWidth: width)
         itemStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        previewCard.dismiss()
         for (index, item) in items.enumerated() {
             let itemView = TaskbarItemView(
                 icon: ShellButton.icon(item.icon, side: Self.iconSize),
@@ -63,7 +66,18 @@ final class TaskbarPanel: NSPanel, ShellChrome {
             ) { [weak self] in
                 self?.activateItem(at: index)
             }
-            itemView.toolTip = item.title
+            itemView.menu = Self.menu(for: item)
+            itemView.onHoverChange = { [weak self, weak itemView] isInside in
+                guard let self, let itemView, isInside else {
+                    self?.previewCard.pointerLeft()
+                    return
+                }
+                self.previewCard.pointerEntered(
+                    item,
+                    anchor: self.convertToScreen(itemView.convert(itemView.bounds, to: nil)),
+                    screen: self.screen?.frame ?? self.frame
+                )
+            }
             itemStack.addArrangedSubview(itemView)
         }
     }
@@ -132,8 +146,20 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         actions.onShowDesktop?()
     }
 
+    private static func menu(for item: TaskbarItem) -> NSMenu? {
+        let menu = NSMenu()
+        if let close = item.close {
+            menu.addItem(ClosureMenuItem(title: "Close window", handler: close))
+        }
+        if let quit = item.quit {
+            menu.addItem(ClosureMenuItem(title: "Quit \(item.appName ?? "app")", handler: quit))
+        }
+        return menu.items.isEmpty ? nil : menu
+    }
+
     private func activateItem(at index: Int) {
         guard items.indices.contains(index) else { return }
+        previewCard.dismiss()
         items[index].activate()
     }
 }
