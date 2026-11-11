@@ -8,6 +8,11 @@ public struct ExplorerTypeAhead {
 
     public init() {}
 
+    public func isActive(at time: Date) -> Bool {
+        guard !buffer.isEmpty, let lastTyped else { return false }
+        return time.timeIntervalSince(lastTyped) <= Self.timeout
+    }
+
     public mutating func append(_ text: String, at time: Date) -> String {
         if let lastTyped, time.timeIntervalSince(lastTyped) > Self.timeout {
             buffer = ""

@@ -13,7 +13,7 @@ public struct NavigationHistory {
     public var canGoForward: Bool { !forwardStack.isEmpty }
 
     public mutating func visit(_ url: URL) {
-        guard url != current else { return }
+        guard url.standardizedFileURL.path != current.standardizedFileURL.path else { return }
         backStack.append(current)
         forwardStack.removeAll()
         current = url
