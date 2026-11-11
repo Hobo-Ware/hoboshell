@@ -18,8 +18,9 @@ APIs only. No System Integrity Protection changes, no private frameworks.
 - **System tray** with network state, battery level, and a clock with the date.
 - **Window switcher**: hold Option and press Tab to step through open windows,
   release Option to switch.
-- **Start menu** with a searchable list of your installed apps. Type, press
-  Enter, done.
+- **Start menu** with pinned apps, an All apps list, recent files, grouped
+  search (apps, files, Settings), a left rail of places, your account menu
+  and a power menu. Open it from the Start button or with Option+Space.
 - **Desktop** with your Desktop files as an icon grid. Double-click to open.
 - **File explorer** with a sidebar (Quick access, drives, Trash), back /
   forward / up, a clickable path bar, search, a details list and an icon

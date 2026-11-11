@@ -5,6 +5,24 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Added
+- The Start menu is now a full flyout. A grid of pinned apps (Safari, Mail,
+  Calendar, Notes, Music, Photos, System Settings and Terminal to begin with)
+  drags to reorder and remembers its order. "All apps" lists every app A to Z
+  with letter headers, and up to six recent files sit under the pins.
+- Start menu search covers apps, files and Settings panes in grouped results.
+  Type anywhere to search, use the arrow keys to move, and press Enter to open
+  the highlighted result (the top hit by default).
+- The Start menu has a left rail (Home, Documents, Downloads, Pictures and
+  Settings), your name and picture with Lock screen and Sign out, and a power
+  button with Sleep, Restart and Shut down. macOS asks before it restarts,
+  shuts down or signs you out.
+- Right-click an app in the Start menu for Open, Pin to Start or Unpin from
+  Start, Pin to taskbar or Unpin from taskbar, and Show in Files.
+- Option+Space opens and closes the Start menu. Tab moves between the search
+  field, the rail, the apps and the footer. Escape, a click outside, or
+  switching to another app closes it.
+- `--show start=all` and `--show start=search:TEXT` open the Start menu on the
+  All apps view or on search results.
 - Hoboshell's own icon set, drawn in a hobo theme: a bindle for Files, taped
   cardboard folders with stitched patches for places, a cardboard shelter for
   Home, a tin can for drives, a rusty barrel for the Trash that burns when it
