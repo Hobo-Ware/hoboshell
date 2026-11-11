@@ -75,7 +75,7 @@ final class WindowCatalog {
         }
     }
 
-    private static func attribute(_ name: String, of element: AXUIElement) -> CFTypeRef? {
+    static func attribute(_ name: String, of element: AXUIElement) -> CFTypeRef? {
         var value: CFTypeRef?
         return AXUIElementCopyAttributeValue(element, name as CFString, &value) == .success ? value : nil
     }

@@ -2,6 +2,7 @@ import AppKit
 
 final class AppTracker {
     var onChange: (() -> Void)?
+    var onUserActivation: (() -> Void)?
     private(set) var lastActiveApp: NSRunningApplication?
     private var observers: [NSObjectProtocol] = []
 
@@ -31,6 +32,7 @@ final class AppTracker {
            let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
            app.processIdentifier != ProcessInfo.processInfo.processIdentifier {
             lastActiveApp = app
+            onUserActivation?()
         }
         onChange?()
     }
