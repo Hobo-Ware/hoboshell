@@ -1,11 +1,6 @@
 import AppKit
 import ApplicationServices
-
-enum SnapRegion: Int {
-    case leftHalf
-    case rightHalf
-    case maximize
-}
+import HoboshellCore
 
 enum WindowSnapper {
     @discardableResult
@@ -16,7 +11,13 @@ enum WindowSnapper {
         reservedBottom: CGFloat
     ) -> Bool {
         guard let window = focusedWindow(of: app) else { return false }
-        var frame = accessibilityFrame(for: region, on: screen, reservedBottom: reservedBottom)
+        var frame = SnapGeometry.accessibilityFrame(
+            for: region,
+            visibleFrame: screen.visibleFrame,
+            screenFrame: screen.frame,
+            primaryScreenHeight: NSScreen.screens.first?.frame.height ?? screen.frame.height,
+            reservedBottom: reservedBottom
+        )
         guard let position = AXValueCreate(.cgPoint, &frame.origin),
               let size = AXValueCreate(.cgSize, &frame.size) else { return false }
         let moved = AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, position)
@@ -30,26 +31,5 @@ enum WindowSnapper {
         let status = AXUIElementCopyAttributeValue(appElement, kAXFocusedWindowAttribute as CFString, &value)
         guard status == .success, let value, CFGetTypeID(value) == AXUIElementGetTypeID() else { return nil }
         return (value as! AXUIElement)
-    }
-
-    private static func accessibilityFrame(for region: SnapRegion, on screen: NSScreen, reservedBottom: CGFloat) -> CGRect {
-        var usable = screen.visibleFrame
-        let floor = screen.frame.minY + reservedBottom
-        if usable.minY < floor {
-            usable.size.height -= floor - usable.minY
-            usable.origin.y = floor
-        }
-        switch region {
-        case .leftHalf:
-            usable.size.width /= 2
-        case .rightHalf:
-            usable.size.width /= 2
-            usable.origin.x += usable.width
-        case .maximize:
-            break
-        }
-        // AppKit measures from the bottom-left of the primary screen, the Accessibility API from its top-left.
-        let primaryHeight = NSScreen.screens.first?.frame.height ?? screen.frame.height
-        return CGRect(x: usable.minX, y: primaryHeight - usable.maxY, width: usable.width, height: usable.height)
     }
 }

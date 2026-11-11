@@ -1,4 +1,5 @@
 import AppKit
+import HoboshellCore
 
 final class DesktopWindow: NSWindow {
     init(screen: NSScreen, reservedBottom: CGFloat) {
@@ -118,6 +119,10 @@ final class DesktopIconView: NSView {
     override var isFlipped: Bool { true }
 
     @objc private func open() {
+        if FileEntry.isBrowsableFolder(file) {
+            ExplorerWindow.open(at: file)
+            return
+        }
         NSWorkspace.shared.open(file)
     }
 }
