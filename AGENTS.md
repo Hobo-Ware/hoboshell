@@ -16,6 +16,7 @@ Integrity Protection, and never use private frameworks.
 | `scripts/test.sh` | The one way to run tests. Works with or without full Xcode. |
 | `scripts/bundle.sh` | Builds a signed `dist/Hoboshell.app`. Delete `dist/` when you are done with it. |
 | `.github/workflows/ci.yml` | Build and test check. Runs on macOS, which is billed at a higher rate on a private repo, so it skips draft pull requests. |
+| `LICENSE` | GNU GPL v3.0. Do not add code or assets whose license does not allow that. |
 | `CHANGELOG.md` | Record of work, newest first. |
 
 ## Commands
