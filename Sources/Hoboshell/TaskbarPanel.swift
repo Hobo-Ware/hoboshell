@@ -2,11 +2,8 @@ import AppKit
 import HoboshellCore
 
 final class TaskbarPanel: NSPanel, ShellChrome {
-    private static let buttonHeight: CGFloat = 40
-    private static let iconSize: CGFloat = 24
-    private static let startLogoHeight: CGFloat = 32
-    private static let itemSpacing: CGFloat = 4
-    private static let showDesktopWidth: CGFloat = 10
+    private static let itemSpacing = DSSpacing.xs
+    private static let showDesktopWidth = DSSpacing.s
     private static let widthUsedByFixedControls: CGFloat = 380
 
     var actions = ShellActions()
@@ -17,8 +14,8 @@ final class TaskbarPanel: NSPanel, ShellChrome {
     private let previewCard = PreviewCardPanel()
 
     init(layout: ShellLayout, switchTitle: String) {
-        super.init(contentRect: layout.bar, styleMask: ShellPanelStyle.styleMask, backing: .buffered, defer: false)
-        buildContent(in: ShellPanelStyle.apply(to: self), switchTitle: switchTitle)
+        super.init(contentRect: layout.bar, styleMask: DSPanelStyle.styleMask, backing: .buffered, defer: false)
+        buildContent(in: DSPanelStyle.apply(to: self, kind: .bar), switchTitle: switchTitle)
     }
 
     override var canBecomeKey: Bool { false }
@@ -40,7 +37,7 @@ final class TaskbarPanel: NSPanel, ShellChrome {
     }
 
     func startMenuOrigin(menuSize: NSSize) -> NSPoint {
-        NSPoint(x: frame.minX + 8, y: frame.maxY + 8)
+        NSPoint(x: frame.minX + DSSpacing.s, y: frame.maxY + DSSpacing.s)
     }
 
     func update(items: [TaskbarItem]) {
@@ -58,11 +55,11 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         itemStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         previewCard.dismiss()
         for (index, item) in items.enumerated() {
-            let itemView = TaskbarItemView(
-                icon: ShellButton.icon(item.icon, side: Self.iconSize),
+            let itemView = TaskbarItemView.make(
+                icon: item.icon,
                 title: showsTitle ? item.title : nil,
                 isActive: item.isActive,
-                size: NSSize(width: width, height: Self.buttonHeight)
+                width: width
             ) { [weak self] in
                 self?.activateItem(at: index)
             }
@@ -82,79 +79,54 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         }
     }
 
-    private func buildContent(in background: NSVisualEffectView, switchTitle: String) {
-        let logo = HobowareLogo.image(height: Self.startLogoHeight, style: .official, ink: .forDarkBackground)
-        let startButton = makeButton(title: logo == nil ? "⊞" : "", image: logo, action: #selector(startPressed))
-        startButton.toolTip = "Start"
+    private func buildContent(in background: DSCard, switchTitle: String) {
+        let logo = HobowareLogo.image(height: DSIconSize.startLogo, style: .official, ink: .forDarkBackground)
+        let startButton = DSButton(title: logo == nil ? "⊞" : "", image: logo, height: .taskbar, tip: "Start")
+        startButton.onPress = { [weak self] in
+            self?.actions.onStart?()
+        }
 
-        let filesButton = makeButton(
-            image: NSImage(systemSymbolName: "folder.fill", accessibilityDescription: "Files"),
-            action: #selector(filesPressed)
-        )
-        filesButton.toolTip = "Files"
+        let filesButton = DSButton(symbol: "folder.fill", tip: "Files", height: .taskbar)
+        filesButton.onPress = { [weak self] in
+            self?.actions.onFiles?()
+        }
 
         itemStack.orientation = .horizontal
         itemStack.spacing = Self.itemSpacing
         itemStack.setHuggingPriority(.defaultHigh, for: .horizontal)
 
+        let showDesktopButton = DSButton(height: .taskbar, width: Self.showDesktopWidth, tip: "Show desktop")
+        showDesktopButton.restingFill = DSColor.faint
+        showDesktopButton.cornerRadius = DSRadius.none
+        showDesktopButton.onPress = { [weak self] in
+            self?.actions.onShowDesktop?()
+        }
+
         let root = NSStackView()
         root.orientation = .horizontal
-        root.spacing = 6
-        root.edgeInsets = NSEdgeInsets(top: 0, left: 8, bottom: 0, right: 0)
+        root.spacing = Self.itemSpacing
+        root.edgeInsets = NSEdgeInsets(top: 0, left: DSSpacing.s, bottom: 0, right: 0)
         root.addView(startButton, in: .leading)
         root.addView(filesButton, in: .leading)
         root.addView(itemStack, in: .leading)
-
-        root.addView(SystemTrayView(clockOnOneLine: false), in: .trailing)
-
-        let showDesktopButton = makeButton(width: Self.showDesktopWidth, action: #selector(showDesktopPressed))
-        showDesktopButton.toolTip = "Show desktop"
-        showDesktopButton.restingBackground = NSColor.white.withAlphaComponent(0.06).cgColor
-        showDesktopButton.layer?.cornerRadius = 0
+        root.addView(SystemTrayView(clockOnOneLine: false, height: .regular), in: .trailing)
         root.addView(showDesktopButton, in: .trailing)
 
-        ShellPanelStyle.pin(root, to: background)
+        DSPanelStyle.pin(root, to: background)
         background.menu = ShellContextMenu(switchTitle: switchTitle) { [weak self] in
             self?.actions.onSwitchVariant?()
         }
     }
 
-    private func makeButton(
-        title: String = "",
-        image: NSImage? = nil,
-        width: CGFloat = TaskbarLayout.iconOnlyWidth,
-        action: Selector
-    ) -> HoverButton {
-        ShellButton.make(
-            title: title,
-            image: image,
-            size: NSSize(width: width, height: Self.buttonHeight),
-            target: self,
-            action: action
-        )
-    }
-
-    @objc private func startPressed() {
-        actions.onStart?()
-    }
-
-    @objc private func filesPressed() {
-        actions.onFiles?()
-    }
-
-    @objc private func showDesktopPressed() {
-        actions.onShowDesktop?()
-    }
-
     private static func menu(for item: TaskbarItem) -> NSMenu? {
-        let menu = NSMenu()
+        var items: [NSMenuItem] = []
         if let close = item.close {
-            menu.addItem(ClosureMenuItem(title: "Close window", handler: close))
+            items.append(DSMenuItem("Close window", handler: close))
         }
         if let quit = item.quit {
-            menu.addItem(ClosureMenuItem(title: "Quit \(item.appName ?? "app")", handler: quit))
+            items.append(DSMenuItem("Quit \(item.appName ?? "app")", handler: quit))
         }
-        return menu.items.isEmpty ? nil : menu
+        return items.isEmpty ? nil : DSMenu.make(items)
     }
 
     private func activateItem(at index: Int) {

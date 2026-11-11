@@ -22,7 +22,7 @@ final class TopBarPanel: NSPanel {
         root.orientation = .horizontal
         root.edgeInsets = NSEdgeInsets(top: 0, left: 8, bottom: 0, right: 12)
         root.addView(overviewButton, in: .leading)
-        root.addView(SystemTrayView(clockOnOneLine: true), in: .trailing)
+        root.addView(SystemTrayView(clockOnOneLine: true, height: .compact), in: .trailing)
         ShellPanelStyle.pin(root, to: background)
         background.menu = contextMenu
     }
