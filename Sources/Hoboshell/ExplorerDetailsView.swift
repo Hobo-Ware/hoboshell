@@ -2,7 +2,7 @@ import AppKit
 import HoboshellCore
 
 final class ExplorerDetailsView: NSScrollView, ExplorerItemsView, NSTableViewDataSource, NSTableViewDelegate {
-    private static let rowHeight: CGFloat = 24
+    private static let rowHeight = DSControlHeight.compact.value
 
     private struct ColumnSpec {
         let column: ExplorerSortColumn
@@ -86,6 +86,10 @@ final class ExplorerDetailsView: NSScrollView, ExplorerItemsView, NSTableViewDat
 
     func numberOfRows(in tableView: NSTableView) -> Int {
         entries.count
+    }
+
+    func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? {
+        tableView.makeView(withIdentifier: DSTableRowView.identifier, owner: nil) as? DSTableRowView ?? DSTableRowView()
     }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
@@ -182,6 +186,9 @@ final class ExplorerDetailsView: NSScrollView, ExplorerItemsView, NSTableViewDat
             table.addTableColumn(column)
         }
         table.rowHeight = Self.rowHeight
+        table.style = .plain
+        table.intercellSpacing = .zero
+        table.backgroundColor = .clear
         table.allowsMultipleSelection = true
         table.allowsColumnReordering = false
         table.columnAutoresizingStyle = .firstColumnOnlyAutoresizingStyle

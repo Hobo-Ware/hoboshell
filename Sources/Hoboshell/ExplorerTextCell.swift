@@ -3,19 +3,17 @@ import AppKit
 final class ExplorerTextCell: NSTableCellView {
     static let identifier = NSUserInterfaceItemIdentifier("ExplorerTextCell")
 
-    private let label = NSTextField(labelWithString: "")
+    private let label = DSLabel(color: DSColor.dimText)
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         identifier = Self.identifier
-        label.lineBreakMode = .byTruncatingTail
-        label.textColor = .secondaryLabelColor
         label.translatesAutoresizingMaskIntoConstraints = false
         addSubview(label)
         textField = label
         NSLayoutConstraint.activate([
-            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
-            label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
+            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: DSSpacing.s),
+            label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -DSSpacing.s),
             label.centerYAnchor.constraint(equalTo: centerYAnchor),
         ])
     }

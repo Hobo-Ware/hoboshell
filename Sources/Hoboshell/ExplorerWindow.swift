@@ -34,7 +34,7 @@ final class ExplorerWindow: NSWindow, NSWindowDelegate {
         isReleasedWhenClosed = false
         minSize = Self.minimumSize
         appearance = NSAppearance(named: .darkAqua)
-        backgroundColor = ExplorerTheme.background
+        backgroundColor = DSColor.surface
         delegate = self
         contentView = controller.contentView
         controller.window = self
