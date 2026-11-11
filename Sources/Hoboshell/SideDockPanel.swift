@@ -1,9 +1,6 @@
 import AppKit
 
 final class SideDockPanel: NSPanel {
-    private static let buttonSize = NSSize(width: 48, height: 48)
-    private static let iconSize: CGFloat = 34
-
     var onFiles: (() -> Void)?
     var onShowApps: (() -> Void)?
 
@@ -12,23 +9,30 @@ final class SideDockPanel: NSPanel {
     private var shownItems: [String] = []
 
     init(frame: NSRect, contextMenu: NSMenu) {
-        super.init(contentRect: frame, styleMask: ShellPanelStyle.styleMask, backing: .buffered, defer: false)
-        let background = ShellPanelStyle.apply(to: self)
+        super.init(contentRect: frame, styleMask: DSPanelStyle.styleMask, backing: .buffered, defer: false)
+        let background = DSPanelStyle.apply(to: self, kind: .bar)
 
-        let filesButton = makeButton(symbol: "folder.fill", tip: "Files", action: #selector(filesPressed))
-        let appsButton = makeButton(symbol: "square.grid.3x3.fill", tip: "Show apps", action: #selector(showAppsPressed))
+        let filesButton = DSButton(symbol: "folder.fill", tip: "Files", height: .taskbar)
+        filesButton.onPress = { [weak self] in
+            self?.onFiles?()
+        }
+        let appsButton = DSButton(symbol: "square.grid.3x3.fill", tip: "Show apps", height: .taskbar)
+        appsButton.onPress = { [weak self] in
+            self?.onShowApps?()
+        }
 
         itemStack.orientation = .vertical
-        itemStack.spacing = 4
+        itemStack.spacing = DSSpacing.xs
 
         let root = NSStackView()
         root.orientation = .vertical
-        root.spacing = 6
-        root.edgeInsets = NSEdgeInsets(top: 8, left: 0, bottom: 8, right: 0)
+        root.alignment = .centerX
+        root.spacing = DSSpacing.xs
+        root.edgeInsets = NSEdgeInsets(top: DSSpacing.s, left: 0, bottom: DSSpacing.s, right: 0)
         root.addView(filesButton, in: .top)
         root.addView(itemStack, in: .top)
         root.addView(appsButton, in: .bottom)
-        ShellPanelStyle.pin(root, to: background)
+        DSPanelStyle.pin(root, to: background)
         background.menu = contextMenu
     }
 
@@ -43,40 +47,13 @@ final class SideDockPanel: NSPanel {
 
         itemStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         for (index, item) in items.enumerated() {
-            let button = ShellButton.make(
-                image: ShellButton.icon(item.icon, side: Self.iconSize),
-                size: Self.buttonSize,
-                target: self,
-                action: #selector(itemPressed(_:))
-            )
-            button.tag = index
-            button.toolTip = item.title
-            button.restingBackground = item.isActive ? ShellButton.activeBackground : nil
+            let button = DSButton(image: item.icon, height: .taskbar, tip: item.title)
+            button.isSelected = item.isActive
+            button.onPress = { [weak self] in
+                guard let self, self.items.indices.contains(index) else { return }
+                self.items[index].activate()
+            }
             itemStack.addArrangedSubview(button)
         }
-    }
-
-    private func makeButton(symbol: String, tip: String, action: Selector) -> NSButton {
-        let button = ShellButton.make(
-            image: NSImage(systemSymbolName: symbol, accessibilityDescription: tip),
-            size: Self.buttonSize,
-            target: self,
-            action: action
-        )
-        button.toolTip = tip
-        return button
-    }
-
-    @objc private func filesPressed() {
-        onFiles?()
-    }
-
-    @objc private func showAppsPressed() {
-        onShowApps?()
-    }
-
-    @objc private func itemPressed(_ sender: NSButton) {
-        guard items.indices.contains(sender.tag) else { return }
-        items[sender.tag].activate()
     }
 }
