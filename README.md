@@ -12,7 +12,9 @@ APIs only. No System Integrity Protection changes, no private frameworks.
 - **Taskbar** along the bottom of the screen, on every desktop: Start button,
   file explorer button, one button per open window, the tray and a show
   desktop strip. Everything on it lights up under the pointer. Click a window's button to bring it forward; click it
-  again to minimise it.
+  again to minimise it. Right-click a button to pin the app, close its
+  windows or quit it. Pinned apps stay on the bar, running apps get a line
+  under the button, and many windows of one app can fold into one button.
 - **System tray** with network state, battery level, and a clock with the date.
 - **Window switcher**: hold Option and press Tab to step through open windows,
   release Option to switch.
@@ -129,5 +131,4 @@ Coding and testing rules are in [AGENTS.md](AGENTS.md). Work done so far is in
 
 ## Roadmap
 
-- Pinned apps on the taskbar
 - Volume control in the system tray

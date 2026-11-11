@@ -5,6 +5,13 @@ public struct TaskbarPage: Equatable {
     public let overflows: Bool
     public let hasPrevious: Bool
     public let hasNext: Bool
+
+    public init(range: Range<Int>, overflows: Bool, hasPrevious: Bool, hasNext: Bool) {
+        self.range = range
+        self.overflows = overflows
+        self.hasPrevious = hasPrevious
+        self.hasNext = hasNext
+    }
 }
 
 public enum TaskbarOverflow {

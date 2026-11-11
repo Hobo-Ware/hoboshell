@@ -111,14 +111,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func refreshTaskbar() {
+        let apps = tracker.taskbarApps
+        let entries = apps.map(Self.entry(for:))
         guard Accessibility.isTrusted else {
-            chrome?.update(items: tracker.taskbarApps.map(Self.item(for:)))
+            chrome?.update(snapshot: TaskbarSnapshot(items: apps.map(Self.item(for:)), apps: entries))
             return
         }
         windowEvents.watch(apps: appsWithWindows)
         catalog.load(apps: appsWithWindows) { [weak self] windows in
-            self?.chrome?.update(items: windows.map(Self.item(for:)))
+            guard let self else { return }
+            self.chrome?.update(snapshot: TaskbarSnapshot(items: windows.map(Self.item(for:)), apps: entries))
         }
+    }
+
+    private static func appID(of app: NSRunningApplication) -> String {
+        TaskbarAppID.make(bundleIdentifier: app.bundleIdentifier, pid: app.processIdentifier)
+    }
+
+    private static func reveal(_ app: NSRunningApplication) {
+        app.unhide()
+        app.activate()
+    }
+
+    private static func entry(for app: NSRunningApplication) -> TaskbarAppEntry {
+        TaskbarAppEntry(
+            id: appID(of: app),
+            name: app.localizedName ?? "",
+            icon: app.icon,
+            isActive: app.isActive,
+            activate: {
+                if app.isActive {
+                    app.hide()
+                } else {
+                    reveal(app)
+                }
+            },
+            quit: { app.terminate() }
+        )
     }
 
     private static func item(for app: NSRunningApplication) -> TaskbarItem {
@@ -126,12 +155,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if app.isActive {
                 app.hide()
             } else {
-                app.unhide()
-                app.activate()
+                reveal(app)
             }
         }
         item.quit = { app.terminate() }
         item.appName = app.localizedName
+        item.appID = appID(of: app)
+        item.reveal = { reveal(app) }
         return item
     }
 
@@ -152,6 +182,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         item.close = { WindowCatalog.close(window) }
         item.quit = { window.app.terminate() }
         item.appName = window.app.localizedName
+        item.appID = appID(of: window.app)
+        item.reveal = { WindowCatalog.focus(window) }
         return item
     }
 

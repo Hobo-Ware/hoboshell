@@ -20,14 +20,20 @@ final class PreviewCardPanel: NSPanel {
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 
-    func pointerEntered(_ item: TaskbarItem, anchor: NSRect, screen: NSRect) {
+    func pointerEntered(_ items: [TaskbarItem], anchor: NSRect, screen: NSRect) {
         pendingHide?.cancel()
         pendingShow?.cancel()
         let show = DispatchWorkItem { [weak self] in
-            self?.present(item, anchor: anchor, screen: screen)
+            self?.present(items, anchor: anchor, screen: screen)
         }
         pendingShow = show
         DispatchQueue.main.asyncAfter(deadline: .now() + (isVisible ? 0 : Self.showDelay), execute: show)
+    }
+
+    func showNow(_ items: [TaskbarItem], anchor: NSRect, screen: NSRect) {
+        pendingHide?.cancel()
+        pendingShow?.cancel()
+        present(items, anchor: anchor, screen: screen)
     }
 
     func pointerLeft() {
@@ -46,13 +52,52 @@ final class PreviewCardPanel: NSPanel {
         orderOut(nil)
     }
 
-    private func present(_ item: TaskbarItem, anchor: NSRect, screen: NSRect) {
+    private func present(_ items: [TaskbarItem], anchor: NSRect, screen: NSRect) {
+        guard !items.isEmpty, let background = contentView else { return }
         presentation += 1
         let shown = presentation
+        let isGroup = items.count > 1
+        let cards = items.map { makeCard(for: $0, isGroup: isGroup) }
+        background.subviews.forEach { $0.removeFromSuperview() }
+
+        let size: NSSize
+        if isGroup {
+            let strip = PreviewCardStrip(cards: cards)
+            DSPanelStyle.pin(strip, to: background)
+            let content = strip.desiredSize
+            size = NSSize(width: min(content.width, screen.width - 2 * Self.screenMargin), height: content.height)
+        } else {
+            DSPanelStyle.pin(cards[0], to: background)
+            size = cards[0].fittingSize
+        }
+        let origin = PreviewCardLayout.origin(
+            cardSize: size,
+            anchor: anchor,
+            screen: screen,
+            gap: Self.gapAboveBar,
+            margin: Self.screenMargin
+        )
+        setFrame(NSRect(origin: origin, size: size), display: true)
+        orderFrontRegardless()
+
+        WindowPreview.askForAccessOnce()
+        for (item, card) in zip(items, cards) {
+            item.preview?(Self.previewLimit) { [weak self, weak card] image in
+                guard let self, self.presentation == shown, let image else { return }
+                card?.show(preview: image)
+            }
+        }
+    }
+
+    private func makeCard(for item: TaskbarItem, isGroup: Bool) -> PreviewCardView {
         let card = PreviewCardView(item: item, previewSize: Self.previewLimit)
         card.onPress = { [weak self] in
             self?.dismiss()
-            item.activate()
+            if isGroup, let reveal = item.reveal {
+                reveal()
+            } else {
+                item.activate()
+            }
         }
         card.onClose = { [weak self] in
             self?.dismiss()
@@ -65,25 +110,6 @@ final class PreviewCardPanel: NSPanel {
                 self?.pointerLeft()
             }
         }
-        guard let background = contentView else { return }
-        background.subviews.forEach { $0.removeFromSuperview() }
-        DSPanelStyle.pin(card, to: background)
-
-        let size = card.fittingSize
-        let origin = PreviewCardLayout.origin(
-            cardSize: size,
-            anchor: anchor,
-            screen: screen,
-            gap: Self.gapAboveBar,
-            margin: Self.screenMargin
-        )
-        setFrame(NSRect(origin: origin, size: size), display: true)
-        orderFrontRegardless()
-
-        WindowPreview.askForAccessOnce()
-        item.preview?(Self.previewLimit) { [weak self, weak card] image in
-            guard let self, self.presentation == shown, let image else { return }
-            card?.show(preview: image)
-        }
+        return card
     }
 }

@@ -15,7 +15,20 @@ final class DSBadge: NSView {
         }
     }
 
-    init(_ text: String, tone: Tone = .neutral) {
+    enum Size {
+        case regular
+        case compact
+
+        var horizontalPadding: CGFloat {
+            self == .regular ? DSSpacing.s : DSSpacing.xs
+        }
+
+        var verticalPadding: CGFloat {
+            self == .regular ? DSSpacing.xxs : 0
+        }
+    }
+
+    init(_ text: String, tone: Tone = .neutral, size: Size = .regular) {
         super.init(frame: .zero)
         wantsLayer = true
         layer?.cornerRadius = DSRadius.control
@@ -25,10 +38,10 @@ final class DSBadge: NSView {
         label.translatesAutoresizingMaskIntoConstraints = false
         addSubview(label)
         NSLayoutConstraint.activate([
-            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: DSSpacing.s),
-            label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -DSSpacing.s),
-            label.topAnchor.constraint(equalTo: topAnchor, constant: DSSpacing.xxs),
-            label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -DSSpacing.xxs),
+            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: size.horizontalPadding),
+            label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -size.horizontalPadding),
+            label.topAnchor.constraint(equalTo: topAnchor, constant: size.verticalPadding),
+            label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -size.verticalPadding),
         ])
         setContentHuggingPriority(.required, for: .horizontal)
         setContentHuggingPriority(.required, for: .vertical)
