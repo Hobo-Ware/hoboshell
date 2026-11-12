@@ -63,6 +63,22 @@ final class StartMenuPanel: NSPanel {
             defer: false
         )
         buildContent(in: DSPanelStyle.apply(to: self, kind: .flyout))
+        warmIcons()
+    }
+
+    private func warmIcons() {
+        let apps = installedApps
+        let pins = startPins.ids
+        let taskbarPins = TaskbarPinStore.loadPins().ids
+        DispatchQueue.global(qos: .utility).async {
+            let pinned = pins.compactMap { StartMenuApps.app(forBundleID: $0, in: apps)?.url.path }
+            let pinnedOnTaskbar = taskbarPins.compactMap {
+                NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0)?.path
+            }
+            HoboIcon.warm(paths: pinned, sides: [DSIconSize.grid])
+            HoboIcon.warm(paths: pinnedOnTaskbar, sides: [DSIconSize.grid])
+            HoboIcon.warm(paths: apps.map(\.url.path), sides: [DSIconSize.toolbar])
+        }
     }
 
     var staysOpenForCapture = false
@@ -247,9 +263,9 @@ final class StartMenuPanel: NSPanel {
         let user = DSButton(
             views: [avatar, DSLabel(StartMenuSystem.userName)],
             height: .regular,
-            alignment: .leading,
-            tip: StartMenuSystem.userName
+            alignment: .leading
         )
+        user.setAccessibilityLabel(StartMenuSystem.userName)
         let power = DSButton(symbol: "power", tip: "Power")
         user.onPress = { [weak self, weak user] in
             guard let self, let user else { return }

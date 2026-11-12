@@ -3,6 +3,8 @@ public enum ShowTarget: Equatable {
     case startAll
     case startSearch(text: String)
     case files(path: String?)
+    case switcher
+    case tray(TrayItemKind)
 
     public static func parse(arguments: [String]) -> [ShowTarget] {
         var targets: [ShowTarget] = []
@@ -25,6 +27,12 @@ public enum ShowTarget: Equatable {
         }
         if value.hasPrefix("start=search:"), value.count > "start=search:".count {
             return [.startSearch(text: String(value.dropFirst("start=search:".count)))]
+        }
+        if value == "switcher" {
+            return [.switcher]
+        }
+        if value.hasPrefix("tray="), let kind = TrayItemKind(rawValue: String(value.dropFirst("tray=".count))) {
+            return [.tray(kind)]
         }
         if value == "files" {
             return [.files(path: nil)]

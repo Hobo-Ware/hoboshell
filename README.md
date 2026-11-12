@@ -15,9 +15,12 @@ APIs only. No System Integrity Protection changes, no private frameworks.
   again to minimise it. Right-click a button to pin the app, close its
   windows or quit it. Pinned apps stay on the bar, running apps get a line
   under the button, and many windows of one app can fold into one button.
-- **System tray** with network state, battery level, and a clock with the date.
-- **Window switcher**: hold Option and press Tab to step through open windows,
-  release Option to switch.
+- **System tray** with apps running in the background (no window, with unread
+  counts), volume, network state, battery level, and a clock with the date.
+  Each of the last four opens a small flyout; the clock opens a calendar.
+- **Window switcher**: hold Command (or Option) and press Tab to step through
+  open windows, one tile per window with a live picture, most recently used
+  first. Release to switch.
 - **Start menu** with pinned apps, an All apps list, recent files, grouped
   search (apps, files, Settings), a left rail of places, your account menu
   and a power menu. Open it from the Start button or with Option+Space.
@@ -43,7 +46,8 @@ is remembered.
 
 | Keys | What happens |
 | --- | --- |
-| Option+Tab | Step through open windows; release Option to switch |
+| Command+Tab, Command+Shift+Tab | Open the window switcher and step forward or back; release Command to switch. Arrow keys move, Escape cancels, Q quits the app, W closes the window. Turn off in the bar's right-click menu |
+| Option+Tab | The same switcher, held with Option |
 | Control+Option+Left | Snap the last used window to the left half |
 | Control+Option+Right | Snap it to the right half |
 | Control+Option+Up | Fill the area above the taskbar |
@@ -75,22 +79,35 @@ or press Ctrl+C in the terminal.
 When you start it from a terminal, the Accessibility switch appears under your
 terminal app's name in System Settings > Privacy & Security > Accessibility.
 
-### Hiding the real Dock and desktop icons
+### Replacing the real Dock and desktop icons
 
-Off by default. Right-click a bar and tick "Hide the Mac Dock and desktop
+Off by default. Right-click a bar and tick "Replace the Mac Dock and desktop
 icons"; the choice is remembered. Or turn it on for one run:
 
 ```sh
 HOBOSHELL_HIDE_SYSTEM_UI=1 swift run
 ```
 
-This sets the Dock to auto-hide with a very long delay and turns off Finder's
-desktop icons, then restarts both. Your old settings are saved first and put
-back when Hoboshell quits. If it ever quits badly, restore them by hand:
+macOS keeps maximised and tiled windows clear of the Dock, so Hoboshell keeps
+the real Dock on the same edge as its bar (bottom for the bottom taskbar, left
+for the side dock), never hiding and never magnifying, and draws the bar
+exactly on top of it. Hoboshell measures how thick the Dock turns out and
+adjusts its icon size until it matches the bar, so the first run restarts the
+Dock a few times. It also turns off the Finder desktop icons and restarts
+Finder. Your old settings are saved first and put back when you untick the
+item or quit Hoboshell. If it ever quits badly, restore them by hand:
 
 ```sh
 swift run Hoboshell --restore
 ```
+
+Settings this changes in `com.apple.dock`: `autohide`, `autohide-delay`,
+`tilesize`, `orientation`, `magnification`, `show-recents` and `largesize`
+(saved, not changed), and in `com.apple.finder`: `CreateDesktop`.
+
+With the option off, "Keep windows above the taskbar" (on by default) shrinks
+any window that ends up with its bottom edge under the bottom taskbar once you
+stop moving it.
 
 ## Limits you should know about
 
@@ -98,8 +115,10 @@ macOS does not let another app replace Finder or the Dock, so Hoboshell is an
 overlay, not a replacement:
 
 - The Mac menu bar stays at the top of the screen.
-- Windows you maximise yourself can slide under the taskbar. The snap shortcuts
-  keep clear of it.
+- Without the Dock replacement, windows you maximise yourself can slide under
+  the taskbar until "Keep windows above the taskbar" nudges them up. The snap
+  shortcuts keep clear of it. The top bar of the side dock look still overlaps
+  windows: macOS only keeps them below the Mac menu bar.
 - The file explorer does not appear in Cmd+Tab, because Hoboshell runs as a
   background agent. It does appear on the taskbar and in Option+Tab.
 - The system tray shows Hoboshell's own indicators. macOS does not let another
@@ -126,10 +145,17 @@ Code is split in two:
 - `Sources/HoboshellCore` - logic with no windows (snap geometry, file
   listing). Unit tested.
 - `Sources/Hoboshell` - the app itself: windows, panels and system calls.
+- `Sources/HoboshellProbe` - a tiny helper app used only by the self-test.
+
+### Self-test
+
+`./scripts/selftest.sh` checks that the taskbar and tray follow real windows
+in real time. It opens a few small windows from a helper app that never takes
+keyboard focus, closes and minimises them, and prints how many milliseconds
+each change took to show. Every step must be under 150 ms. It needs the
+Accessibility permission for the `Hoboshell` binary, and it opens windows on
+your screen, so run it by hand. `./scripts/selftest.sh report.txt` also writes
+the result to a file.
 
 Coding and testing rules are in [AGENTS.md](AGENTS.md). Work done so far is in
 [CHANGELOG.md](CHANGELOG.md).
-
-## Roadmap
-
-- Volume control in the system tray

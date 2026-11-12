@@ -10,7 +10,7 @@ enum GalleryContent {
 
     static func page() -> NSView {
         let sections = [
-            colors(), scales(), text(), buttons(), toggles(), fields(), menus(), rows(), grid(), startMenu(), chrome(), taskbar(), dialogs(),
+            colors(), scales(), text(), buttons(), toggles(), fields(), menus(), rows(), grid(), startMenu(), switcher(), chrome(), taskbar(), tray(), dialogs(),
         ]
         let stack = NSStackView(views: [DSLabel("Hoboshell design system", style: .title, weight: .semibold)] + sections)
         stack.orientation = .vertical
@@ -205,6 +205,29 @@ enum GalleryContent {
         ])
     }
 
+    private static func switcher() -> NSView {
+        let application = NSImage(named: NSImage.applicationIconName)
+        let photo = NSImage(size: DSSwitcherTile.pictureSize, flipped: false) { rect in
+            DSColor.raisedSurface.setFill()
+            rect.fill()
+            return true
+        }
+        func tile(picture: NSImage?) -> () -> DSControl {
+            {
+                let tile = DSSwitcherTile()
+                tile.show(title: "Quarterly plan - Notes", icon: application)
+                if let picture {
+                    tile.show(picture: picture)
+                }
+                return tile
+            }
+        }
+        return GalleryRow.section("DSSwitcherTile", [
+            GalleryRow.states("icon placeholder", tile(picture: nil)),
+            GalleryRow.states("window picture", tile(picture: photo)),
+        ])
+    }
+
     private static func chrome() -> NSView {
         let toolbar = DSToolbar([
             .group([
@@ -245,7 +268,7 @@ enum GalleryContent {
     private static func taskbar() -> NSView {
         let folder = NSImage(named: NSImage.folderName)
         let marks: [(String, NSView)] = [
-            ("none", DSRunMark()), ("running", mark(.running)), ("active", mark(.active)),
+            ("none", DSRunMark()), ("running", mark(.running)), ("active", mark(.active)), ("background", mark(.background)),
         ]
         func button(_ configure: @escaping (DSTaskbarButton) -> Void) -> () -> DSControl {
             {
@@ -259,6 +282,7 @@ enum GalleryContent {
             GalleryRow.states("pinned, not running", button { _ in }),
             GalleryRow.states("running", button { $0.runState = .running }),
             GalleryRow.states("active window", button { $0.runState = .active }),
+            GalleryRow.states("pinned, no window", button { $0.runState = .background }),
             GalleryRow.states("group with count", button {
                 $0.runState = .running
                 $0.countText = "3"
@@ -267,6 +291,26 @@ enum GalleryContent {
                 $0.runState = .running
                 $0.notificationText = "12"
             }),
+        ])
+    }
+
+    private static func tray() -> NSView {
+        let folder = NSImage(named: NSImage.folderName)
+        let icons: [(String, NSView)] = [
+            ("icon", DSTrayIcon(icon: folder, tip: "Documents")),
+            ("with unread badge", DSTrayIcon(icon: folder, tip: "Documents", badge: "12")),
+        ]
+        let slider = DSSlider()
+        slider.doubleValue = 0.55
+        let disabled = DSSlider()
+        disabled.isEnabled = false
+        return GalleryRow.section("Tray: DSTrayIcon, DSCalendarCell, DSSlider", [
+            GalleryRow.make("background app", icons),
+            GalleryRow.make("DSCalendarCell", [
+                ("day", DSCalendarCell("12", style: .day)), ("today", DSCalendarCell("13", style: .today)),
+                ("week number", DSCalendarCell("46", style: .weekNumber)), ("weekday", DSCalendarCell("M", style: .weekday)),
+            ]),
+            GalleryRow.make("DSSlider", [("level", sized(slider)), ("disabled", sized(disabled))]),
         ])
     }
 
