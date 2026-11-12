@@ -5,6 +5,11 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Added
+- Click the network icon in the tray for a flyout with connected or offline,
+  Wi-Fi or wired, the local IP address and a "Network settings" button. It does
+  not read the Wi-Fi name or scan. `--show tray=network` opens it for
+  screenshots. Tray flyouts open one at a time and close on Escape, a click
+  outside, or a second click on their item.
 - Click the battery in the tray for a flyout with the charge, whether it is
   charging, plugged in or on battery, the time left or to full when the Mac
   reports it, whether Low Power Mode is on, and a "Battery settings" button.
