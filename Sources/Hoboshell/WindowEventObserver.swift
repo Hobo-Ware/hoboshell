@@ -1,51 +1,102 @@
 import AppKit
 import ApplicationServices
+import HoboshellCore
 
 final class WindowEventObserver {
-    private static let messagingTimeout: Float = 0.25
-    private static let notifications = [
-        kAXWindowCreatedNotification,
-        kAXUIElementDestroyedNotification,
-        kAXFocusedWindowChangedNotification,
-        kAXMainWindowChangedNotification,
-        kAXTitleChangedNotification,
-        kAXWindowMiniaturizedNotification,
-        kAXWindowDeminiaturizedNotification,
-    ]
+    private static let launchRetryDelays: [TimeInterval] = [0.1, 0.3, 1]
+    private static let desktopRecheckDelay: TimeInterval = 0.25
 
-    var onChange: (() -> Void)?
-    var onDestroyed: ((AXUIElement) -> Void)?
-    private var observers: [pid_t: AXObserver] = [:]
+    var onGeometryChange: ((AXUIElement) -> Void)?
 
-    func watch(apps: [NSRunningApplication]) {
-        let running = Set(apps.map(\.processIdentifier))
-        for (pid, observer) in observers where !running.contains(pid) {
-            CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .defaultMode)
-            observers[pid] = nil
-        }
-        for pid in running where observers[pid] == nil {
-            observers[pid] = makeObserver(for: pid)
+    private let worker = AXWorker.shared
+    private let registry: WindowRegistry
+    private var watchers: [pid_t: AppWatcher] = [:]
+
+    init(registry: WindowRegistry) {
+        self.registry = registry
+    }
+
+    func appLaunched(pid: pid_t, name: String) {
+        worker.async { [weak self] in
+            self?.startWatching(pid: pid, name: name)
         }
     }
 
-    private func makeObserver(for pid: pid_t) -> AXObserver? {
-        var created: AXObserver?
-        let callback: AXObserverCallback = { _, element, notification, context in
-            guard let context else { return }
-            let observer = Unmanaged<WindowEventObserver>.fromOpaque(context).takeUnretainedValue()
-            if notification as String == kAXUIElementDestroyedNotification {
-                observer.onDestroyed?(element)
+    func appTerminated(pid: pid_t) {
+        worker.async { [weak self] in
+            self?.watchers.removeValue(forKey: pid)?.stop()
+        }
+    }
+
+    func sync(apps: [(pid: pid_t, name: String)], snapshot reason: ShellEvent.SnapshotReason) {
+        worker.async { [weak self] in
+            guard let self else { return }
+            let running = Set(apps.map(\.pid))
+            for pid in watchers.keys where !running.contains(pid) {
+                watchers.removeValue(forKey: pid)?.stop()
             }
-            observer.onChange?()
+            var started = Set<pid_t>()
+            for app in apps where watchers[app.pid] == nil {
+                startWatching(pid: app.pid, name: app.name)
+                started.insert(app.pid)
+            }
+            snapshotAll(reason, skipping: started)
         }
-        guard AXObserverCreate(pid, callback, &created) == .success, let observer = created else { return nil }
-        let app = AXUIElementCreateApplication(pid)
-        AXUIElementSetMessagingTimeout(app, Self.messagingTimeout)
-        let context = Unmanaged.passUnretained(self).toOpaque()
-        for notification in Self.notifications {
-            AXObserverAddNotification(observer, app, notification as CFString, context)
+    }
+
+    func desktopChanged() {
+        worker.async { [weak self] in
+            self?.snapshotAll(.desktopChange)
         }
-        CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .defaultMode)
-        return observer
+        worker.after(Self.desktopRecheckDelay) { [weak self] in
+            self?.snapshotAll(.desktopChange)
+        }
+    }
+
+    func stopAll() {
+        worker.async { [weak self] in
+            guard let self else { return }
+            watchers.values.forEach { $0.stop() }
+            watchers = [:]
+        }
+    }
+
+    private func startWatching(pid: pid_t, name: String) {
+        guard watchers[pid] == nil else { return }
+        let watcher = AppWatcher(pid: pid, name: name, registry: registry) { kind, observedAt in
+            ShellStore.post(kind, observedAt: observedAt)
+        }
+        watcher.onGeometryChange = { [weak self] element in
+            DispatchQueue.main.async {
+                self?.onGeometryChange?(element)
+            }
+        }
+        guard watcher.start() else { return }
+        watchers[pid] = watcher
+        snapshotUntilWindowsAppear(pid: pid, delays: Self.launchRetryDelays[...])
+    }
+
+    private func snapshotUntilWindowsAppear(pid: pid_t, delays: ArraySlice<TimeInterval>) {
+        guard let watcher = watchers[pid] else { return }
+        let windows = watcher.snapshot()
+        if let windows {
+            post(windows, pid: pid, reason: .launch)
+        }
+        guard windows?.isEmpty ?? true, let delay = delays.first else { return }
+        worker.after(delay) { [weak self] in
+            self?.snapshotUntilWindowsAppear(pid: pid, delays: delays.dropFirst())
+        }
+    }
+
+    private func snapshotAll(_ reason: ShellEvent.SnapshotReason, skipping skipped: Set<pid_t> = []) {
+        for (pid, watcher) in watchers where !skipped.contains(pid) {
+            if let windows = watcher.snapshot() {
+                post(windows, pid: pid, reason: reason)
+            }
+        }
+    }
+
+    private func post(_ windows: [WindowState], pid: pid_t, reason: ShellEvent.SnapshotReason) {
+        ShellStore.post(.appSnapshot(pid: pid, windows: windows, reason: reason))
     }
 }

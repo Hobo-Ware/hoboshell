@@ -5,6 +5,51 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Added
+- `scripts/selftest.sh` runs `Hoboshell --selftest realtime`: the shell opens
+  a small helper app (`HoboshellProbe`) with plain windows that never take
+  keyboard focus, opens, retitles, minimises, restores and closes them, and
+  times how long the taskbar and tray take to show each change. Every step must
+  show within 150 ms. `--selftest-report PATH` also writes the result to a file.
+- Click the network icon in the tray for a flyout with connected or offline,
+  Wi-Fi or wired, the local IP address and a "Network settings" button. It does
+  not read the Wi-Fi name or scan. `--show tray=network` opens it for
+  screenshots. Tray flyouts open one at a time and close on Escape, a click
+  outside, or a second click on their item.
+- Click the battery in the tray for a flyout with the charge, whether it is
+  charging, plugged in or on battery, the time left or to full when the Mac
+  reports it, whether Low Power Mode is on, and a "Battery settings" button.
+  `--show tray=battery` opens it for screenshots. Macs without a battery still
+  show no battery item.
+- The tray clock now follows the Mac's region settings (12 or 24 hour, date
+  order) instead of a fixed 24-hour pattern. Click it for a calendar flyout:
+  today's date, a month grid with week numbers and today marked, previous and
+  next month arrows, a "Today" button and a "Date and time settings" button.
+  `--show tray=calendar` opens it for screenshots.
+- A volume item in the tray that follows the level and mute state of the
+  current output device. Scroll over it to change the volume in 5% steps; click
+  it for a slider, a mute button, the list of outputs (click one to switch) and
+  a "Sound settings" button. `--show tray=volume` opens it for screenshots.
+- Apps that are running with no window (for example Slack after you press the
+  red button) now show as small icons at the left end of the tray, with their
+  unread count on the icon. Click one to bring its window back, right-click for
+  Open and Quit. With more than three, an arrow opens a "Running in the
+  background" list. A pinned app that runs with no window gets a small dot under
+  its taskbar button instead of the line. `--show tray=apps` opens the list for
+  screenshots (with sample rows when nothing is in the background), and the
+  `--gallery` window shows the tray icon, its badge and the dot.
+- "Replace the Mac Dock and desktop icons" (the old "Hide the Mac Dock" item,
+  same setting) now keeps the real Dock on screen under the bar, the same
+  thickness and never hidden, and draws the bar on top of it. Maximised and
+  tiled windows now stop at the bar instead of sliding under it. The first
+  run measures the Dock and adjusts its icon size to fit, so the Dock restarts
+  a few times once; later runs restart it once. Switching between the two
+  looks moves the Dock to the other edge. Your old Dock and Finder settings
+  are saved first and put back when you turn it off, quit, or run
+  `swift run Hoboshell --restore`; leftovers from a crash are put back at the
+  next start.
+- "Keep windows above the taskbar" in the bar's right-click menu, on by
+  default: a window whose bottom edge ends up under the bottom taskbar gets
+  shorter so it sits just above it.
 - A new window switcher on Command+Tab and Command+Shift+Tab (Option+Tab still
   works). It shows one tile per window with a live picture, the app icon and
   the title, most recently used first, and wraps onto more rows when needed.
@@ -68,6 +113,16 @@ Record of work, newest first. Each entry says what a user would notice.
   count and the unread badge.
 
 ### Changed
+- The taskbar, the tray background list, the side dock and the Option+Tab
+  switcher now follow windows and apps as they change instead of checking every
+  second and a half. A new window, a closed window, a minimise, a restore, a new
+  title or a quit shows up at once, and an app moves to the tray the moment its
+  last window closes. Buttons are updated in place, so hover and pressed looks
+  no longer reset and nothing flickers. Windows that are minimised never lose
+  their button.
+- Hover highlights appear instantly and fade out in 0.08 s. The window preview
+  card opens after 0.3 s and shows the last picture of the window straight away
+  while a fresh one loads.
 - Taskbar running marks are easier to see: a 12 wide white line under running
   apps and a 20 wide accent line under the focused window, both a little
   thicker. The Start logo and the Files bindle are drawn at 32 pt instead of
@@ -113,6 +168,12 @@ Record of work, newest first. Each entry says what a user would notice.
   shows in the window.
 
 ### Fixed
+- The taskbar now draws above the Mac Dock. It was sitting below it, so the
+  Dock showed on top of the bar whenever the Dock was visible.
+- Switching desktops no longer makes the taskbar slide away with the desktop,
+  and its buttons change once to the new desktop's windows instead of in
+  several steps. An app whose windows are on another desktop is not shown as
+  running in the background.
 - The Start menu header lines up: "Pinned" and "All apps >" sit on one row
   with the control at the right end and a small arrow, and the Back row of the
   All apps list is centred the same way. A tooltip with your name no longer

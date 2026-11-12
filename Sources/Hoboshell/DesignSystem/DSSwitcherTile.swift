@@ -65,10 +65,14 @@ final class DSSwitcherTile: DSControl {
     }
 
     func show(title: String, icon: NSImage?) {
-        titleLabel.stringValue = title
-        placeholder.image = icon
-        badge.image = icon
-        setAccessibilityLabel(title)
+        if titleLabel.stringValue != title {
+            titleLabel.stringValue = title
+            setAccessibilityLabel(title)
+        }
+        if placeholder.image !== icon {
+            placeholder.image = icon
+            badge.image = icon
+        }
     }
 
     func show(picture: NSImage) {

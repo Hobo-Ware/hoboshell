@@ -22,14 +22,23 @@ public struct ShellLayout: Equatable {
     public let bar: CGRect
     public let dock: CGRect?
     public let reserved: ShellInsets
+    public let dockReservation: DockReservation
 
-    public init(variant: ShellVariant, screenFrame: CGRect, visibleFrame: CGRect) {
+    public init(
+        variant: ShellVariant,
+        screenFrame: CGRect,
+        visibleFrame: CGRect,
+        dockReservation: DockReservation = .off
+    ) {
+        self.dockReservation = dockReservation
         switch variant {
         case .bottomTaskbar:
-            bar = CGRect(x: screenFrame.minX, y: screenFrame.minY, width: screenFrame.width, height: Self.taskbarHeight)
+            let height = dockReservation.thickness ?? Self.taskbarHeight
+            bar = CGRect(x: screenFrame.minX, y: screenFrame.minY, width: screenFrame.width, height: height)
             dock = nil
-            reserved = ShellInsets(bottom: Self.taskbarHeight)
+            reserved = ShellInsets(bottom: height)
         case .topBarWithDock:
+            let width = dockReservation.thickness ?? Self.dockWidth
             let topBar = CGRect(
                 x: screenFrame.minX,
                 y: visibleFrame.maxY - Self.topBarHeight,
@@ -40,10 +49,10 @@ public struct ShellLayout: Equatable {
             dock = CGRect(
                 x: screenFrame.minX,
                 y: screenFrame.minY,
-                width: Self.dockWidth,
+                width: width,
                 height: topBar.minY - screenFrame.minY
             )
-            reserved = ShellInsets(top: Self.topBarHeight, left: Self.dockWidth)
+            reserved = ShellInsets(top: Self.topBarHeight, left: width)
         }
     }
 }

@@ -12,21 +12,14 @@ struct TaskbarItem {
     var appName: String?
     var appID: String?
     var reveal: (() -> Void)?
+    var windowID: Int?
 }
 
-struct TaskbarAppEntry {
-    let id: String
-    let name: String
-    let icon: NSImage?
-    let isActive: Bool
-    let activate: () -> Void
-    let quit: () -> Void
-}
-
-struct TaskbarSnapshot {
-    var items: [TaskbarItem]
-    var apps: [TaskbarAppEntry] = []
-    var badges: [String: String] = [:]
+struct TaskbarButtonInfo {
+    let pid: Int32?
+    let tip: String
+    let windowCount: Int
+    let view: ObjectIdentifier
 }
 
 struct ShellActions {
@@ -40,21 +33,24 @@ protocol ShellChrome: AnyObject {
     var actions: ShellActions { get set }
     func show()
     func dismiss()
-    func update(items: [TaskbarItem])
-    func update(snapshot: TaskbarSnapshot)
+    func update(state: ShellState, isTrusted: Bool)
     func reposition(to layout: ShellLayout)
     func startMenuOrigin(menuSize: NSSize) -> NSPoint
+    var shownButtons: [TaskbarButtonInfo] { get }
 }
 
 extension ShellChrome {
-    func update(snapshot: TaskbarSnapshot) {
-        update(items: snapshot.items)
-    }
+    var shownButtons: [TaskbarButtonInfo] { [] }
 }
 
 extension ShellLayout {
-    init(variant: ShellVariant, screen: NSScreen) {
-        self.init(variant: variant, screenFrame: screen.frame, visibleFrame: screen.visibleFrame)
+    init(variant: ShellVariant, screen: NSScreen, dockReservation: DockReservation = .off) {
+        self.init(
+            variant: variant,
+            screenFrame: screen.frame,
+            visibleFrame: screen.visibleFrame,
+            dockReservation: dockReservation
+        )
     }
 }
 

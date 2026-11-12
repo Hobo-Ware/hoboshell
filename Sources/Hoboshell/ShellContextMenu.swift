@@ -7,8 +7,11 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
         let choose: (TaskbarGrouping) -> Void
     }
 
-    private let hideSystemUIItem = DSMenuItem("Hide the Mac Dock and desktop icons") {
+    private let replaceDockItem = DSMenuItem("Replace the Mac Dock and desktop icons") {
         SystemChrome.setWanted(!SystemChrome.isWanted)
+    }
+    private let keepAboveBarItem = DSMenuItem("Keep windows above the taskbar") {
+        WindowNudger.setEnabled(!WindowNudger.isEnabled)
     }
     private let commandTabItem = DSMenuItem("Use Hoboshell for Command+Tab") {
         SwitcherSettings.setTakesCommandTab(!SwitcherSettings.takesCommandTab)
@@ -28,7 +31,8 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
             addItem(DSMenu.submenu("Group windows", groupingItems.map(\.1)))
         }
         addItem(commandTabItem)
-        addItem(hideSystemUIItem)
+        addItem(keepAboveBarItem)
+        addItem(replaceDockItem)
         delegate = self
         addItem(DSMenu.separator())
         addItem(DSMenuItem("Quit Hoboshell") {
@@ -42,7 +46,8 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
-        hideSystemUIItem.state = SystemChrome.isWanted ? .on : .off
+        replaceDockItem.state = SystemChrome.isWanted ? .on : .off
+        keepAboveBarItem.state = WindowNudger.isEnabled ? .on : .off
         commandTabItem.state = SwitcherSettings.takesCommandTab ? .on : .off
         guard let current = groupingChoice?.current() else { return }
         for (mode, item) in groupingItems {
