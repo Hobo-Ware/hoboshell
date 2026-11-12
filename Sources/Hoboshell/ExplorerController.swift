@@ -18,6 +18,7 @@ final class ExplorerController: NSObject {
     var statusError: String?
 
     let sidebar = ExplorerSidebarView()
+    private var iconPackObserver: NSObjectProtocol?
     let details = ExplorerDetailsView()
     let icons = ExplorerIconsView()
     let statusLabel = DSLabel(style: .caption, color: DSColor.dimText)
@@ -50,6 +51,12 @@ final class ExplorerController: NSObject {
     func start() {
         details.itemsDelegate = self
         icons.itemsDelegate = self
+        iconPackObserver = NotificationCenter.default.addObserver(
+            forName: IconPack.didChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.sidebar.reload()
+            self?.reload()
+        }
         sidebar.onSelect = { [weak self] url in
             self?.navigate(to: url)
         }
