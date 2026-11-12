@@ -59,7 +59,71 @@ def crate(glyph):
       + "".join(f'<circle cx="{x}" cy="{y}" r="3.500" fill="#4A2D14"/>' for x in (39, 217) for y in (89, 125, 161, 197)))
     return d, body + stencil(glyph)
 
-concepts = {"2-suitcase": suitcase, "3-lunchbox": lunchbox, "4-sack": sack, "5-crate": crate}
+import math
+
+def duct_tape(x, y, rot, w=70):
+    return (f'<g transform="rotate({rot} {x} {y})"><rect x="{x - w / 2}" y="{y - 11}" width="{w}" height="22" rx="2" fill="#B9C0CC"/>'
+            f'<rect x="{x - w / 2}" y="{y - 11}" width="{w}" height="5" fill="#fff" opacity=".35"/>'
+            f'<path d="M{x - w / 2 + 6} {y - 11}v22M{x + w / 2 - 6} {y - 11}v22" stroke="#7C8798" stroke-width="1.500" opacity=".6"/></g>')
+
+def cloth(x, y, rot, color, w=36, h=32):
+    return (f'<g transform="rotate({rot} {x} {y})"><rect x="{x - w / 2}" y="{y - h / 2}" width="{w}" height="{h}" rx="4" fill="{color}"/>'
+            f'<rect x="{x - w / 2 + 4}" y="{y - h / 2 + 4}" width="{w - 8}" height="{h - 8}" rx="2" fill="none" stroke="#fff" stroke-width="2.500" stroke-dasharray="5 5" opacity=".85"/></g>')
+
+def rope(d):
+    return (f'<path d="{d}" fill="none" stroke="#6E5327" stroke-width="9" stroke-linecap="round"/>'
+            f'<path d="{d}" fill="none" stroke="#D9C08A" stroke-width="6" stroke-linecap="round" stroke-dasharray="7 4"/>')
+
+def scuffs(points):
+    return '<g stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".22">' + "".join(f'<path d="M{x} {y}l{dx} {dy}"/>' for x, y, dx, dy in points) + '</g>'
+
+def under_patch(result, extra):
+    defs, body = result
+    cut = body.rindex('<g transform="translate(') if '<g transform="translate(' in body else len(body)
+    return defs, body[:cut] + extra + body[cut:]
+
+def hobo_suitcase(glyph):
+    extra = (rope("M22 138c40 10 170 10 212 0") + rope("M22 150c40 10 170 10 212 0")
+             + '<circle cx="44" cy="146" r="9" fill="#D9C08A" stroke="#6E5327" stroke-width="3"/>'
+             + duct_tape(196, 92, 28, 76) + cloth(52, 192, -12, "#5F86BA") + cloth(208, 196, 9, "#7E8850", 30, 26)
+             + scuffs([(96, 88, 18, 4), (150, 204, 22, -3), (112, 98, 10, 2)])
+             + '<ellipse cx="150" cy="96" rx="16" ry="7" fill="#2B190A" opacity=".25"/>')
+    return under_patch(suitcase(glyph), extra)
+
+def hobo_sack(glyph):
+    extra = (cloth(74, 128, -18, "#5F86BA", 40, 34) + cloth(190, 190, 14, "#7E8850", 34, 30)
+             + '<path d="M176 112l8 10 8-10 8 10 8-10" fill="none" stroke="#5E4A22" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'
+             + '<ellipse cx="66" cy="186" rx="9" ry="6" fill="#3B2410" opacity=".55"/><path d="M58 186l-6-4M60 192l-7 3M72 192l5 5" stroke="#5E4A22" stroke-width="2.500" stroke-linecap="round"/>'
+             + '<ellipse cx="150" cy="204" rx="26" ry="6" fill="#5E4A22" opacity=".18"/>')
+    return under_patch(sack(glyph), extra)
+
+def hobo_crate(glyph):
+    defs, body = crate(glyph)
+    body = body.replace('fill="#3B2410" opacity=".8"', 'fill="#C8102B" opacity=".92"').replace('fill="#3B2410" opacity=".7"', 'fill="#C8102B" opacity=".9"')
+    extra = ('<path d="M150 110l10 8-6 6 12 6-8 10h60v-30z" fill="#4A2D14"/>'
+             + duct_tape(184, 196, -8, 80) + rope("M26 164c50 12 150 12 204 0")
+             + '<path d="M60 80l3 14M196 190l-4 12" stroke="#4A2D14" stroke-width="3" stroke-linecap="round" opacity=".7"/>'
+             + scuffs([(70, 190, 26, 2), (120, 84, 20, 3)]))
+    cut = body.rindex('<g fill="#C8102B"')
+    return defs, body[:cut] + extra + body[cut:]
+
+def tin_can(glyph):
+    d = (lg("b", [(0, "#6B768B"), (.2, "#E4E9F1"), (.5, "#BFC8D5"), (.85, "#8791A3"), (1, "#596375")], True)
+         + lg("l", [(0, "#D9CFAE"), (.3, "#FBF3D8"), (.7, "#EFE4C0"), (1, "#C9BE99")], True)
+         + lg("m", [(0, "#F4F6FA"), (1, "#AEB7C6")]))
+    teeth = " ".join(f"{176 + (58 if i % 2 == 0 else 50) * math.cos(math.pi * i / 14):.1f},{50 + (17 if i % 2 == 0 else 13) * math.sin(math.pi * i / 14):.1f}" for i in range(28))
+    ridges = "".join(f'<path d="M56 {y}a72 18 0 0 0 144 0" fill="none" stroke="#4E586B" stroke-width="2.500" opacity=".5"/>' for y in (98, 108, 186, 196))
+    body = (f'<g transform="rotate(-24 176 50)"><polygon points="{teeth}" fill="url(#m)" stroke="#7C8798" stroke-width="2"/><ellipse cx="176" cy="50" rx="34" ry="9" fill="none" stroke="#9AA4B6" stroke-width="2"/></g>'
+      '<path d="M56 84h144v112a72 18 0 0 1-144 0z" fill="url(#b)"/>' + ridges
+      + '<path d="M56 118a72 18 0 0 0 144 0v60a72 18 0 0 1-144 0z" fill="url(#l)"/>'
+      '<ellipse cx="128" cy="84" rx="72" ry="18" fill="#DDE3EC"/><ellipse cx="128" cy="85" rx="64" ry="14" fill="#2E3440"/>'
+      '<path d="M70 86l10-12 10 10 10-12 10 10 12-12 10 12 12-10 10 10 10-12 8 14" fill="none" stroke="#DDE3EC" stroke-width="5" stroke-linejoin="round"/>'
+      '<ellipse cx="80" cy="170" rx="12" ry="20" fill="#2E3440" opacity=".14"/><ellipse cx="184" cy="132" rx="9" ry="14" fill="#2E3440" opacity=".12"/>'
+      '<g fill="#B85A2C" opacity=".75"><circle cx="186" cy="202" r="5"/><circle cx="72" cy="104" r="4"/><circle cx="176" cy="196" r="2.500"/></g>'
+      + duct_tape(70, 150, 78, 60))
+    return d, body + patch(glyph, -8, 0)
+
+concepts = {"2-suitcase": hobo_suitcase, "3-bean-can": tin_can, "4-sack": hobo_sack, "5-crate": hobo_crate}
 names = ["folder", "documents", "downloads", "pictures", "music"]
 here = pathlib.Path(__file__).resolve().parent
 out = here / "1-cardboard"; out.mkdir(exist_ok=True)
