@@ -41,21 +41,24 @@ final class WindowNudger {
         }
         let windows = pending
         pending = []
-        for window in windows {
-            nudge(window)
+        guard Self.isEnabled, let bar = barFrame, let primaryHeight = NSScreen.screens.first?.frame.height else { return }
+        let screens = NSScreen.screens.map(\.frame)
+        AXWorker.shared.async {
+            for window in windows {
+                Self.nudge(window, bar: bar, screens: screens, primaryHeight: primaryHeight)
+            }
         }
     }
 
-    private func nudge(_ window: AXUIElement) {
-        guard Self.isEnabled, Accessibility.isTrusted, let bar = barFrame,
+    private static func nudge(_ window: AXUIElement, bar: CGRect, screens: [CGRect], primaryHeight: CGFloat) {
+        guard isEnabled, Accessibility.isTrusted,
               WindowCatalog.attribute(kAXSubroleAttribute, of: window) as? String == kAXStandardWindowSubrole,
               WindowCatalog.attribute(kAXMinimizedAttribute, of: window) as? Bool != true,
               WindowCatalog.attribute("AXFullScreen", of: window) as? Bool != true,
-              let accessibilityFrame = WindowCatalog.frame(of: window),
-              let primaryHeight = NSScreen.screens.first?.frame.height else { return }
+              let accessibilityFrame = WindowCatalog.frame(of: window) else { return }
         let frame = WindowNudge.flipped(accessibilityFrame, primaryScreenHeight: primaryHeight)
-        guard let screen = NSScreen.screens.first(where: { $0.frame.contains(CGPoint(x: frame.midX, y: frame.midY)) }),
-              let nudged = WindowNudge.frame(for: frame, bar: bar, screen: screen.frame) else { return }
+        guard let screen = screens.first(where: { $0.contains(CGPoint(x: frame.midX, y: frame.midY)) }),
+              let nudged = WindowNudge.frame(for: frame, bar: bar, screen: screen) else { return }
         var size = WindowNudge.flipped(nudged, primaryScreenHeight: primaryHeight).size
         guard let value = AXValueCreate(.cgSize, &size) else { return }
         _ = AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, value)

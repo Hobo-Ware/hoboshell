@@ -13,14 +13,16 @@ final class WindowSwitcherPanel: NSPanel {
     var onEnd: (() -> Void)?
 
     private let scroll = NSScrollView()
-    private let rows = NSStackView()
+    private let document = DSFlippedView()
     private var scrollWidth: NSLayoutConstraint?
     private var scrollHeight: NSLayoutConstraint?
+    private var documentHeight: NSLayoutConstraint?
     private var windows: [ShellWindow] = []
-    private var tiles: [DSSwitcherTile] = []
+    private var tiles: [Int: DSSwitcherTile] = [:]
+    private var tileOrder: [Int] = []
     private var selected: Int?
     private var columns = 1
-    private var generation = 0
+    private var iconObserver: NSObjectProtocol?
     private var holding: SwitcherModifier?
     private var screenInUse: NSScreen?
     private var modifierMonitors: [Any] = []
@@ -31,13 +33,7 @@ final class WindowSwitcherPanel: NSPanel {
         super.init(contentRect: .zero, styleMask: DSPanelStyle.styleMask, backing: .buffered, defer: true)
         let background = DSPanelStyle.apply(to: self, kind: .flyout, level: .popUpMenu)
 
-        rows.orientation = .vertical
-        rows.alignment = .leading
-        rows.spacing = Self.tileSpacing
-        rows.translatesAutoresizingMaskIntoConstraints = false
-        let document = DSFlippedView()
         document.translatesAutoresizingMaskIntoConstraints = false
-        DSPanelStyle.pin(rows, to: document)
 
         scroll.drawsBackground = false
         scroll.hasVerticalScroller = false
@@ -47,11 +43,24 @@ final class WindowSwitcherPanel: NSPanel {
         let clip = scroll.contentView
         scrollWidth = scroll.widthAnchor.constraint(equalToConstant: DSSwitcherTile.size.width)
         scrollHeight = scroll.heightAnchor.constraint(equalToConstant: DSSwitcherTile.size.height)
+        documentHeight = document.heightAnchor.constraint(equalToConstant: DSSwitcherTile.size.height)
         NSLayoutConstraint.activate([
             document.topAnchor.constraint(equalTo: clip.topAnchor),
             document.leadingAnchor.constraint(equalTo: clip.leadingAnchor),
             document.trailingAnchor.constraint(equalTo: clip.trailingAnchor),
-        ] + [scrollWidth, scrollHeight].compactMap { $0 })
+        ] + [scrollWidth, scrollHeight, documentHeight].compactMap { $0 })
+        iconObserver = NotificationCenter.default.addObserver(
+            forName: AppIcons.didLoad, object: nil, queue: .main
+        ) { [weak self] _ in
+            guard self?.isShowing == true else { return }
+            self?.reconcile()
+        }
+    }
+
+    deinit {
+        if let iconObserver {
+            NotificationCenter.default.removeObserver(iconObserver)
+        }
     }
 
     override var canBecomeKey: Bool { false }
@@ -66,8 +75,9 @@ final class WindowSwitcherPanel: NSPanel {
         self.holding = holding
         screenInUse = screen
         isShowing = true
-        rebuild()
+        reconcile()
         orderFrontRegardless()
+        refreshPictures()
         if let holding {
             guard Self.isHeld(holding) else {
                 finish(commit: true)
@@ -86,14 +96,10 @@ final class WindowSwitcherPanel: NSPanel {
             finish(commit: false)
             return
         }
-        guard ordered.map(\.id) != windows.map(\.id) else {
-            windows = ordered
-            return
-        }
-        let selectedID = selected.map { windows[$0].id }
+        let selectedID = selected.flatMap { windows.indices.contains($0) ? windows[$0].id : nil }
         windows = ordered
         selected = ordered.firstIndex { $0.id == selectedID } ?? min(selected ?? 0, ordered.count - 1)
-        rebuild()
+        reconcile()
     }
 
     func apply(_ action: SwitcherAction) {
@@ -123,13 +129,11 @@ final class WindowSwitcherPanel: NSPanel {
     func finish(commit: Bool) {
         guard isShowing, !staysOpenForCapture else { return }
         isShowing = false
-        generation += 1
         modifierMonitors.forEach(NSEvent.removeMonitor)
         modifierMonitors = []
         orderOut(nil)
         let chosen = selected.flatMap { windows.indices.contains($0) ? windows[$0] : nil }
         windows = []
-        tiles = []
         selected = nil
         onEnd?()
         if commit, let chosen {
@@ -160,7 +164,7 @@ final class WindowSwitcherPanel: NSPanel {
     }
 
     private func select(_ index: Int?) {
-        guard let index, tiles.indices.contains(index) else { return }
+        guard let index, windows.indices.contains(index) else { return }
         selected = index
         refreshSelection()
     }
@@ -175,16 +179,11 @@ final class WindowSwitcherPanel: NSPanel {
         let previous = selected ?? 0
         windows = remaining
         selected = remaining.firstIndex { $0.id == selectedID } ?? min(previous, remaining.count - 1)
-        rebuild()
+        reconcile()
     }
 
-    private func rebuild() {
-        generation += 1
-        let shown = generation
-        rows.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        tiles = []
+    private func reconcile() {
         guard let screen = screenInUse else { return }
-
         let tileSize = DSSwitcherTile.size
         let limit = NSSize(width: screen.frame.width * Self.screenShare, height: screen.frame.height * Self.screenShare)
         let layout = SwitcherGrid.layout(
@@ -195,67 +194,88 @@ final class WindowSwitcherPanel: NSPanel {
         )
         columns = max(layout.columns, 1)
 
-        for start in stride(from: 0, to: windows.count, by: columns) {
-            let row = NSStackView()
-            row.orientation = .horizontal
-            row.alignment = .top
-            row.spacing = Self.tileSpacing
-            for index in start..<min(start + columns, windows.count) {
-                let tile = makeTile(for: windows[index], at: index, shown: shown)
-                row.addArrangedSubview(tile)
-                tiles.append(tile)
-            }
-            rows.addArrangedSubview(row)
+        let diff = ListDiff(old: tileOrder, new: windows.map(\.id))
+        for id in diff.removed {
+            tiles.removeValue(forKey: id)?.removeFromSuperview()
         }
+        for (index, window) in windows.enumerated() {
+            let tile = tiles[window.id] ?? makeTile(for: window)
+            tile.show(title: window.title, icon: AppIcons.shared.image(forPath: window.app.bundleURL?.path))
+            tile.frame = NSRect(
+                x: CGFloat(index % columns) * (tileSize.width + Self.tileSpacing),
+                y: CGFloat(index / columns) * (tileSize.height + Self.tileSpacing),
+                width: tileSize.width,
+                height: tileSize.height
+            )
+        }
+        tileOrder = windows.map(\.id)
 
         let width = CGFloat(layout.columns) * tileSize.width + CGFloat(layout.columns - 1) * Self.tileSpacing
         let height = CGFloat(layout.visibleRows) * tileSize.height + CGFloat(layout.visibleRows - 1) * Self.tileSpacing
+        let rows = max(layout.rows, 1)
+        documentHeight?.constant = CGFloat(rows) * tileSize.height + CGFloat(rows - 1) * Self.tileSpacing
         scrollWidth?.constant = width
         scrollHeight?.constant = height
         scroll.hasVerticalScroller = layout.rows > layout.visibleRows
         scroll.autohidesScrollers = true
         let panelSize = NSSize(width: width + Self.padding * 2, height: height + Self.padding * 2)
-        setFrame(
-            NSRect(
-                x: screen.frame.midX - panelSize.width / 2,
-                y: screen.frame.midY - panelSize.height / 2,
-                width: panelSize.width,
-                height: panelSize.height
-            ),
-            display: true
+        let target = NSRect(
+            x: screen.frame.midX - panelSize.width / 2,
+            y: screen.frame.midY - panelSize.height / 2,
+            width: panelSize.width,
+            height: panelSize.height
         )
+        if frame != target {
+            setFrame(target, display: true)
+        }
         refreshSelection()
     }
 
-    private func makeTile(for window: ShellWindow, at index: Int, shown: Int) -> DSSwitcherTile {
+    private func makeTile(for window: ShellWindow) -> DSSwitcherTile {
         let tile = DSSwitcherTile()
-        let icon = HoboIcon.image(for: window.app)
-        tile.show(title: window.title, icon: icon)
+        let id = window.id
         tile.onPress = { [weak self] in
-            self?.select(index)
-            self?.finish(commit: true)
+            guard let self, let index = self.windows.firstIndex(where: { $0.id == id }) else { return }
+            self.select(index)
+            self.finish(commit: true)
         }
+        if let remembered = WindowPreview.cached(id) {
+            tile.show(picture: remembered)
+        }
+        document.addSubview(tile)
+        tiles[id] = tile
+        capturePicture(for: window, in: tile)
+        return tile
+    }
+
+    private func refreshPictures() {
+        for window in windows {
+            if let tile = tiles[window.id] {
+                capturePicture(for: window, in: tile)
+            }
+        }
+    }
+
+    private func capturePicture(for window: ShellWindow, in tile: DSSwitcherTile) {
         let request = PreviewRequest(
             windowID: window.id,
             pid: window.app.processIdentifier,
             title: window.title,
-            frame: window.frame,
             isMinimized: window.isMinimized
         )
         WindowPreview.askForAccessOnce()
         WindowPreview.capture(request, limit: DSSwitcherTile.pictureSize) { [weak self, weak tile] image in
-            guard let self, self.generation == shown, let image else { return }
-            tile?.show(picture: image)
+            guard let self, let tile, self.tiles[window.id] === tile, let image else { return }
+            tile.show(picture: image)
         }
-        return tile
     }
 
     private func refreshSelection() {
-        for (index, tile) in tiles.enumerated() {
-            tile.isSelected = index == selected
+        for (index, window) in windows.enumerated() {
+            tiles[window.id]?.isSelected = index == selected
         }
-        if let selected, tiles.indices.contains(selected) {
-            tiles[selected].scrollToVisible(tiles[selected].bounds)
+        if let selected, windows.indices.contains(selected), let tile = tiles[windows[selected].id] {
+            tile.scrollToVisible(tile.bounds)
         }
     }
 }
