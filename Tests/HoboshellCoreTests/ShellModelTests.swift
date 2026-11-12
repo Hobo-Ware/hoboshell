@@ -124,4 +124,18 @@ import Testing
         #expect(!ListDiff(old: ["a", "b"], new: ["a", "b", "c"]).isEmpty)
         #expect(!ListDiff(old: ["a", "b"], new: ["a", "b", "c"]).isReordered)
     }
+
+    @Test func appsWithoutWindowsGetAButtonWhenAccessibilityIsOff() {
+        let state = Shell.running(apps: [Shell.app(1, "mail"), Shell.app(2, "notes")])
+        let buttons = TaskbarModel.make(state, grouping: .never, availableWidth: 1_200, spacing: 4, listsAppsWithoutWindows: true)
+        #expect(buttons.map(\.id) == ["a:mail", "a:notes"])
+        #expect(buttons.map(\.isPinned) == [false, false])
+        #expect(buttons.map(\.isRunning) == [true, true])
+    }
+
+    @Test func minimisingTheFocusedWindowClearsItsFocus() {
+        var state = Shell.running(apps: [Shell.app(1, active: true)], windows: [Shell.window(10, 1, focused: true)])
+        state.apply(ShellEvent(.windowMinimized(id: 10)))
+        #expect(Shell.buttons(state).map(\.isActive) == [false])
+    }
 }

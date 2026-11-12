@@ -22,14 +22,17 @@ public enum TaskbarModel {
         _ state: ShellState,
         grouping: TaskbarGrouping,
         availableWidth: CGFloat,
-        spacing: CGFloat
+        spacing: CGFloat,
+        listsAppsWithoutWindows: Bool = false
     ) -> [TaskbarButtonSpec] {
         let appsByPID = Dictionary(state.apps.map { ($0.pid, $0) }, uniquingKeysWith: { first, _ in first })
         let visible = state.visibleWindows.filter { appsByPID[$0.pid] != nil }
         let regular = state.apps.filter { $0.policy == .regular }
         let runningApps = Set(regular.map(\.appID))
+        let withWindows = Set(visible.map(\.pid))
+        let appOnly = listsAppsWithoutWindows ? regular.filter { !withWindows.contains($0.pid) }.map(\.appID) : []
         let slots = TaskbarSlots.arrange(
-            pins: state.pins,
+            pins: TaskbarPins(state.pins.ids + appOnly),
             windowApps: visible.map { appsByPID[$0.pid]?.appID ?? "" },
             runningApps: runningApps,
             grouping: grouping,
@@ -51,7 +54,7 @@ public enum TaskbarModel {
                 name: app?.name ?? windows.first?.title ?? "",
                 title: windows.count == 1 ? windows[0].title : app?.name ?? "",
                 windowIDs: windows.map(\.id),
-                isPinned: slot.isPinned,
+                isPinned: state.pins.contains(slot.appID),
                 isRunning: slot.isRunning,
                 isActive: isActive,
                 isBackground: windows.isEmpty && windowless.contains(slot.appID),

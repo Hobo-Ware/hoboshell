@@ -5,26 +5,34 @@ import HoboshellCore
 final class DockBadges {
     private static let dockBundleID = "com.apple.dock"
     private static let statusLabelAttribute = "AXStatusLabel"
-    private static let messagingTimeout: Float = 0.25
+    private static let pollInterval: TimeInterval = 1
     private let queue = DispatchQueue(label: "dev.hoboware.hoboshell.badges", qos: .utility)
+    private var timer: DispatchSourceTimer?
+    private var lastPosted: [String: String]?
 
-    func load(completion: @escaping ([String: String]) -> Void) {
-        guard Accessibility.isTrusted else {
-            completion([:])
-            return
+    func start() {
+        guard timer == nil else { return }
+        let source = DispatchSource.makeTimerSource(queue: queue)
+        source.schedule(deadline: .now(), repeating: Self.pollInterval, leeway: .milliseconds(100))
+        source.setEventHandler { [weak self] in
+            self?.poll()
         }
-        queue.async {
-            let badges = Self.read()
-            DispatchQueue.main.async {
-                completion(badges)
-            }
-        }
+        source.resume()
+        timer = source
+    }
+
+    private func poll() {
+        guard Accessibility.isTrusted else { return }
+        let observedAt = ShellClock.now()
+        let badges = Self.read()
+        guard badges != lastPosted else { return }
+        lastPosted = badges
+        ShellStore.post(.badgesRead(badges), observedAt: observedAt)
     }
 
     private static func read() -> [String: String] {
         guard let dock = NSRunningApplication.runningApplications(withBundleIdentifier: dockBundleID).first else { return [:] }
         let root = AXUIElementCreateApplication(dock.processIdentifier)
-        AXUIElementSetMessagingTimeout(root, messagingTimeout)
         var badges: [String: String] = [:]
         for list in children(of: root) {
             for item in children(of: list) {

@@ -8,6 +8,7 @@ public struct ShellApp: Equatable {
     public let pid: Int32
     public var bundleID: String?
     public var name: String
+    public var bundlePath: String?
     public var policy: Policy
     public var isHidden: Bool
     public var isActive: Bool
@@ -17,6 +18,7 @@ public struct ShellApp: Equatable {
         pid: Int32,
         bundleID: String?,
         name: String,
+        bundlePath: String? = nil,
         policy: Policy = .regular,
         isHidden: Bool = false,
         isActive: Bool = false
@@ -24,6 +26,7 @@ public struct ShellApp: Equatable {
         self.pid = pid
         self.bundleID = bundleID
         self.name = name
+        self.bundlePath = bundlePath
         self.policy = policy
         self.isHidden = isHidden
         self.isActive = isActive

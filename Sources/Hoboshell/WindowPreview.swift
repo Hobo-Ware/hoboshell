@@ -7,7 +7,6 @@ struct PreviewRequest {
     let windowID: Int
     let pid: pid_t
     let title: String
-    let frame: CGRect?
     let isMinimized: Bool
 }
 
@@ -49,8 +48,9 @@ enum WindowPreview {
             completion(remembered)
             return
         }
-        Task {
-            let outcome = await image(request, limit: limit)
+        Task.detached {
+            let frame = await WindowCatalog.shared.frame(of: request.windowID)
+            let outcome = await image(request, frame: frame, limit: limit)
             await MainActor.run {
                 switch outcome {
                 case .picture(let image):
@@ -79,13 +79,13 @@ enum WindowPreview {
     }
 
     @available(macOS 14.0, *)
-    private static func image(_ request: PreviewRequest, limit: CGSize) async -> Outcome {
+    private static func image(_ request: PreviewRequest, frame: CGRect?, limit: CGSize) async -> Outcome {
         guard let content = try? await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: false) else {
             return .failure("the list of windows could not be read")
         }
         let windows = content.windows.filter { $0.owningApplication?.processID == request.pid && $0.windowLayer == 0 }
         let outcome = WindowMatch.resolve(
-            frame: request.frame,
+            frame: frame,
             title: request.title,
             among: windows.map {
                 WindowCandidate(frame: $0.frame, title: $0.title ?? "", isNormal: !$0.frame.isEmpty)
@@ -100,7 +100,7 @@ enum WindowPreview {
             return .failure("no matching window: \(failure.rawValue) among \(windows.count)")
         }
 
-        let size = PreviewCardLayout.fit(request.frame?.size ?? windows[index].frame.size, within: limit)
+        let size = PreviewCardLayout.fit(frame?.size ?? windows[index].frame.size, within: limit)
         let configuration = SCStreamConfiguration()
         configuration.width = Int(size.width * pixelsPerPoint)
         configuration.height = Int(size.height * pixelsPerPoint)
