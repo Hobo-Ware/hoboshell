@@ -304,8 +304,12 @@ enum GalleryContent {
         slider.doubleValue = 0.55
         let disabled = DSSlider()
         disabled.isEnabled = false
-        return GalleryRow.section("Tray: DSTrayIcon, DSSlider", [
+        return GalleryRow.section("Tray: DSTrayIcon, DSCalendarCell, DSSlider", [
             GalleryRow.make("background app", icons),
+            GalleryRow.make("DSCalendarCell", [
+                ("day", DSCalendarCell("12", style: .day)), ("today", DSCalendarCell("13", style: .today)),
+                ("week number", DSCalendarCell("46", style: .weekNumber)), ("weekday", DSCalendarCell("M", style: .weekday)),
+            ]),
             GalleryRow.make("DSSlider", [("level", sized(slider)), ("disabled", sized(disabled))]),
         ])
     }

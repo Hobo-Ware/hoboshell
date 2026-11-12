@@ -30,7 +30,9 @@ final class SystemTrayView: NSStackView {
         spacing = DSSpacing.xs
         alignment = .centerY
         setHuggingPriority(.required, for: .horizontal)
-        timeFormatter.dateFormat = "HH:mm"
+        timeFormatter.locale = .autoupdatingCurrent
+        timeFormatter.timeStyle = .short
+        dateFormatter.locale = .autoupdatingCurrent
         dateFormatter.dateStyle = .short
 
         clock.alignment = .right
@@ -42,10 +44,14 @@ final class SystemTrayView: NSStackView {
             TrayFlyouts.shared.toggle(.volume)
         }
         let batteryItem = Self.item([batteryIcon, batteryLabel], height: height, tip: "Battery settings", pane: TraySettings.battery)
-        let clockItem = Self.item([clock], height: height, tip: "Date and time settings", pane: TraySettings.dateAndTime)
+        let clockItem = DSButton(views: [clock], height: height, tip: "Calendar")
+        clockItem.onPress = {
+            TrayFlyouts.shared.toggle(.calendar)
+        }
         self.batteryItem = batteryItem
         trayItems = [networkItem, volumeItem, batteryItem, clockItem]
         self.volumeItem = volumeItem
+        TrayFlyouts.shared.register(.calendar) { [weak clockItem] in clockItem }
         addArrangedSubview(appsView)
         trayItems.forEach(addArrangedSubview)
         TrayFlyouts.shared.register(.apps) { [weak self] in
