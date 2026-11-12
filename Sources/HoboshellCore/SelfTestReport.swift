@@ -2,11 +2,18 @@ public struct SelfTestStep: Equatable {
     public let name: String
     public let milliseconds: Double?
     public let failure: String?
+    public let budgetMilliseconds: Double
 
-    public init(name: String, milliseconds: Double?, failure: String? = nil) {
+    public init(
+        name: String,
+        milliseconds: Double?,
+        failure: String? = nil,
+        budgetMilliseconds: Double = SelfTestReport.budgetMilliseconds
+    ) {
         self.name = name
         self.milliseconds = milliseconds
         self.failure = failure
+        self.budgetMilliseconds = budgetMilliseconds
     }
 }
 
@@ -23,7 +30,7 @@ public struct SelfTestReport: Equatable {
 
     public func passes(_ step: SelfTestStep) -> Bool {
         guard step.failure == nil, let milliseconds = step.milliseconds else { return false }
-        return milliseconds <= Self.budgetMilliseconds
+        return milliseconds <= step.budgetMilliseconds
     }
 
     public var allPassed: Bool {
@@ -35,7 +42,8 @@ public struct SelfTestReport: Equatable {
         let time = step.milliseconds.map { "\(Self.format($0)) ms" } ?? "no time"
         let verdict = passes(step) ? "PASS" : "FAIL"
         let reason = step.failure.map { " (\($0))" } ?? ""
-        return "step \(index + 1) \(step.name): \(time) \(verdict)\(reason)"
+        let ownBudget = step.budgetMilliseconds == Self.budgetMilliseconds ? "" : " (budget \(Self.format(step.budgetMilliseconds)) ms)"
+        return "step \(index + 1) \(step.name): \(time) \(verdict)\(reason)\(ownBudget)"
     }
 
     public var summary: String {

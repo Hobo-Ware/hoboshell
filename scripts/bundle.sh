@@ -9,6 +9,7 @@ swift build -c release
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS"
 cp .build/release/Hoboshell "$app/Contents/MacOS/Hoboshell"
+cp .build/release/HoboshellProbe dist/HoboshellProbe
 cp Support/Info.plist "$app/Contents/Info.plist"
 
 iconset="$(mktemp -d)/AppIcon.iconset"
@@ -20,10 +21,10 @@ done
 iconutil -c icns "$iconset" -o "$app/Contents/Resources/AppIcon.icns"
 rm -rf "$(dirname "$iconset")"
 identity="${HOBOSHELL_SIGN_IDENTITY:-Hoboshell Dev}"
-if security find-identity -p codesigning | grep -q "\"$identity\""; then
-  codesign --force --sign "$identity" "$app"
-else
-  codesign --force --sign - "$app"
+if ! security find-identity -p codesigning | grep -q "\"$identity\""; then
+  identity="-"
 fi
+codesign --force --sign "$identity" dist/HoboshellProbe
+codesign --force --sign "$identity" "$app"
 
 echo "$app"
