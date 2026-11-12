@@ -5,6 +5,11 @@ final class DSSearchField: NSView {
     var onSubmit: ((String) -> Void)?
     var onCancel: (() -> Void)?
 
+    var onCommand: ((Selector) -> Bool)? {
+        get { input.onCommand }
+        set { input.onCommand = newValue }
+    }
+
     var stringValue: String {
         get { input.stringValue }
         set {
@@ -30,14 +35,14 @@ final class DSSearchField: NSView {
     private let input: DSTextField
     private let clearButton: DSButton
 
-    init(placeholder: String = "Search", height: DSControlHeight = .regular) {
+    init(placeholder: String = "Search", height: DSControlHeight = .regular, radius: CGFloat = DSRadius.control) {
         clearButton = DSButton(symbol: "xmark.circle.fill", tip: "Clear", height: .compact)
         let icon = DSIconView(
             side: DSIconSize.inline,
             image: DSIconSize.symbol("magnifyingglass", description: "Search"),
             tint: DSColor.dimText
         )
-        input = DSTextField(placeholder: placeholder, height: height, leading: icon, trailing: clearButton)
+        input = DSTextField(placeholder: placeholder, height: height, leading: icon, trailing: clearButton, radius: radius)
         super.init(frame: .zero)
         input.translatesAutoresizingMaskIntoConstraints = false
         addSubview(input)

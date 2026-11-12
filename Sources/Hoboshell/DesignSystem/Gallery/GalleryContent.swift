@@ -10,7 +10,7 @@ enum GalleryContent {
 
     static func page() -> NSView {
         let sections = [
-            colors(), scales(), text(), buttons(), toggles(), fields(), menus(), rows(), grid(), chrome(), taskbar(), dialogs(),
+            colors(), scales(), text(), buttons(), toggles(), fields(), menus(), rows(), grid(), startMenu(), switcher(), chrome(), taskbar(), tray(), dialogs(),
         ]
         let stack = NSStackView(views: [DSLabel("Hoboshell design system", style: .title, weight: .semibold)] + sections)
         stack.orientation = .vertical
@@ -23,10 +23,10 @@ enum GalleryContent {
         let roles: [(String, NSColor)] = [
             ("surface", DSColor.surface), ("raisedSurface", DSColor.raisedSurface), ("field", DSColor.field),
             ("border", DSColor.border), ("text", DSColor.text), ("dimText", DSColor.dimText),
-            ("accent", DSColor.accent), ("danger", DSColor.danger), ("focusRing", DSColor.focusRing),
+            ("accent", DSColor.accent), ("onAccent", DSColor.onAccent), ("danger", DSColor.danger), ("focusRing", DSColor.focusRing),
         ]
         let overlays: [(String, NSColor)] = [
-            ("faint", DSColor.faint), ("hover", DSColor.hover), ("pressed", DSColor.pressed), ("selected", DSColor.selected),
+            ("faint", DSColor.faint), ("hover", DSColor.hover), ("pressed", DSColor.pressed), ("selected", DSColor.selected), ("accentTint", DSColor.accentTint), ("runMark", DSColor.runMark),
         ]
         let desktops: [(String, NSColor)] = ShellVariant.allCases.map { ($0.displayName, DSColor.desktop(for: $0)) }
         return GalleryRow.section("Colour roles", [
@@ -43,12 +43,13 @@ enum GalleryContent {
         ]
         let radii: [(String, CGFloat)] = [("control 4", DSRadius.control), ("card 8", DSRadius.card), ("panel 12", DSRadius.panel)]
         let heights: [(String, CGFloat)] = [
-            ("compact 24", DSControlHeight.compact.value), ("regular 32", DSControlHeight.regular.value),
+            ("compact 24", DSControlHeight.compact.value), ("row 28", DSControlHeight.row.value), ("regular 32", DSControlHeight.regular.value),
             ("taskbar 40", DSControlHeight.taskbar.value),
         ]
         let icons: [(String, CGFloat)] = [
-            ("inline 16", DSIconSize.inline), ("toolbar 20", DSIconSize.toolbar),
+            ("inline 16", DSIconSize.inline), ("row 18", DSIconSize.row), ("toolbar 20", DSIconSize.toolbar),
             ("taskbar 24", DSIconSize.taskbar), ("grid 48", DSIconSize.grid),
+            ("picture 96", DSIconSize.picture),
         ]
         return GalleryRow.section("Values", [
             GalleryRow.make("spacing", spacing.map { ($0.0, block(width: $0.1, height: DSSpacing.l, radius: DSRadius.none)) }),
@@ -108,6 +109,7 @@ enum GalleryContent {
         let text: [(String, NSView)] = [
             ("rest", sized(DSTextField(placeholder: "Name"))), ("filled", sized(filled)),
             ("focus", sized(focused)), ("disabled", sized(disabled)),
+            ("card radius", sized(DSTextField(placeholder: "Name", radius: DSRadius.card))),
         ]
         let searchFilled = DSSearchField(placeholder: "Search")
         searchFilled.stringValue = "report"
@@ -118,6 +120,7 @@ enum GalleryContent {
         let search: [(String, NSView)] = [
             ("rest", sized(DSSearchField(placeholder: "Search"))), ("filled", sized(searchFilled)),
             ("focus", sized(searchFocused)), ("disabled", sized(searchDisabled)),
+            ("card radius", sized(DSSearchField(placeholder: "Search", radius: DSRadius.card))),
         ]
         return GalleryRow.section("DSTextField and DSSearchField", [
             GalleryRow.make("text field", text), GalleryRow.make("search field", search),
@@ -148,7 +151,22 @@ enum GalleryContent {
 
     private static func grid() -> NSView {
         let folder = NSImage(named: NSImage.folderName) ?? NSImage()
-        return GalleryRow.section("DSGridCell", [
+        let photo = NSImage(size: NSSize(width: 96, height: 64), flipped: false) { rect in
+            DSColor.accent.setFill()
+            rect.fill()
+            return true
+        }
+        func tile(_ name: String, _ image: NSImage, isPicture: Bool) -> () -> DSControl {
+            {
+                let tile = DSTile()
+                tile.show(name: name, image: image, isPicture: isPicture)
+                tile.translatesAutoresizingMaskIntoConstraints = false
+                tile.widthAnchor.constraint(equalToConstant: DSTile.size.width).isActive = true
+                tile.heightAnchor.constraint(equalToConstant: DSTile.size.height).isActive = true
+                return tile
+            }
+        }
+        return GalleryRow.section("DSGridCell and DSTile", [
             GalleryRow.states("DSGridCell") {
                 let cell = DSGridCell()
                 cell.show(name: "Documents", icon: folder)
@@ -157,6 +175,56 @@ enum GalleryContent {
                 cell.heightAnchor.constraint(equalToConstant: DSGridCell.size.height).isActive = true
                 return cell
             },
+            GalleryRow.states("DSTile icon", tile("Documents", folder, isPicture: false)),
+            GalleryRow.states("DSTile picture", tile("Holiday photo from the beach in Portugal 2026.jpeg", photo, isPicture: true)),
+        ])
+    }
+
+    private static func startMenu() -> NSView {
+        let application = NSImage(named: NSImage.applicationIconName) ?? NSImage()
+        let letter = DSLetterHeader("A")
+        letter.translatesAutoresizingMaskIntoConstraints = false
+        letter.widthAnchor.constraint(equalToConstant: rowWidth).isActive = true
+        return GalleryRow.section("Start menu pieces", [
+            GalleryRow.states("rail button") {
+                DSButton(image: HoboIcon.home.image(side: DSIconSize.toolbar), height: .regular, tip: "Home")
+            },
+            GalleryRow.states("pinned tile") {
+                let cell = DSGridCell()
+                cell.show(name: "Safari", icon: application)
+                cell.translatesAutoresizingMaskIntoConstraints = false
+                cell.widthAnchor.constraint(equalToConstant: DSGridCell.size.width).isActive = true
+                cell.heightAnchor.constraint(equalToConstant: DSGridCell.size.height).isActive = true
+                return cell
+            },
+            GalleryRow.states("result row") {
+                sized(DSListRow(title: "Quarterly plan.pdf", image: NSImage(named: NSImage.folderName), detail: "Documents"), width: toolbarWidth / 2)
+            },
+            GalleryRow.make("letter header", [("A", letter)]),
+            GalleryRow.make("avatar", [("picture", DSAvatar(side: DSIconSize.taskbar, image: application)), ("none", DSAvatar(side: DSIconSize.taskbar))]),
+        ])
+    }
+
+    private static func switcher() -> NSView {
+        let application = NSImage(named: NSImage.applicationIconName)
+        let photo = NSImage(size: DSSwitcherTile.pictureSize, flipped: false) { rect in
+            DSColor.raisedSurface.setFill()
+            rect.fill()
+            return true
+        }
+        func tile(picture: NSImage?) -> () -> DSControl {
+            {
+                let tile = DSSwitcherTile()
+                tile.show(title: "Quarterly plan - Notes", icon: application)
+                if let picture {
+                    tile.show(picture: picture)
+                }
+                return tile
+            }
+        }
+        return GalleryRow.section("DSSwitcherTile", [
+            GalleryRow.states("icon placeholder", tile(picture: nil)),
+            GalleryRow.states("window picture", tile(picture: photo)),
         ])
     }
 
@@ -200,7 +268,7 @@ enum GalleryContent {
     private static func taskbar() -> NSView {
         let folder = NSImage(named: NSImage.folderName)
         let marks: [(String, NSView)] = [
-            ("none", DSRunMark()), ("running", mark(.running)), ("active", mark(.active)),
+            ("none", DSRunMark()), ("running", mark(.running)), ("active", mark(.active)), ("background", mark(.background)),
         ]
         func button(_ configure: @escaping (DSTaskbarButton) -> Void) -> () -> DSControl {
             {
@@ -214,6 +282,7 @@ enum GalleryContent {
             GalleryRow.states("pinned, not running", button { _ in }),
             GalleryRow.states("running", button { $0.runState = .running }),
             GalleryRow.states("active window", button { $0.runState = .active }),
+            GalleryRow.states("pinned, no window", button { $0.runState = .background }),
             GalleryRow.states("group with count", button {
                 $0.runState = .running
                 $0.countText = "3"
@@ -222,6 +291,26 @@ enum GalleryContent {
                 $0.runState = .running
                 $0.notificationText = "12"
             }),
+        ])
+    }
+
+    private static func tray() -> NSView {
+        let folder = NSImage(named: NSImage.folderName)
+        let icons: [(String, NSView)] = [
+            ("icon", DSTrayIcon(icon: folder, tip: "Documents")),
+            ("with unread badge", DSTrayIcon(icon: folder, tip: "Documents", badge: "12")),
+        ]
+        let slider = DSSlider()
+        slider.doubleValue = 0.55
+        let disabled = DSSlider()
+        disabled.isEnabled = false
+        return GalleryRow.section("Tray: DSTrayIcon, DSCalendarCell, DSSlider", [
+            GalleryRow.make("background app", icons),
+            GalleryRow.make("DSCalendarCell", [
+                ("day", DSCalendarCell("12", style: .day)), ("today", DSCalendarCell("13", style: .today)),
+                ("week number", DSCalendarCell("46", style: .weekNumber)), ("weekday", DSCalendarCell("M", style: .weekday)),
+            ]),
+            GalleryRow.make("DSSlider", [("level", sized(slider)), ("disabled", sized(disabled))]),
         ])
     }
 

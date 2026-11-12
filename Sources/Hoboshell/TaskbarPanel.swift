@@ -11,19 +11,33 @@ final class TaskbarPanel: NSPanel, ShellChrome {
     private let itemStack = NSStackView()
     private let previousButton = DSButton(symbol: "chevron.left", tip: "Previous windows", height: .taskbar)
     private let nextButton = DSButton(symbol: "chevron.right", tip: "Next windows", height: .taskbar)
-    private var snapshot = TaskbarSnapshot(items: [])
-    private var shownKey = ""
-    private var pins = TaskbarPinStore.loadPins()
+    private lazy var buttons = KeyedStack<TaskbarButton>(stack: itemStack)
+    private var state = ShellState()
+    private var isTrusted = true
+    private var specs: [String: TaskbarButtonSpec] = [:]
     private var grouping = TaskbarPinStore.loadGrouping()
     private var firstIndex = 0
     private var isReordering = false
+    private var hasPresented = false
     private var page = TaskbarPage(range: 0..<0, overflows: false, hasPrevious: false, hasNext: false)
-    private var buttons: [(model: TaskbarButtonModel, view: TaskbarButton)] = []
     private let previewCard = PreviewCardPanel()
+    private var iconObserver: NSObjectProtocol?
 
     init(layout: ShellLayout, switchTitle: String) {
         super.init(contentRect: layout.bar, styleMask: DSPanelStyle.styleMask, backing: .buffered, defer: false)
-        buildContent(in: DSPanelStyle.apply(to: self, kind: .bar), switchTitle: switchTitle)
+        let kind: DSPanelStyle.Kind = layout.dockReservation.isOn ? .opaqueBar : .bar
+        buildContent(in: DSPanelStyle.apply(to: self, kind: kind), switchTitle: switchTitle)
+        iconObserver = NotificationCenter.default.addObserver(
+            forName: AppIcons.didLoad, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.present()
+        }
+    }
+
+    deinit {
+        if let iconObserver {
+            NotificationCenter.default.removeObserver(iconObserver)
+        }
     }
 
     override var canBecomeKey: Bool { false }
@@ -40,37 +54,40 @@ final class TaskbarPanel: NSPanel, ShellChrome {
 
     func reposition(to layout: ShellLayout) {
         setFrame(layout.bar, display: true)
-        rebuild(force: true)
+        present()
     }
 
     func startMenuOrigin(menuSize: NSSize) -> NSPoint {
         NSPoint(x: frame.minX + DSSpacing.s, y: frame.maxY + DSSpacing.s)
     }
 
-    func update(items: [TaskbarItem]) {
-        update(snapshot: TaskbarSnapshot(items: items))
+    var shownButtons: [TaskbarButtonInfo] {
+        buttons.keys.compactMap { key in
+            guard let spec = specs[key], let view = buttons.views[key] else { return nil }
+            return TaskbarButtonInfo(
+                pid: spec.pid, tip: view.toolTip ?? "", windowCount: spec.windowIDs.count, view: ObjectIdentifier(view)
+            )
+        }
     }
 
-    func update(snapshot: TaskbarSnapshot) {
-        self.snapshot = snapshot
-        rebuild(force: false)
+    func update(state: ShellState, isTrusted: Bool) {
+        self.state = state
+        self.isTrusted = isTrusted
+        present()
     }
 
-    private func rebuild(force: Bool) {
+    private func present() {
         guard !isReordering else { return }
         let available = frame.width - Self.widthUsedByFixedControls
-        let slots = TaskbarSlots.arrange(
-            pins: pins,
-            windowApps: snapshot.items.enumerated().map { $0.element.appID ?? "item:\($0.offset)" },
-            runningApps: Set(snapshot.apps.map(\.id)),
+        let all = TaskbarModel.make(
+            state,
             grouping: grouping,
             availableWidth: available,
-            spacing: Self.itemSpacing
+            spacing: Self.itemSpacing,
+            listsAppsWithoutWindows: !isTrusted
         )
-        let models = TaskbarButtonModels.make(slots: slots, snapshot: snapshot)
-
-        let iconOnlyCount = models.filter(\.isIconOnly).count
-        let labelledCount = models.count - iconOnlyCount
+        let iconOnlyCount = all.filter(\.isIconOnly).count
+        let labelledCount = all.count - iconOnlyCount
         let labelledWidth = TaskbarLayout.buttonWidth(
             buttonCount: labelledCount,
             availableWidth: available - CGFloat(iconOnlyCount) * (TaskbarLayout.iconOnlyWidth + Self.itemSpacing),
@@ -78,9 +95,9 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         )
         let usesLabels = labelledCount > 0 && TaskbarLayout.showsTitle(atWidth: labelledWidth)
         let nextPage = usesLabels
-            ? TaskbarPage(range: 0..<models.count, overflows: false, hasPrevious: false, hasNext: false)
+            ? TaskbarPage(range: 0..<all.count, overflows: false, hasPrevious: false, hasNext: false)
             : TaskbarOverflow.page(
-                buttonCount: models.count,
+                buttonCount: all.count,
                 buttonWidth: TaskbarLayout.iconOnlyWidth,
                 availableWidth: available,
                 spacing: Self.itemSpacing,
@@ -88,21 +105,23 @@ final class TaskbarPanel: NSPanel, ShellChrome {
                 firstIndex: firstIndex
             )
         firstIndex = nextPage.range.lowerBound
-
-        let key = ([
-            "\(usesLabels)", "\(labelledWidth)", "\(nextPage.range)", "\(grouping)", "\(pins.ids)",
-        ] + models[nextPage.range].map(\.key)).joined(separator: "|")
-        guard force || key != shownKey else { return }
-        shownKey = key
         page = nextPage
 
-        previewCard.dismiss()
-        itemStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        buttons = []
-        for model in models[nextPage.range] {
-            let button = makeButton(for: model, labelled: usesLabels && !model.isIconOnly, width: labelledWidth)
-            itemStack.addArrangedSubview(button)
-            buttons.append((model, button))
+        let visible = Array(all[nextPage.range])
+        let previous = specs
+        specs = Dictionary(visible.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let diff = buttons.apply(
+            keys: visible.map(\.id),
+            animated: hasPresented,
+            make: makeButton,
+            update: { [weak self] button, id in
+                guard let self, let spec = self.specs[id] else { return }
+                self.configure(button, with: spec, previous: previous[id], labelled: usesLabels && !spec.isIconOnly, width: labelledWidth)
+            }
+        )
+        hasPresented = true
+        if let owner = previewCard.ownerID, diff.removed.contains(owner) {
+            previewCard.dismiss()
         }
         previousButton.isHidden = !nextPage.overflows
         nextButton.isHidden = !nextPage.overflows
@@ -110,43 +129,78 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         nextButton.isEnabled = nextPage.hasNext
     }
 
-    private func makeButton(for model: TaskbarButtonModel, labelled: Bool, width: CGFloat) -> TaskbarButton {
-        let button = TaskbarItemView.make(
-            icon: model.icon,
-            title: labelled ? model.title : nil,
-            isActive: model.isActive,
-            runState: model.runState,
-            width: labelled ? width : TaskbarLayout.iconOnlyWidth
-        ) { }
+    private func makeButton(id: String) -> TaskbarButton {
+        let button = TaskbarItemView.make()
         button.onPress = { [weak self, weak button] in
             guard let self, let button else { return }
-            self.press(model, button: button)
+            self.press(id, button: button)
         }
-        button.toolTip = model.title
-        button.setAccessibilityLabel(model.title)
-        button.countText = model.isGroup ? "\(model.items.count)" : nil
-        button.notificationText = model.badge
-        button.menu = TaskbarMenu.make(for: model) { [weak self] in
-            self?.togglePin(model.appID)
-        }
-        button.isReorderable = model.slot.isPinned
         button.onReorderingChange = { [weak self] isDragging in
             self?.isReordering = isDragging
-        }
-        button.onReorder = { [weak self] center in
-            self?.reorder(model.appID, droppedAt: center)
-        }
-        button.onDragHover = { model.revealWindow?() }
-        if !model.items.isEmpty {
-            button.onHoverChange = { [weak self, weak button] isInside in
-                guard let self, let button, isInside else {
-                    self?.previewCard.pointerLeft()
-                    return
-                }
-                self.previewCard.pointerEntered(model.items, anchor: self.anchor(of: button), screen: self.screenFrame)
+            if !isDragging {
+                self?.present()
             }
         }
+        button.onReorder = { [weak self] center in
+            self?.reorder(id, droppedAt: center)
+        }
+        button.onDragHover = { [weak self] in
+            guard let self, let spec = self.specs[id] else { return }
+            TaskbarActions.reveal(spec, in: self.state)
+        }
+        button.onHoverChange = { [weak self, weak button] isInside in
+            guard let self, let button, isInside else {
+                self?.previewCard.pointerLeft()
+                return
+            }
+            guard let spec = self.specs[id], !spec.windowIDs.isEmpty else { return }
+            self.previewCard.pointerEntered(
+                owner: id,
+                items: { TaskbarActions.items(for: spec, in: self.state) },
+                anchor: self.anchor(of: button),
+                screen: self.screenFrame
+            )
+        }
         return button
+    }
+
+    private func configure(
+        _ button: TaskbarButton,
+        with spec: TaskbarButtonSpec,
+        previous: TaskbarButtonSpec?,
+        labelled: Bool,
+        width: CGFloat
+    ) {
+        let installed = spec.isRunning ? nil : AppIcons.shared.installedApp(spec.appID)
+        let name = spec.isRunning ? spec.name : installed?.name ?? ""
+        let title = spec.windowIDs.count == 1 ? spec.title : name
+        let path = spec.pid.flatMap { state.app(pid: $0)?.bundlePath }
+        TaskbarItemView.apply(
+            TaskbarItemView.Look(
+                title: title,
+                tip: title,
+                icon: spec.isRunning ? AppIcons.shared.image(forPath: path) : installed?.icon,
+                isActive: spec.isActive,
+                runState: runState(of: spec),
+                width: labelled ? width : TaskbarLayout.iconOnlyWidth,
+                isLabelled: labelled,
+                count: spec.isGroup ? "\(spec.windowIDs.count)" : nil,
+                badge: spec.badge
+            ),
+            to: button
+        )
+        button.isReorderable = spec.isPinned
+        if spec != previous || button.menu == nil {
+            button.menu = TaskbarMenu.make(for: spec, name: name) { [weak self] in
+                self?.togglePin(spec.appID)
+            }
+        }
+    }
+
+    private func runState(of spec: TaskbarButtonSpec) -> DSRunMark.State {
+        guard spec.isRunning else { return .none }
+        if spec.isBackground { return .background }
+        return spec.isActive ? .active : .running
     }
 
     private var screenFrame: NSRect {
@@ -157,51 +211,57 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         convertToScreen(button.convert(button.bounds, to: nil))
     }
 
-    private func press(_ model: TaskbarButtonModel, button: TaskbarButton) {
-        if model.isGroup {
-            previewCard.showNow(model.items, anchor: anchor(of: button), screen: screenFrame)
+    private func press(_ id: String, button: TaskbarButton) {
+        guard let spec = specs[id] else { return }
+        if spec.isGroup {
+            previewCard.showNow(
+                owner: id,
+                items: TaskbarActions.items(for: spec, in: state),
+                anchor: anchor(of: button),
+                screen: screenFrame
+            )
             return
         }
         previewCard.dismiss()
-        if let item = model.items.first {
-            item.activate()
-        } else if let activateApp = model.activateApp {
-            activateApp()
-        } else {
-            model.launch?()
-        }
+        TaskbarActions.click(spec, in: state)
+    }
+
+    private func commit(_ pins: TaskbarPins) {
+        TaskbarPinStore.save(pins)
+        ShellStore.shared.apply(ShellEvent(.pinsChanged(pins), observedAt: ShellClock.now()))
     }
 
     private func togglePin(_ appID: String) {
-        pins = pins.contains(appID) ? pins.removing(appID) : pins.adding(appID)
-        TaskbarPinStore.save(pins)
-        rebuild(force: true)
+        let pins = state.pins
+        commit(pins.contains(appID) ? pins.removing(appID) : pins.adding(appID))
     }
 
-    private func reorder(_ appID: String, droppedAt center: CGFloat) {
+    private func reorder(_ id: String, droppedAt center: CGFloat) {
+        guard let appID = specs[id]?.appID else { return }
         var seen = Set([appID])
-        let others = buttons.compactMap { entry -> (id: String, center: CGFloat)? in
-            guard entry.model.slot.isPinned, seen.insert(entry.model.appID).inserted else { return nil }
-            return (entry.model.appID, entry.view.frame.midX)
+        let others = buttons.keys.compactMap { key -> (id: String, center: CGFloat)? in
+            guard let spec = specs[key], spec.isPinned, seen.insert(spec.appID).inserted,
+                  let view = buttons.views[key] else { return nil }
+            return (spec.appID, view.frame.midX)
         }
-        pins = pins.moving(appID, before: TaskbarReorder.anchor(draggedCenter: center, others: others))
-        TaskbarPinStore.save(pins)
-        rebuild(force: true)
+        commit(state.pins.moving(appID, before: TaskbarReorder.anchor(draggedCenter: center, others: others)))
     }
 
     private func scroll(to index: Int) {
         firstIndex = index
-        rebuild(force: true)
+        present()
     }
 
     private func buildContent(in background: DSCard, switchTitle: String) {
         let logo = HobowareLogo.image(height: DSIconSize.startLogo, style: .official, ink: .forDarkBackground)
         let startButton = DSButton(title: logo == nil ? "⊞" : "", image: logo, height: .taskbar, tip: "Start")
+        startButton.iconSide = DSIconSize.startLogo
         startButton.onPress = { [weak self] in
             self?.actions.onStart?()
         }
 
         let filesButton = DSButton(image: HoboIcon.files.image(side: DSIconSize.startLogo), height: .taskbar, tip: "Files")
+        filesButton.iconSide = DSIconSize.startLogo
         filesButton.onPress = { [weak self] in
             self?.actions.onFiles?()
         }
@@ -248,7 +308,7 @@ final class TaskbarPanel: NSPanel, ShellChrome {
                 choose: { [weak self] choice in
                     self?.grouping = choice
                     TaskbarPinStore.save(choice)
-                    self?.rebuild(force: true)
+                    self?.present()
                 }
             )
         ) { [weak self] in

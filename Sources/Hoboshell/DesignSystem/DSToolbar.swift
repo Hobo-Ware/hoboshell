@@ -48,7 +48,7 @@ final class DSToolbar: NSView {
         case .group(let views):
             let group = NSStackView(views: views)
             group.orientation = .horizontal
-            group.spacing = DSSpacing.xxs
+            group.spacing = DSSpacing.xs
             group.alignment = .centerY
             return group
         case .divider:

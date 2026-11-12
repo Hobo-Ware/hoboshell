@@ -5,6 +5,7 @@ final class DSTextField: NSView, NSTextFieldDelegate {
     var onSubmit: ((String) -> Void)?
     var onCancel: (() -> Void)?
     var onEndEditing: (() -> Void)?
+    var onCommand: ((Selector) -> Bool)?
 
     var showsFocus: Bool {
         get { box.isFocused }
@@ -32,10 +33,12 @@ final class DSTextField: NSView, NSTextFieldDelegate {
         placeholder: String = "",
         height: DSControlHeight = .regular,
         leading: NSView? = nil,
-        trailing: NSView? = nil
+        trailing: NSView? = nil,
+        radius: CGFloat = DSRadius.control
     ) {
         self.height = height
         super.init(frame: .zero)
+        box.radius = radius
         let font = height.textStyle.font()
         field.font = font
         field.textColor = DSColor.text
@@ -95,6 +98,9 @@ final class DSTextField: NSView, NSTextFieldDelegate {
     }
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+        if onCommand?(commandSelector) == true {
+            return true
+        }
         if commandSelector == #selector(NSResponder.insertNewline(_:)), let onSubmit {
             onSubmit(field.stringValue)
             return true
