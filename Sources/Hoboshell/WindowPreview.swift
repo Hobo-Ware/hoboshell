@@ -7,7 +7,6 @@ struct PreviewRequest {
     let windowID: Int
     let pid: pid_t
     let title: String
-    let frame: CGRect?
     let isMinimized: Bool
 }
 
@@ -16,7 +15,8 @@ enum WindowPreview {
     private static let pixelsPerPoint: CGFloat = 2
     private static let rememberedPictures = 64
     private static let log = Logger(subsystem: "dev.hoboware.hoboshell", category: "preview")
-    private static var hasAskedForAccess = false
+    private static let accessQueue = DispatchQueue(label: "dev.hoboware.hoboshell.capture-access", qos: .utility)
+    private nonisolated(unsafe) static var hasAskedForAccess = false
     private static var pictures: [Int: NSImage] = [:]
     private static var pictureOrder: [Int] = []
     private static var loggedFailures = Set<String>()
@@ -27,9 +27,15 @@ enum WindowPreview {
     }
 
     static func askForAccessOnce() {
-        guard !hasAskedForAccess, !CGPreflightScreenCaptureAccess() else { return }
-        hasAskedForAccess = true
-        CGRequestScreenCaptureAccess()
+        accessQueue.async {
+            guard !hasAskedForAccess, !CGPreflightScreenCaptureAccess() else { return }
+            hasAskedForAccess = true
+            CGRequestScreenCaptureAccess()
+        }
+    }
+
+    static func cached(_ windowID: Int) -> NSImage? {
+        pictures[windowID]
     }
 
     static func capture(_ request: PreviewRequest, limit: CGSize, completion: @escaping (NSImage?) -> Void) {
@@ -39,18 +45,8 @@ enum WindowPreview {
             completion(remembered)
             return
         }
-        guard #available(macOS 14.0, *) else {
-            logOnce(request, "needs macOS 14 for window pictures")
-            completion(remembered)
-            return
-        }
-        guard CGPreflightScreenCaptureAccess() else {
-            logOnce(request, "Screen Recording access is off")
-            completion(remembered)
-            return
-        }
-        Task {
-            let outcome = await image(request, limit: limit)
+        Task.detached {
+            let outcome = await outcome(for: request, limit: limit)
             await MainActor.run {
                 switch outcome {
                 case .picture(let image):
@@ -62,6 +58,13 @@ enum WindowPreview {
                 }
             }
         }
+    }
+
+    private static func outcome(for request: PreviewRequest, limit: CGSize) async -> Outcome {
+        guard #available(macOS 14.0, *) else { return .failure("needs macOS 14 for window pictures") }
+        guard CGPreflightScreenCaptureAccess() else { return .failure("Screen Recording access is off") }
+        let frame = await WindowCatalog.shared.frame(of: request.windowID)
+        return await image(request, frame: frame, limit: limit)
     }
 
     private static func remember(_ image: NSImage, for windowID: Int) {
@@ -79,13 +82,13 @@ enum WindowPreview {
     }
 
     @available(macOS 14.0, *)
-    private static func image(_ request: PreviewRequest, limit: CGSize) async -> Outcome {
+    private static func image(_ request: PreviewRequest, frame: CGRect?, limit: CGSize) async -> Outcome {
         guard let content = try? await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: false) else {
             return .failure("the list of windows could not be read")
         }
         let windows = content.windows.filter { $0.owningApplication?.processID == request.pid && $0.windowLayer == 0 }
         let outcome = WindowMatch.resolve(
-            frame: request.frame,
+            frame: frame,
             title: request.title,
             among: windows.map {
                 WindowCandidate(frame: $0.frame, title: $0.title ?? "", isNormal: !$0.frame.isEmpty)
@@ -100,7 +103,7 @@ enum WindowPreview {
             return .failure("no matching window: \(failure.rawValue) among \(windows.count)")
         }
 
-        let size = PreviewCardLayout.fit(request.frame?.size ?? windows[index].frame.size, within: limit)
+        let size = PreviewCardLayout.fit(frame?.size ?? windows[index].frame.size, within: limit)
         let configuration = SCStreamConfiguration()
         configuration.width = Int(size.width * pixelsPerPoint)
         configuration.height = Int(size.height * pixelsPerPoint)

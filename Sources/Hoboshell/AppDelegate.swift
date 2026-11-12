@@ -4,18 +4,11 @@ import HoboshellCore
 import os
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private static let windowRefreshInterval: TimeInterval = 1.5
-    private static let windowEventSettleDelay: TimeInterval = 0.15
     private static let neverInTray = ["com.apple.finder"]
     private static let savedVariantKey = "ShellVariant"
     private static let snapLog = Logger(subsystem: "dev.hoboware.hoboshell", category: "snap")
 
-    private let tracker = AppTracker()
-    private let catalog = WindowCatalog()
-    private let windowEvents = WindowEventObserver()
-    private let dockBadges = DockBadges()
-    private var backgroundApps = BackgroundApps()
-    private var otherDesktopApps = OtherDesktopApps()
+    private let engine = ShellEngine()
     private let showDesktop = TaskbarShowDesktop()
     private let nudger = WindowNudger()
     private let hidesSystemUI = ProcessInfo.processInfo.environment["HOBOSHELL_HIDE_SYSTEM_UI"] == "1"
@@ -28,9 +21,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var desktop: DesktopWindow?
     private var startMenu: StartMenuPanel?
     private var switcher: SwitcherController?
-    private var windowRefreshTimer: Timer?
     private var signalSources: [DispatchSourceSignal] = []
-    private var badges: [String: String] = [:]
+    private var trayEntries: [BackgroundEntry] = []
+    private var selfTest: RealtimeSelfTest?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         terminateCleanlyOnSignals()
@@ -41,41 +34,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         MainMenu.install()
 
         startMenu = StartMenuPanel()
-        switcher = SwitcherController(catalog: catalog) { [weak self] in
-            self?.appsWithWindows ?? []
-        }
+        switcher = SwitcherController(engine: engine)
         switcher?.start()
         buildShell()
 
-        tracker.onChange = { [weak self] in
-            self?.refreshTaskbar()
-        }
-        tracker.onUserActivation = { [weak self] in
+        engine.tracker.onUserActivation = { [weak self] in
             self?.showDesktop.userActivatedApp()
         }
-        tracker.start()
-        NSWorkspace.shared.notificationCenter.addObserver(
-            self,
-            selector: #selector(desktopChanged),
-            name: NSWorkspace.activeSpaceDidChangeNotification,
-            object: nil
-        )
-        windowEvents.onDestroyed = { [weak self] element in
-            self?.catalog.noteDestroyed(element)
-        }
-        windowEvents.onChange = { [weak self] in
-            self?.refreshTaskbar()
-            DispatchQueue.main.asyncAfter(deadline: .now() + Self.windowEventSettleDelay) {
-                self?.refreshTaskbar()
-            }
-        }
-        windowEvents.onGeometryChange = { [weak self] window in
+        engine.windowEvents.onGeometryChange = { [weak self] window in
             self?.nudger.windowChanged(window)
         }
-        windowRefreshTimer = Timer.scheduledTimer(withTimeInterval: Self.windowRefreshInterval, repeats: true) { [weak self] _ in
-            self?.refreshBadges()
-            self?.refreshTaskbar()
+        engine.store.subscribe { [weak self] update in
+            self?.render(update.state)
         }
+        engine.start()
+        startSelfTestIfRequested()
         registerHotKeys()
         openRequestedWindows()
         if hidesSystemUI || SystemChrome.isWanted {
@@ -102,8 +75,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private var appsWithWindows: [NSRunningApplication] {
-        tracker.taskbarApps + [.current]
+    private func startSelfTestIfRequested() {
+        guard let arguments = SelfTestArguments.parse(CommandLine.arguments), let chrome else { return }
+        guard variant == .bottomTaskbar else {
+            print("realtime self-test could not run: start with --variant bottom-taskbar")
+            exit(2)
+        }
+        let test = RealtimeSelfTest(engine: engine, chrome: chrome, reportPath: arguments.reportPath)
+        selfTest = test
+        test.start()
     }
 
     private func buildShell() {
@@ -131,7 +111,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             },
             onShowDesktop: { [weak self] in
                 guard let self else { return }
-                self.showDesktop.toggle(apps: self.tracker.taskbarApps)
+                self.showDesktop.toggle(apps: self.engine.tracker.taskbarApps)
             },
             onSwitchVariant: { [weak self] in
                 self?.switchVariant()
@@ -200,126 +180,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         startMenu?.present(origin: chrome.startMenuOrigin(menuSize:), opening: opening)
     }
 
-    private func refreshBadges() {
-        dockBadges.load { [weak self] badges in
-            guard let self, badges != self.badges else { return }
-            self.badges = badges
-            self.refreshTaskbar()
-        }
-    }
-
     private func refreshTaskbar() {
-        let apps = tracker.taskbarApps
-        let entries = apps.map(Self.entry(for:))
-        guard Accessibility.isTrusted else {
-            chrome?.update(snapshot: TaskbarSnapshot(items: apps.map(Self.item(for:)), apps: entries, badges: badges))
-            return
-        }
-        windowEvents.watch(apps: appsWithWindows)
-        catalog.load(apps: appsWithWindows) { [weak self] windows in
-            guard let self else { return }
-            self.switcher?.windowsDidRefresh(windows)
-            let windowless = self.refreshBackgroundApps(apps: apps, windows: windows)
-            self.chrome?.update(snapshot: TaskbarSnapshot(
-                items: windows.map(Self.item(for:)), apps: entries, badges: self.badges, windowless: windowless
-            ))
-        }
+        render(engine.store.state)
     }
 
-    @objc private func desktopChanged() {
-        otherDesktopApps.desktopChanged()
-        catalog.noteDesktopChanged()
-        refreshTaskbar()
+    private func render(_ state: ShellState) {
+        chrome?.update(state: state, isTrusted: engine.isTrusted)
+        refreshTray(state)
     }
 
-    private func refreshBackgroundApps(apps: [NSRunningApplication], windows: [ShellWindow]) -> Set<String> {
-        let windowCounts = Dictionary(grouping: windows, by: { $0.app.processIdentifier }).mapValues(\.count)
-        let readable = catalog.readablePIDs
-        let appsWithWindowsHere = Set(windowCounts.keys)
-        let candidates = apps.map {
-            let isElsewhere = otherDesktopApps.hasWindowsElsewhere($0.processIdentifier, appsWithWindowsHere: appsWithWindowsHere)
-            return BackgroundApps.Candidate(
-                id: Self.appID(of: $0),
-                pid: $0.processIdentifier,
-                windowCount: windowCounts[$0.processIdentifier] ?? (isElsewhere ? 1 : 0),
-                windowsReadable: readable.contains($0.processIdentifier)
-            )
-        }
-        let windowless = backgroundApps.settledWindowless(candidates, now: ProcessInfo.processInfo.systemUptime)
+    private func refreshTray(_ state: ShellState) {
         let excluded = Set(Self.neverInTray + [Bundle.main.bundleIdentifier].compactMap { $0 })
-        let ids = BackgroundApps.trayIDs(windowless: windowless, pinned: TaskbarPinStore.loadPins(), excluded: excluded)
-        let byID = Dictionary(apps.map { (Self.appID(of: $0), $0) }, uniquingKeysWith: { first, _ in first })
-        TrayAppsStore.shared.update(ids.compactMap { id in
-            byID[id].map { TrayApp(running: $0, id: id, badge: badges[id]) }
+        let entries = TrayModel.backgroundApps(state, excluded: excluded)
+        guard entries != trayEntries else { return }
+        trayEntries = entries
+        TrayAppsStore.shared.update(entries.compactMap { entry in
+            NSRunningApplication(processIdentifier: entry.pid).map { TrayApp(running: $0, id: entry.appID, badge: entry.badge) }
         })
-        return Set(windowless)
-    }
-
-    private static func appID(of app: NSRunningApplication) -> String {
-        TaskbarAppID.make(bundleIdentifier: app.bundleIdentifier, pid: app.processIdentifier)
-    }
-
-    private static func reveal(_ app: NSRunningApplication) {
-        app.unhide()
-        app.activate()
-    }
-
-    private static func entry(for app: NSRunningApplication) -> TaskbarAppEntry {
-        TaskbarAppEntry(
-            id: appID(of: app),
-            name: app.localizedName ?? "",
-            icon: HoboIcon.image(for: app),
-            isActive: app.isActive,
-            activate: {
-                if app.isActive {
-                    app.hide()
-                } else {
-                    reveal(app)
-                }
-            },
-            quit: { app.terminate() }
-        )
-    }
-
-    private static func item(for app: NSRunningApplication) -> TaskbarItem {
-        var item = TaskbarItem(icon: HoboIcon.image(for: app), title: app.localizedName ?? "", isActive: app.isActive) {
-            if app.isActive {
-                app.hide()
-            } else {
-                reveal(app)
-            }
-        }
-        item.quit = { app.terminate() }
-        item.appName = app.localizedName
-        item.appID = appID(of: app)
-        item.reveal = { reveal(app) }
-        return item
-    }
-
-    private static func item(for window: ShellWindow) -> TaskbarItem {
-        var item = TaskbarItem(icon: HoboIcon.image(for: window.app), title: window.title, isActive: window.isFocused) {
-            if window.isFocused {
-                WindowCatalog.minimize(window)
-            } else {
-                WindowCatalog.focus(window)
-            }
-        }
-        let request = PreviewRequest(
-            windowID: window.id,
-            pid: window.app.processIdentifier,
-            title: window.title,
-            frame: window.frame,
-            isMinimized: window.isMinimized
-        )
-        item.preview = { limit, completion in
-            WindowPreview.capture(request, limit: limit, completion: completion)
-        }
-        item.close = { WindowCatalog.close(window) }
-        item.quit = { window.app.terminate() }
-        item.appName = window.app.localizedName
-        item.appID = appID(of: window.app)
-        item.reveal = { WindowCatalog.focus(window) }
-        return item
     }
 
     private func registerHotKeys() {
@@ -348,7 +225,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Accessibility.requestTrust()
             return
         }
-        guard let app = tracker.lastActiveApp ?? NSWorkspace.shared.frontmostApplication, let screen = NSScreen.main else {
+        guard let app = engine.tracker.lastActiveApp ?? NSWorkspace.shared.frontmostApplication, let screen = NSScreen.main else {
             Self.snapLog.notice("snap skipped: no app has been active yet")
             return
         }

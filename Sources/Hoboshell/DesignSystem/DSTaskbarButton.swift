@@ -8,11 +8,17 @@ class DSTaskbarButton: DSButton {
     }
 
     var countText: String? {
-        didSet { countBadge = replace(countBadge, with: countText, tone: .neutral, corner: .bottomTrailing) }
+        didSet {
+            guard oldValue != countText else { return }
+            countBadge = replace(countBadge, with: countText, tone: .neutral, corner: .bottomTrailing)
+        }
     }
 
     var notificationText: String? {
-        didSet { notificationBadge = replace(notificationBadge, with: notificationText, tone: .danger, corner: .topTrailing) }
+        didSet {
+            guard oldValue != notificationText else { return }
+            notificationBadge = replace(notificationBadge, with: notificationText, tone: .danger, corner: .topTrailing)
+        }
     }
 
     private enum Corner {

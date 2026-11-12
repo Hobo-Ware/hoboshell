@@ -4,16 +4,12 @@ import HoboshellCore
 final class SwitcherController {
     private let panel = WindowSwitcherPanel()
     private let tap = SwitcherEventTap()
-    private let catalog: WindowCatalog
-    private let runningApps: () -> [NSRunningApplication]
-    private var recency = WindowRecency()
-    private var snapshot: [ShellWindow] = []
+    private let engine: ShellEngine
     private var holder: SwitcherModifier?
     private var settingObserver: NSObjectProtocol?
 
-    init(catalog: WindowCatalog, runningApps: @escaping () -> [NSRunningApplication]) {
-        self.catalog = catalog
-        self.runningApps = runningApps
+    init(engine: ShellEngine) {
+        self.engine = engine
     }
 
     deinit {
@@ -23,17 +19,18 @@ final class SwitcherController {
     }
 
     func start() {
-        panel.onCommit = { [weak self] window in
-            self?.recency.activated(window.id)
-            WindowCatalog.focus(window)
-        }
+        panel.onCommit = { WindowCatalog.shared.focus($0) }
         panel.onQuit = { $0.app.terminate() }
-        panel.onClose = { WindowCatalog.close($0) }
+        panel.onClose = { WindowCatalog.shared.close($0) }
         panel.onEnd = { [weak self] in
             self?.holder = nil
         }
         tap.onEvent = { [weak self] event in
             self?.handle(event) ?? false
+        }
+        engine.store.subscribe { [weak self] update in
+            guard update.change.touchesWindowsOrApps || update.change.recencyChanged || update.change.desktopChanged else { return }
+            self?.stateDidChange()
         }
         settingObserver = NotificationCenter.default.addObserver(
             forName: SwitcherSettings.didChange, object: nil, queue: .main
@@ -41,14 +38,6 @@ final class SwitcherController {
             self?.applySetting()
         }
         applySetting()
-    }
-
-    func windowsDidRefresh(_ windows: [ShellWindow]) {
-        snapshot = windows
-        recency.forget(keeping: Set(windows.map(\.id)))
-        if let focused = windows.first(where: \.isFocused) {
-            recency.activated(focused.id)
-        }
     }
 
     func openFromHotKey() {
@@ -62,10 +51,20 @@ final class SwitcherController {
     func showForCapture() {
         guard let screen = NSScreen.main else { return }
         panel.staysOpenForCapture = true
-        catalog.load(apps: runningApps()) { [weak self] windows in
-            guard let self else { return }
-            self.snapshot = windows
-            self.panel.begin(windows: self.ordered(windows), holding: nil, forward: true, on: screen)
+        panel.begin(windows: currentWindows(), holding: nil, forward: true, on: screen)
+    }
+
+    private func stateDidChange() {
+        guard panel.isShowing else { return }
+        panel.update(windows: currentWindows())
+    }
+
+    private func currentWindows() -> [ShellWindow] {
+        let running = Dictionary(engine.tracker.shellApps.map { ($0.processIdentifier, $0) }, uniquingKeysWith: { first, _ in first })
+        return SwitcherModel.entries(engine.store.state).compactMap { entry in
+            running[entry.pid].map {
+                ShellWindow(id: entry.windowID, app: $0, title: entry.title, isMinimized: entry.isMinimized, isFocused: false)
+            }
         }
     }
 
@@ -82,7 +81,7 @@ final class SwitcherController {
     }
 
     private func handle(_ event: SwitcherKeyEvent) -> Bool {
-        guard holder != nil || Accessibility.isTrusted else { return false }
+        guard holder != nil || engine.isTrusted else { return false }
         let decision = SwitcherKeyPolicy.decide(event, holder: holder, takesCommandTab: SwitcherSettings.takesCommandTab)
         if let action = decision.action {
             switch action {
@@ -109,7 +108,7 @@ final class SwitcherController {
     }
 
     private func open(holding: SwitcherModifier, forward: Bool) {
-        guard Accessibility.isTrusted else {
+        guard engine.isTrusted else {
             holder = nil
             Accessibility.requestTrust()
             return
@@ -119,25 +118,6 @@ final class SwitcherController {
             return
         }
         holder = holding
-        let shown = ordered(snapshot)
-        guard !shown.isEmpty else {
-            catalog.load(apps: runningApps()) { [weak self] windows in
-                guard let self else { return }
-                self.snapshot = windows
-                self.panel.begin(windows: self.ordered(windows), holding: holding, forward: forward, on: screen)
-            }
-            return
-        }
-        panel.begin(windows: shown, holding: holding, forward: forward, on: screen)
-        catalog.load(apps: runningApps()) { [weak self] windows in
-            guard let self else { return }
-            self.snapshot = windows
-            self.panel.update(windows: self.ordered(windows))
-        }
-    }
-
-    private func ordered(_ windows: [ShellWindow]) -> [ShellWindow] {
-        let byID = Dictionary(windows.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        return recency.ordered(windows.map(\.id)).compactMap { byID[$0] }
+        panel.begin(windows: currentWindows(), holding: holding, forward: forward, on: screen)
     }
 }

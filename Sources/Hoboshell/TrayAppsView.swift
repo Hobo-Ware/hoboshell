@@ -2,8 +2,12 @@ import AppKit
 import HoboshellCore
 
 final class TrayAppsView: NSStackView {
+    private static let flyoutKey = "flyout"
+
     private let height: DSControlHeight
-    private var observer: NSObjectProtocol?
+    private var observers: [NSObjectProtocol] = []
+    private lazy var icons = KeyedStack<DSControl>(stack: self)
+    private var hasPresented = false
 
     init(height: DSControlHeight) {
         self.height = height
@@ -13,11 +17,13 @@ final class TrayAppsView: NSStackView {
         alignment = .centerY
         setHuggingPriority(.required, for: .horizontal)
         reload()
-        observer = NotificationCenter.default.addObserver(
-            forName: TrayAppsStore.didChange, object: nil, queue: .main
-        ) { [weak self] _ in
+        let reload: (Notification) -> Void = { [weak self] _ in
             self?.reload()
         }
+        observers = [
+            NotificationCenter.default.addObserver(forName: TrayAppsStore.didChange, object: nil, queue: .main, using: reload),
+            NotificationCenter.default.addObserver(forName: AppIcons.didLoad, object: nil, queue: .main, using: reload),
+        ]
     }
 
     @available(*, unavailable)
@@ -26,29 +32,35 @@ final class TrayAppsView: NSStackView {
     }
 
     deinit {
-        if let observer {
-            NotificationCenter.default.removeObserver(observer)
-        }
+        observers.forEach(NotificationCenter.default.removeObserver)
     }
 
     private func reload() {
-        arrangedSubviews.forEach { $0.removeFromSuperview() }
         let split = BackgroundApps.split(TrayAppsStore.shared.apps)
         isHidden = split.inline.isEmpty
-        if split.opensFlyout {
-            let arrow = DSButton(symbol: "chevron.up", tip: "Running in the background", height: height)
-            arrow.onPress = {
-                TrayFlyouts.shared.toggle(.apps)
+        let apps = Dictionary(split.inline.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        icons.apply(
+            keys: (split.opensFlyout ? [Self.flyoutKey] : []) + split.inline.map(\.id),
+            animated: hasPresented,
+            make: { [height] key in
+                guard key != Self.flyoutKey else {
+                    let arrow = DSButton(symbol: "chevron.up", tip: "Running in the background", height: height)
+                    arrow.onPress = {
+                        TrayFlyouts.shared.toggle(.apps)
+                    }
+                    return arrow
+                }
+                return DSTrayIcon(icon: nil, tip: "", height: height)
+            },
+            update: { view, key in
+                guard let icon = view as? DSTrayIcon, let app = apps[key] else { return }
+                icon.update(icon: app.resolvedIcon, tip: app.name, badge: app.badge)
+                icon.onPress = {
+                    app.open()
+                }
+                icon.menu = TrayAppMenu.make(for: app)
             }
-            addArrangedSubview(arrow)
-        }
-        for app in split.inline {
-            let icon = DSTrayIcon(icon: app.icon, tip: app.name, badge: app.badge, height: height)
-            icon.onPress = {
-                app.open()
-            }
-            icon.menu = TrayAppMenu.make(for: app)
-            addArrangedSubview(icon)
-        }
+        )
+        hasPresented = true
     }
 }
