@@ -7,6 +7,7 @@ struct TaskbarButtonModel {
     let icon: NSImage?
     let items: [TaskbarItem]
     let isActive: Bool
+    var isBackground = false
     let badge: String?
     let launch: (() -> Void)?
     let activateApp: (() -> Void)?
@@ -19,12 +20,13 @@ struct TaskbarButtonModel {
 
     var runState: DSRunMark.State {
         guard slot.isRunning else { return .none }
+        if isBackground { return .background }
         return isActive ? .active : .running
     }
 
     var key: String {
         let titles = items.map { "\($0.title)|\($0.isActive)" }.joined(separator: ";")
-        return "\(appID)#\(titles)#\(slot.isPinned)#\(slot.isRunning)#\(isActive)#\(badge ?? "")"
+        return "\(appID)#\(titles)#\(slot.isPinned)#\(slot.isRunning)#\(isActive)#\(isBackground)#\(badge ?? "")"
     }
 
     var revealWindow: (() -> Void)? {
@@ -59,6 +61,7 @@ enum TaskbarButtonModels {
                     icon: app.icon,
                     items: [],
                     isActive: app.isActive,
+                    isBackground: snapshot.windowless.contains(slot.appID),
                     badge: badge,
                     launch: nil,
                     activateApp: app.activate,

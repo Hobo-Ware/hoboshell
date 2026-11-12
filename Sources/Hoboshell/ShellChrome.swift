@@ -27,6 +27,7 @@ struct TaskbarSnapshot {
     var items: [TaskbarItem]
     var apps: [TaskbarAppEntry] = []
     var badges: [String: String] = [:]
+    var windowless: Set<String> = []
 }
 
 struct ShellActions {

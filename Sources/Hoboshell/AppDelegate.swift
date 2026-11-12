@@ -6,6 +6,7 @@ import os
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private static let windowRefreshInterval: TimeInterval = 1.5
     private static let windowEventSettleDelay: TimeInterval = 0.15
+    private static let neverInTray = ["com.apple.finder"]
     private static let savedVariantKey = "ShellVariant"
     private static let snapLog = Logger(subsystem: "dev.hoboware.hoboshell", category: "snap")
 
@@ -13,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let catalog = WindowCatalog()
     private let windowEvents = WindowEventObserver()
     private let dockBadges = DockBadges()
+    private var backgroundApps = BackgroundApps()
     private let showDesktop = TaskbarShowDesktop()
     private let nudger = WindowNudger()
     private let hidesSystemUI = ProcessInfo.processInfo.environment["HOBOSHELL_HIDE_SYSTEM_UI"] == "1"
@@ -169,6 +171,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 showStartMenu(.search(text))
             case .switcher:
                 switcher?.showForCapture()
+            case .tray(let kind):
+                DispatchQueue.main.async {
+                    TrayFlyouts.shared.showForCapture(kind)
+                }
             case .files(let path):
                 let folder = path.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
                 ExplorerWindow.open(at: folder ?? FileManager.default.homeDirectoryForCurrentUser)
@@ -206,8 +212,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         catalog.load(apps: appsWithWindows) { [weak self] windows in
             guard let self else { return }
             self.switcher?.windowsDidRefresh(windows)
-            self.chrome?.update(snapshot: TaskbarSnapshot(items: windows.map(Self.item(for:)), apps: entries, badges: self.badges))
+            let windowless = self.refreshBackgroundApps(apps: apps, windows: windows)
+            self.chrome?.update(snapshot: TaskbarSnapshot(
+                items: windows.map(Self.item(for:)), apps: entries, badges: self.badges, windowless: windowless
+            ))
         }
+    }
+
+    private func refreshBackgroundApps(apps: [NSRunningApplication], windows: [ShellWindow]) -> Set<String> {
+        let windowCounts = Dictionary(grouping: windows, by: { $0.app.processIdentifier }).mapValues(\.count)
+        let readable = catalog.readablePIDs
+        let candidates = apps.map {
+            BackgroundApps.Candidate(
+                id: Self.appID(of: $0),
+                pid: $0.processIdentifier,
+                windowCount: windowCounts[$0.processIdentifier] ?? 0,
+                windowsReadable: readable.contains($0.processIdentifier)
+            )
+        }
+        let windowless = backgroundApps.settledWindowless(candidates, now: ProcessInfo.processInfo.systemUptime)
+        let excluded = Set(Self.neverInTray + [Bundle.main.bundleIdentifier].compactMap { $0 })
+        let ids = BackgroundApps.trayIDs(windowless: windowless, pinned: TaskbarPinStore.loadPins(), excluded: excluded)
+        let byID = Dictionary(apps.map { (Self.appID(of: $0), $0) }, uniquingKeysWith: { first, _ in first })
+        TrayAppsStore.shared.update(ids.compactMap { id in
+            byID[id].map { TrayApp(running: $0, id: id, badge: badges[id]) }
+        })
+        return Set(windowless)
     }
 
     private static func appID(of app: NSRunningApplication) -> String {

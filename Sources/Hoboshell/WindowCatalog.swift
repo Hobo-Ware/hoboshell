@@ -19,13 +19,15 @@ final class WindowCatalog {
     private var nextID = 0
     private var retention = WindowRetention()
     private var destroyed: [AXUIElement] = []
+    private(set) var readablePIDs = Set<pid_t>()
 
     func load(apps: [NSRunningApplication], completion: @escaping ([ShellWindow]) -> Void) {
         let frontmost = NSWorkspace.shared.frontmostApplication?.processIdentifier
         queue.async { [weak self] in
             guard let self else { return }
-            let windows = self.reconcile(apps: apps, frontmost: frontmost, now: ProcessInfo.processInfo.systemUptime)
+            let (windows, readable) = self.reconcile(apps: apps, frontmost: frontmost, now: ProcessInfo.processInfo.systemUptime)
             DispatchQueue.main.async {
+                self.readablePIDs = readable
                 completion(windows)
             }
         }
@@ -37,7 +39,7 @@ final class WindowCatalog {
         }
     }
 
-    private func reconcile(apps: [NSRunningApplication], frontmost: pid_t?, now: TimeInterval) -> [ShellWindow] {
+    private func reconcile(apps: [NSRunningApplication], frontmost: pid_t?, now: TimeInterval) -> ([ShellWindow], Set<pid_t>) {
         let destroyedElements = destroyed
         destroyed = []
         var readablePIDs = Set<pid_t>()
@@ -76,7 +78,7 @@ final class WindowCatalog {
             result.append(contentsOf: group)
         }
         listed = result
-        return result.map(\.window)
+        return (result.map(\.window), readablePIDs)
     }
 
     private func makeID() -> Int {

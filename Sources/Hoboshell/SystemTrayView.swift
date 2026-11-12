@@ -20,9 +20,11 @@ final class SystemTrayView: NSStackView {
     private var refreshTimer: Timer?
     private var trayItems: [DSButton] = []
     private var batteryItem: DSButton?
+    private let appsView: TrayAppsView
 
     init(clockOnOneLine: Bool, height: DSControlHeight) {
         self.clockOnOneLine = clockOnOneLine
+        appsView = TrayAppsView(height: height)
         super.init(frame: .zero)
         orientation = .horizontal
         spacing = DSSpacing.xs
@@ -39,7 +41,12 @@ final class SystemTrayView: NSStackView {
         let clockItem = Self.item([clock], height: height, tip: "Date and time settings", pane: Self.dateSettings)
         self.batteryItem = batteryItem
         trayItems = [networkItem, batteryItem, clockItem]
+        addArrangedSubview(appsView)
         trayItems.forEach(addArrangedSubview)
+        TrayFlyouts.shared.register(.apps) { [weak self] in
+            guard let self else { return nil }
+            return self.appsView.isHidden ? self : self.appsView
+        }
 
         showNetwork(isOnline: true)
         networkMonitor.pathUpdateHandler = { [weak self] path in
