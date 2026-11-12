@@ -15,10 +15,6 @@ final class ShellEngine {
     private var observers: [NSObjectProtocol] = []
     private(set) var isTrusted = Accessibility.isTrusted
 
-    func runningApp(pid: pid_t) -> NSRunningApplication? {
-        tracker.shellApps.first { $0.processIdentifier == pid }
-    }
-
     func start() {
         if PerfLog.watchesMainThread {
             watchdog.start()
