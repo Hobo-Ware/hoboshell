@@ -61,6 +61,15 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         NSPoint(x: frame.minX + DSSpacing.s, y: frame.maxY + DSSpacing.s)
     }
 
+    var shownButtons: [TaskbarButtonInfo] {
+        buttons.keys.compactMap { key in
+            guard let spec = specs[key], let view = buttons.views[key] else { return nil }
+            return TaskbarButtonInfo(
+                pid: spec.pid, tip: view.toolTip ?? "", windowCount: spec.windowIDs.count, view: ObjectIdentifier(view)
+            )
+        }
+    }
+
     func update(state: ShellState, isTrusted: Bool) {
         self.state = state
         self.isTrusted = isTrusted

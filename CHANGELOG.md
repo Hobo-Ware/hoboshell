@@ -5,6 +5,11 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Added
+- `scripts/selftest.sh` runs `Hoboshell --selftest realtime`: the shell opens
+  a small helper app (`HoboshellProbe`) with plain windows that never take
+  keyboard focus, opens, retitles, minimises, restores and closes them, and
+  times how long the taskbar and tray take to show each change. Every step must
+  show within 150 ms. `--selftest-report PATH` also writes the result to a file.
 - Click the network icon in the tray for a flyout with connected or offline,
   Wi-Fi or wired, the local IP address and a "Network settings" button. It does
   not read the Wi-Fi name or scan. `--show tray=network` opens it for

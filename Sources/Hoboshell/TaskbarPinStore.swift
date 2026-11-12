@@ -17,7 +17,8 @@ enum TaskbarPinStore {
     }
 
     static func loadGrouping() -> TaskbarGrouping {
-        TaskbarGrouping(stored: UserDefaults.standard.string(forKey: groupingKey))
+        guard SelfTestArguments.parse(CommandLine.arguments) == nil else { return .never }
+        return TaskbarGrouping(stored: UserDefaults.standard.string(forKey: groupingKey))
     }
 
     static func save(_ grouping: TaskbarGrouping) {
