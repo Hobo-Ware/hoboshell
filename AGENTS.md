@@ -15,7 +15,7 @@ Integrity Protection, and never use private frameworks.
 | `Sources/HoboshellProbe` | A tiny helper app that opens and closes plain windows on command. Used only by the self-test. |
 | `Support/Info.plist` | Keys for the packaged `.app` (`LSUIElement`, folder access texts). |
 | `scripts/test.sh` | The one way to run tests. Works with or without full Xcode. |
-| `scripts/selftest.sh` | Builds and runs `Hoboshell --selftest realtime`. It opens windows on the screen, so only the owner runs it. |
+| `scripts/selftest.sh` | Builds the bundle and runs `Hoboshell --selftest realtime` through `open`, so macOS applies Hoboshell's own Accessibility permission. It starts the probe helper, which opens small windows without taking keyboard focus, and fails unless every step passes. Stop a running Hoboshell first. |
 | `scripts/bundle.sh` | Builds a signed `dist/Hoboshell.app`. Signs with the local certificate named `Hoboshell Dev` when the keychain has one, so macOS permissions survive rebuilds; otherwise ad-hoc. Delete `dist/` when you are done with it. |
 | `Design/icons` | The icon set as SVG files, the source of truth. After changing one, run `scripts/embed-icons.py` to rebuild `Sources/Hoboshell/HoboIconData.swift`. |
 | `scripts/capture.sh` | Saves a picture of each Hoboshell window that is on screen into a folder, for checking work by eye. Captures Hoboshell's own windows only. |

@@ -7,7 +7,11 @@ final class RealtimeSelfTest {
         let command: ProbeCommand?
         let isDone: () -> Bool
         let verify: () -> String?
+        var budget = SelfTestReport.budgetMilliseconds
     }
+
+    // macOS reports a window as minimised or restored only when its animation has ended.
+    private static let animatedStepBudget = 1000.0
 
     private static let stepTimeout: TimeInterval = 3
     private static let pollInterval: TimeInterval = 0.005
@@ -38,7 +42,7 @@ final class RealtimeSelfTest {
             finish(error: "Accessibility access is off for this binary. Grant it in System Settings and run again.")
             return
         }
-        guard let probeURL = Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent("HoboshellProbe"),
+        guard let probeURL = Self.probeLocation(),
               FileManager.default.isExecutableFile(atPath: probeURL.path) else {
             finish(error: "HoboshellProbe is missing next to the Hoboshell binary. Run swift build first.")
             return
@@ -71,6 +75,16 @@ final class RealtimeSelfTest {
             self?.evaluate()
         }
         say("realtime self-test started, probe pid \(process.processIdentifier)")
+    }
+
+    // Inside the app bundle the helper would count as Hoboshell itself, so it lives next to the bundle.
+    private static func probeLocation() -> URL? {
+        let name = "HoboshellProbe"
+        let besideBundle = Bundle.main.bundleURL.deletingLastPathComponent().appendingPathComponent(name)
+        if FileManager.default.isExecutableFile(atPath: besideBundle.path) {
+            return besideBundle
+        }
+        return Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent(name)
     }
 
     private var pid: pid_t { process.processIdentifier }
@@ -118,12 +132,12 @@ final class RealtimeSelfTest {
                 probeWindows.first?.isMinimized == true
             }, verify: { [self] in
                 keepsButtonA()
-            }),
+            }, budget: Self.animatedStepBudget),
             Step(name: "restore keeps the button", command: .restore(window: 1), isDone: { [self] in
                 probeWindows.first?.isMinimized == false
             }, verify: { [self] in
                 keepsButtonA()
-            }),
+            }, budget: Self.animatedStepBudget),
             Step(name: "close removes the button", command: .close(window: 2), isDone: { [self] in
                 probeWindowCount == 1
             }, verify: { [self] in
@@ -171,7 +185,7 @@ final class RealtimeSelfTest {
         let step = steps[index]
         let elapsed = ShellClock.milliseconds(since: stepStart)
         if step.isDone() {
-            record(SelfTestStep(name: step.name, milliseconds: elapsed, failure: step.verify()))
+            record(SelfTestStep(name: step.name, milliseconds: elapsed, failure: step.verify(), budgetMilliseconds: step.budget))
         } else if elapsed > Self.stepTimeout * 1_000 {
             record(SelfTestStep(name: step.name, milliseconds: nil, failure: "timed out after \(Int(Self.stepTimeout)) s"))
         }

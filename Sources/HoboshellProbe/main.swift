@@ -3,7 +3,6 @@ import HoboshellCore
 
 final class ProbeWindow: NSWindow {
     override var canBecomeKey: Bool { false }
-    override var canBecomeMain: Bool { false }
 }
 
 final class Probe {

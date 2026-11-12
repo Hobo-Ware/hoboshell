@@ -46,18 +46,27 @@ final class AppWatcher {
             .handle(notification as String, element: element, observedAt: observedAt)
     }
 
+    private var pendingAppNotifications = AppWatcher.appNotifications
+
     @discardableResult
     func start() -> Bool {
         var created: AXObserver?
         guard AXObserverCreate(pid, Self.callback, &created) == .success, let created else { return false }
         WindowCatalog.timeout(element)
-        let context = Unmanaged.passUnretained(self).toOpaque()
-        for notification in Self.appNotifications {
-            AXObserverAddNotification(created, element, notification as CFString, context)
-        }
         AXWorker.shared.add(source: AXObserverGetRunLoopSource(created))
         observer = created
+        registerAppNotifications()
         return true
+    }
+
+    // An app that is still starting refuses registrations, so the missing ones are tried again on every read.
+    private func registerAppNotifications() {
+        guard let observer, !pendingAppNotifications.isEmpty else { return }
+        let context = Unmanaged.passUnretained(self).toOpaque()
+        pendingAppNotifications = pendingAppNotifications.filter { notification in
+            let result = AXObserverAddNotification(observer, element, notification as CFString, context)
+            return result != .success && result != .notificationAlreadyRegistered
+        }
     }
 
     func stop() {
@@ -70,6 +79,7 @@ final class AppWatcher {
     }
 
     func snapshot() -> [WindowState]? {
+        registerAppNotifications()
         guard let elements = WindowCatalog.attribute(kAXWindowsAttribute, of: element) as? [AXUIElement] else { return nil }
         let focused = WindowCatalog.attribute(kAXFocusedWindowAttribute, of: element)
         return elements.compactMap { window in

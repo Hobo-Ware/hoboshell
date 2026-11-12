@@ -2,6 +2,13 @@ import Testing
 @testable import HoboshellCore
 
 @Suite struct SelfTestTests {
+    @Test func stepWithItsOwnBudgetIsJudgedAgainstIt() {
+        var report = SelfTestReport()
+        report.add(SelfTestStep(name: "animated", milliseconds: 530, budgetMilliseconds: 1000))
+        report.add(SelfTestStep(name: "too slow", milliseconds: 1200, budgetMilliseconds: 1000))
+        #expect(report.steps.map(report.passes) == [true, false])
+    }
+
     @Test func everyProbeCommandSurvivesALineRoundTrip() {
         let commands: [ProbeCommand] = [
             .open(title: "Probe A"),
