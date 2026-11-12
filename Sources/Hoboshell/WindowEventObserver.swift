@@ -12,9 +12,14 @@ final class WindowEventObserver {
         kAXWindowMiniaturizedNotification,
         kAXWindowDeminiaturizedNotification,
     ]
+    private static let geometryNotifications = [
+        kAXWindowMovedNotification,
+        kAXWindowResizedNotification,
+    ]
 
     var onChange: (() -> Void)?
     var onDestroyed: ((AXUIElement) -> Void)?
+    var onGeometryChange: ((AXUIElement) -> Void)?
     private var observers: [pid_t: AXObserver] = [:]
 
     func watch(apps: [NSRunningApplication]) {
@@ -33,6 +38,10 @@ final class WindowEventObserver {
         let callback: AXObserverCallback = { _, element, notification, context in
             guard let context else { return }
             let observer = Unmanaged<WindowEventObserver>.fromOpaque(context).takeUnretainedValue()
+            if WindowEventObserver.geometryNotifications.contains(notification as String) {
+                observer.onGeometryChange?(element)
+                return
+            }
             if notification as String == kAXUIElementDestroyedNotification {
                 observer.onDestroyed?(element)
             }
@@ -42,7 +51,7 @@ final class WindowEventObserver {
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, Self.messagingTimeout)
         let context = Unmanaged.passUnretained(self).toOpaque()
-        for notification in Self.notifications {
+        for notification in Self.notifications + Self.geometryNotifications {
             AXObserverAddNotification(observer, app, notification as CFString, context)
         }
         CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .defaultMode)

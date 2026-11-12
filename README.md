@@ -77,22 +77,35 @@ or press Ctrl+C in the terminal.
 When you start it from a terminal, the Accessibility switch appears under your
 terminal app's name in System Settings > Privacy & Security > Accessibility.
 
-### Hiding the real Dock and desktop icons
+### Replacing the real Dock and desktop icons
 
-Off by default. Right-click a bar and tick "Hide the Mac Dock and desktop
+Off by default. Right-click a bar and tick "Replace the Mac Dock and desktop
 icons"; the choice is remembered. Or turn it on for one run:
 
 ```sh
 HOBOSHELL_HIDE_SYSTEM_UI=1 swift run
 ```
 
-This sets the Dock to auto-hide with a very long delay and turns off Finder's
-desktop icons, then restarts both. Your old settings are saved first and put
-back when Hoboshell quits. If it ever quits badly, restore them by hand:
+macOS keeps maximised and tiled windows clear of the Dock, so Hoboshell keeps
+the real Dock on the same edge as its bar (bottom for the bottom taskbar, left
+for the side dock), never hiding and never magnifying, and draws the bar
+exactly on top of it. Hoboshell measures how thick the Dock turns out and
+adjusts its icon size until it matches the bar, so the first run restarts the
+Dock a few times. It also turns off the Finder desktop icons and restarts
+Finder. Your old settings are saved first and put back when you untick the
+item or quit Hoboshell. If it ever quits badly, restore them by hand:
 
 ```sh
 swift run Hoboshell --restore
 ```
+
+Settings this changes in `com.apple.dock`: `autohide`, `autohide-delay`,
+`tilesize`, `orientation`, `magnification`, `show-recents` and `largesize`
+(saved, not changed), and in `com.apple.finder`: `CreateDesktop`.
+
+With the option off, "Keep windows above the taskbar" (on by default) shrinks
+any window that ends up with its bottom edge under the bottom taskbar once you
+stop moving it.
 
 ## Limits you should know about
 
@@ -100,8 +113,10 @@ macOS does not let another app replace Finder or the Dock, so Hoboshell is an
 overlay, not a replacement:
 
 - The Mac menu bar stays at the top of the screen.
-- Windows you maximise yourself can slide under the taskbar. The snap shortcuts
-  keep clear of it.
+- Without the Dock replacement, windows you maximise yourself can slide under
+  the taskbar until "Keep windows above the taskbar" nudges them up. The snap
+  shortcuts keep clear of it. The top bar of the side dock look still overlaps
+  windows: macOS only keeps them below the Mac menu bar.
 - The file explorer does not appear in Cmd+Tab, because Hoboshell runs as a
   background agent. It does appear on the taskbar and in Option+Tab.
 - The system tray shows Hoboshell's own indicators. macOS does not let another

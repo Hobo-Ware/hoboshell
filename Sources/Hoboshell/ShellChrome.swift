@@ -53,8 +53,13 @@ extension ShellChrome {
 }
 
 extension ShellLayout {
-    init(variant: ShellVariant, screen: NSScreen) {
-        self.init(variant: variant, screenFrame: screen.frame, visibleFrame: screen.visibleFrame)
+    init(variant: ShellVariant, screen: NSScreen, dockReservation: DockReservation = .off) {
+        self.init(
+            variant: variant,
+            screenFrame: screen.frame,
+            visibleFrame: screen.visibleFrame,
+            dockReservation: dockReservation
+        )
     }
 }
 

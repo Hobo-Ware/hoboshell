@@ -14,11 +14,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let windowEvents = WindowEventObserver()
     private let dockBadges = DockBadges()
     private let showDesktop = TaskbarShowDesktop()
+    private let nudger = WindowNudger()
     private let hidesSystemUI = ProcessInfo.processInfo.environment["HOBOSHELL_HIDE_SYSTEM_UI"] == "1"
     private var variant = ShellVariant.resolve(
         arguments: CommandLine.arguments,
         saved: UserDefaults.standard.string(forKey: AppDelegate.savedVariantKey)
     )
+    private var dockReservation = DockReservation.off
     private var chrome: ShellChrome?
     private var desktop: DesktopWindow?
     private var startMenu: StartMenuPanel?
@@ -29,8 +31,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         terminateCleanlyOnSignals()
-        if hidesSystemUI || SystemChrome.isWanted {
-            SystemChrome.hide()
+        if !hidesSystemUI && !SystemChrome.isWanted && SystemChrome.isActive {
+            SystemChrome.restore()
         }
         Accessibility.requestTrust()
         MainMenu.install()
@@ -58,12 +60,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.refreshTaskbar()
             }
         }
+        windowEvents.onGeometryChange = { [weak self] window in
+            self?.nudger.windowChanged(window)
+        }
         windowRefreshTimer = Timer.scheduledTimer(withTimeInterval: Self.windowRefreshInterval, repeats: true) { [weak self] _ in
             self?.refreshBadges()
             self?.refreshTaskbar()
         }
         registerHotKeys()
         openRequestedWindows()
+        if hidesSystemUI || SystemChrome.isWanted {
+            engageDock()
+        }
 
         NotificationCenter.default.addObserver(
             self,
@@ -71,10 +79,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             name: NSApplication.didChangeScreenParametersNotification,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(dockWantedChanged),
+            name: SystemChrome.wantedDidChange,
+            object: nil
+        )
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        if SystemChrome.isHidden {
+        if SystemChrome.isActive {
             SystemChrome.restore()
         }
     }
@@ -84,12 +98,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func buildShell() {
-        guard let screen = NSScreen.main else { return }
+        guard let screen = shellScreen else { return }
         chrome?.dismiss()
         desktop?.orderOut(nil)
         startMenu?.orderOut(nil)
 
-        let layout = ShellLayout(variant: variant, screen: screen)
+        let layout = ShellLayout(variant: variant, screen: screen, dockReservation: reservation(on: screen))
+        nudger.barFrame = variant == .bottomTaskbar ? layout.bar : nil
         let desktop = DesktopWindow(screen: screen, reserved: layout.reserved, color: variant.desktopColor)
         desktop.orderFront(nil)
         self.desktop = desktop
@@ -118,10 +133,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshTaskbar()
     }
 
+    private var shellScreen: NSScreen? {
+        dockReservation.isOn ? NSScreen.screens.first : NSScreen.main
+    }
+
+    private func reservation(on screen: NSScreen) -> DockReservation {
+        screen == NSScreen.screens.first ? dockReservation : .off
+    }
+
     private func switchVariant() {
         variant = variant.other
         UserDefaults.standard.set(variant.rawValue, forKey: Self.savedVariantKey)
+        dockReservation = .off
         buildShell()
+        if SystemChrome.isActive {
+            engageDock()
+        }
+    }
+
+    private func engageDock() {
+        SystemChrome.engage(variant: variant) { [weak self] reservation in
+            self?.dockReservation = reservation
+            self?.buildShell()
+        }
     }
 
     private func openRequestedWindows() {
@@ -273,7 +307,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Self.snapLog.notice("snap skipped: no app has been active yet")
             return
         }
-        let reserved = ShellLayout(variant: variant, screen: screen).reserved
+        let reserved = ShellLayout(variant: variant, screen: screen, dockReservation: reservation(on: screen)).reserved
         let outcome = WindowSnapper.snapFrontWindow(of: app, to: region, on: screen, reserved: reserved)
         let appName = app.localizedName ?? "unknown app"
         Self.snapLog.notice("snap region \(region.rawValue) on \(appName, privacy: .public): \(outcome.description, privacy: .public)")
@@ -292,6 +326,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func screensChanged() {
+        buildShell()
+    }
+
+    @objc private func dockWantedChanged() {
+        if SystemChrome.isWanted {
+            engageDock()
+            return
+        }
+        SystemChrome.restore()
+        dockReservation = .off
         buildShell()
     }
 }
