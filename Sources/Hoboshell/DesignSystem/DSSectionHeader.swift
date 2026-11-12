@@ -5,7 +5,7 @@ final class DSSectionHeader: NSView {
 
     init(_ title: String) {
         super.init(frame: .zero)
-        let label = DSLabel(title, style: .caption, weight: .medium, color: DSColor.dimText)
+        let label = Self.makeLabel(title)
         label.translatesAutoresizingMaskIntoConstraints = false
         addSubview(label)
         NSLayoutConstraint.activate([
@@ -13,6 +13,10 @@ final class DSSectionHeader: NSView {
             label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -DSSpacing.s),
             label.topAnchor.constraint(equalTo: topAnchor, constant: DSSpacing.m),
         ])
+    }
+
+    static func makeLabel(_ title: String) -> DSLabel {
+        DSLabel(title, style: .caption, weight: .medium, color: DSColor.dimText)
     }
 
     @available(*, unavailable)

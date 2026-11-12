@@ -247,9 +247,9 @@ final class StartMenuPanel: NSPanel {
         let user = DSButton(
             views: [avatar, DSLabel(StartMenuSystem.userName)],
             height: .regular,
-            alignment: .leading,
-            tip: StartMenuSystem.userName
+            alignment: .leading
         )
+        user.setAccessibilityLabel(StartMenuSystem.userName)
         let power = DSButton(symbol: "power", tip: "Power")
         user.onPress = { [weak self, weak user] in
             guard let self, let user else { return }

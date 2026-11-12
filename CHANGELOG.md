@@ -103,6 +103,10 @@ Record of work, newest first. Each entry says what a user would notice.
   shows in the window.
 
 ### Fixed
+- The Start menu header lines up: "Pinned" and "All apps >" sit on one row
+  with the control at the right end and a small arrow, and the Back row of the
+  All apps list is centred the same way. A tooltip with your name no longer
+  pops up over other parts of the menu.
 - Desktop icons now react: they light up under the pointer, select on a
   click, open on a double click and have a right-click menu. Finder's own
   desktop was sitting on top and taking every click; it is now covered.
