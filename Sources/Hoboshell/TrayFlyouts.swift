@@ -7,6 +7,7 @@ final class TrayFlyouts {
 
     private static let appsWidth: CGFloat = 280
     private static let volumeWidth: CGFloat = 280
+    private static let batteryWidth: CGFloat = 240
 
     var staysOpenForCapture = false
 
@@ -60,6 +61,7 @@ final class TrayFlyouts {
         switch kind {
         case .apps: return (TrayAppsFlyoutView(context: context), Self.appsWidth)
         case .volume: return (TrayVolumeFlyoutView(context: context), Self.volumeWidth)
+        case .battery: return (TrayBatteryFlyoutView(context: context), Self.batteryWidth)
         case .calendar: return (TrayCalendarFlyoutView(context: context), TrayCalendarFlyoutView.contentWidth)
         }
     }

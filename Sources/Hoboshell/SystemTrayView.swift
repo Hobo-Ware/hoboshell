@@ -1,6 +1,5 @@
 import AppKit
 import HoboshellCore
-import IOKit.ps
 import Network
 
 final class SystemTrayView: NSStackView {
@@ -43,7 +42,10 @@ final class SystemTrayView: NSStackView {
         volumeItem.onPress = {
             TrayFlyouts.shared.toggle(.volume)
         }
-        let batteryItem = Self.item([batteryIcon, batteryLabel], height: height, tip: "Battery settings", pane: TraySettings.battery)
+        let batteryItem = DSButton(views: [batteryIcon, batteryLabel], height: height, tip: "Battery")
+        batteryItem.onPress = {
+            TrayFlyouts.shared.toggle(.battery)
+        }
         let clockItem = DSButton(views: [clock], height: height, tip: "Calendar")
         clockItem.onPress = {
             TrayFlyouts.shared.toggle(.calendar)
@@ -51,6 +53,9 @@ final class SystemTrayView: NSStackView {
         self.batteryItem = batteryItem
         trayItems = [networkItem, volumeItem, batteryItem, clockItem]
         self.volumeItem = volumeItem
+        TrayFlyouts.shared.register(.battery) { [weak self, weak batteryItem] in
+            batteryItem?.isHidden == false ? batteryItem : self
+        }
         TrayFlyouts.shared.register(.calendar) { [weak clockItem] in clockItem }
         addArrangedSubview(appsView)
         trayItems.forEach(addArrangedSubview)
@@ -112,7 +117,7 @@ final class SystemTrayView: NSStackView {
         let separator = clockOnOneLine ? "  " : "\n"
         clock.stringValue = timeFormatter.string(from: now) + separator + dateFormatter.string(from: now)
 
-        let battery = Self.readBattery()
+        let battery = TrayBatteryReader.read()?.status
         batteryItem?.isHidden = battery == nil
         if let battery {
             batteryIcon.image = DSIconSize.symbol(battery.symbolName, description: "Battery")
@@ -127,21 +132,5 @@ final class SystemTrayView: NSStackView {
             TraySettings.open(pane)
         }
         return item
-    }
-
-    private static func readBattery() -> BatteryStatus? {
-        guard let snapshot = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
-              let sources = IOPSCopyPowerSourcesList(snapshot)?.takeRetainedValue() as? [CFTypeRef] else { return nil }
-        for source in sources {
-            guard let details = IOPSGetPowerSourceDescription(snapshot, source)?.takeUnretainedValue() as? [String: Any],
-                  let current = details[kIOPSCurrentCapacityKey] as? Int,
-                  let capacity = details[kIOPSMaxCapacityKey] as? Int,
-                  capacity > 0 else { continue }
-            return BatteryStatus(
-                percent: current * 100 / capacity,
-                isCharging: details[kIOPSIsChargingKey] as? Bool ?? false
-            )
-        }
-        return nil
     }
 }
