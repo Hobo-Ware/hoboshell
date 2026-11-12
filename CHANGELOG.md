@@ -153,6 +153,8 @@ Record of work, newest first. Each entry says what a user would notice.
   shows in the window.
 
 ### Fixed
+- The taskbar now draws above the Mac Dock. It was sitting below it, so the
+  Dock showed on top of the bar whenever the Dock was visible.
 - Switching desktops no longer makes the taskbar slide away with the desktop,
   and its buttons change once to the new desktop's windows instead of in
   several steps. An app whose windows are on another desktop is not shown as

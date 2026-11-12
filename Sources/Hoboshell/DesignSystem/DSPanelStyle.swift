@@ -11,10 +11,11 @@ enum DSPanelStyle {
 
     @discardableResult
     static func apply(to panel: NSPanel, kind: Kind, level: NSWindow.Level = .statusBar) -> DSCard {
+        // Turning a panel into a floating panel resets its level, so the level is set after it.
+        panel.isFloatingPanel = true
         panel.level = level
         panel.collectionBehavior = [.canJoinAllSpaces, .ignoresCycle, .fullScreenAuxiliary]
         panel.appearance = NSAppearance(named: .darkAqua)
-        panel.isFloatingPanel = true
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
         panel.isMovable = false
