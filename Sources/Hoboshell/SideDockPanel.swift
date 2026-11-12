@@ -8,9 +8,9 @@ final class SideDockPanel: NSPanel {
     private var items: [TaskbarItem] = []
     private var shownItems: [String] = []
 
-    init(frame: NSRect, contextMenu: NSMenu) {
+    init(frame: NSRect, contextMenu: NSMenu, kind: DSPanelStyle.Kind = .bar) {
         super.init(contentRect: frame, styleMask: DSPanelStyle.styleMask, backing: .buffered, defer: false)
-        let background = DSPanelStyle.apply(to: self, kind: .bar)
+        let background = DSPanelStyle.apply(to: self, kind: kind)
 
         let filesButton = DSButton(image: HoboIcon.files.image(side: DSIconSize.startLogo), height: .taskbar, tip: "Files")
         filesButton.onPress = { [weak self] in

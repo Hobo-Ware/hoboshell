@@ -115,7 +115,7 @@ final class WindowCatalog {
         _ = AXUIElementPerformAction(button as! AXUIElement, kAXPressAction as CFString)
     }
 
-    private static func frame(of element: AXUIElement) -> CGRect? {
+    static func frame(of element: AXUIElement) -> CGRect? {
         guard let position = attribute(kAXPositionAttribute, of: element),
               let size = attribute(kAXSizeAttribute, of: element),
               CFGetTypeID(position) == AXValueGetTypeID(),

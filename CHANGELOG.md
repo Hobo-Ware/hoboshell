@@ -5,6 +5,19 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Added
+- "Replace the Mac Dock and desktop icons" (the old "Hide the Mac Dock" item,
+  same setting) now keeps the real Dock on screen under the bar, the same
+  thickness and never hidden, and draws the bar on top of it. Maximised and
+  tiled windows now stop at the bar instead of sliding under it. The first
+  run measures the Dock and adjusts its icon size to fit, so the Dock restarts
+  a few times once; later runs restart it once. Switching between the two
+  looks moves the Dock to the other edge. Your old Dock and Finder settings
+  are saved first and put back when you turn it off, quit, or run
+  `swift run Hoboshell --restore`; leftovers from a crash are put back at the
+  next start.
+- "Keep windows above the taskbar" in the bar's right-click menu, on by
+  default: a window whose bottom edge ends up under the bottom taskbar gets
+  shorter so it sits just above it.
 - A new window switcher on Command+Tab and Command+Shift+Tab (Option+Tab still
   works). It shows one tile per window with a live picture, the app icon and
   the title, most recently used first, and wraps onto more rows when needed.

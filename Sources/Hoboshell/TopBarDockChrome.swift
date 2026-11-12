@@ -11,7 +11,11 @@ final class TopBarDockChrome: ShellChrome {
         var switchVariant: (() -> Void)?
         let makeMenu = { ShellContextMenu(switchTitle: switchTitle) { switchVariant?() } }
         topBar = TopBarPanel(frame: layout.bar, contextMenu: makeMenu())
-        dock = SideDockPanel(frame: layout.dock ?? .zero, contextMenu: makeMenu())
+        dock = SideDockPanel(
+            frame: layout.dock ?? .zero,
+            contextMenu: makeMenu(),
+            kind: layout.dockReservation.isOn ? .opaqueBar : .bar
+        )
 
         switchVariant = { [weak self] in self?.actions.onSwitchVariant?() }
         topBar.onOverview = { [weak self] in self?.actions.onStart?() }

@@ -24,7 +24,8 @@ final class TaskbarPanel: NSPanel, ShellChrome {
 
     init(layout: ShellLayout, switchTitle: String) {
         super.init(contentRect: layout.bar, styleMask: DSPanelStyle.styleMask, backing: .buffered, defer: false)
-        buildContent(in: DSPanelStyle.apply(to: self, kind: .bar), switchTitle: switchTitle)
+        let kind: DSPanelStyle.Kind = layout.dockReservation.isOn ? .opaqueBar : .bar
+        buildContent(in: DSPanelStyle.apply(to: self, kind: kind), switchTitle: switchTitle)
         pinObserver = NotificationCenter.default.addObserver(
             forName: TaskbarPinStore.didChange, object: nil, queue: .main
         ) { [weak self] _ in
