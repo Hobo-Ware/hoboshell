@@ -3,4 +3,5 @@ public enum TrayItemKind: String, CaseIterable, Equatable {
     case volume
     case calendar
     case battery
+    case network
 }

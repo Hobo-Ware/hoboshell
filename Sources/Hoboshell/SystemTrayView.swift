@@ -1,6 +1,5 @@
 import AppKit
 import HoboshellCore
-import Network
 
 final class SystemTrayView: NSStackView {
     private static let refreshInterval: TimeInterval = 5
@@ -12,13 +11,13 @@ final class SystemTrayView: NSStackView {
     private let clock = DSLabel(style: .caption, monospacedDigits: true)
     private let timeFormatter = DateFormatter()
     private let dateFormatter = DateFormatter()
-    private let networkMonitor = NWPathMonitor()
     private let clockOnOneLine: Bool
     private var refreshTimer: Timer?
     private var trayItems: [DSButton] = []
     private var batteryItem: DSButton?
     private var volumeItem: DSButton?
     private var volumeObserver: NSObjectProtocol?
+    private var networkObserver: NSObjectProtocol?
     private let appsView: TrayAppsView
 
     init(clockOnOneLine: Bool, height: DSControlHeight) {
@@ -37,7 +36,10 @@ final class SystemTrayView: NSStackView {
         clock.alignment = .right
         clock.maximumNumberOfLines = clockOnOneLine ? 1 : 2
 
-        let networkItem = Self.item([networkIcon], height: height, tip: "Network settings", pane: TraySettings.network)
+        let networkItem = DSButton(views: [networkIcon], height: height, tip: "Network")
+        networkItem.onPress = {
+            TrayFlyouts.shared.toggle(.network)
+        }
         let volumeItem = TrayVolumeButton(views: [volumeIcon], height: height, tip: "Volume")
         volumeItem.onPress = {
             TrayFlyouts.shared.toggle(.volume)
@@ -53,6 +55,7 @@ final class SystemTrayView: NSStackView {
         self.batteryItem = batteryItem
         trayItems = [networkItem, volumeItem, batteryItem, clockItem]
         self.volumeItem = volumeItem
+        TrayFlyouts.shared.register(.network) { [weak networkItem] in networkItem }
         TrayFlyouts.shared.register(.battery) { [weak self, weak batteryItem] in
             batteryItem?.isHidden == false ? batteryItem : self
         }
@@ -73,14 +76,13 @@ final class SystemTrayView: NSStackView {
         }
         showVolume()
 
-        showNetwork(isOnline: true)
-        networkMonitor.pathUpdateHandler = { [weak self] path in
-            let isOnline = path.status == .satisfied
-            DispatchQueue.main.async {
-                self?.showNetwork(isOnline: isOnline)
-            }
+        TrayNetwork.shared.start()
+        networkObserver = NotificationCenter.default.addObserver(
+            forName: TrayNetwork.didChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.showNetwork()
         }
-        networkMonitor.start(queue: DispatchQueue(label: "dev.hoboware.hoboshell.network"))
+        showNetwork()
 
         refresh()
         refreshTimer = Timer.scheduledTimer(withTimeInterval: Self.refreshInterval, repeats: true) { [weak self] _ in
@@ -94,14 +96,13 @@ final class SystemTrayView: NSStackView {
     }
 
     deinit {
-        networkMonitor.cancel()
-        if let volumeObserver {
-            NotificationCenter.default.removeObserver(volumeObserver)
+        for observer in [volumeObserver, networkObserver].compactMap({ $0 }) {
+            NotificationCenter.default.removeObserver(observer)
         }
     }
 
-    private func showNetwork(isOnline: Bool) {
-        networkIcon.image = DSIconSize.symbol(isOnline ? "wifi" : "wifi.slash", description: "Network")
+    private func showNetwork() {
+        networkIcon.image = DSIconSize.symbol(TrayNetwork.shared.summary.symbolName, description: "Network")
     }
 
     private func showVolume() {

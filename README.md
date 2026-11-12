@@ -15,7 +15,9 @@ APIs only. No System Integrity Protection changes, no private frameworks.
   again to minimise it. Right-click a button to pin the app, close its
   windows or quit it. Pinned apps stay on the bar, running apps get a line
   under the button, and many windows of one app can fold into one button.
-- **System tray** with network state, battery level, and a clock with the date.
+- **System tray** with apps running in the background (no window, with unread
+  counts), volume, network state, battery level, and a clock with the date.
+  Each of the last four opens a small flyout; the clock opens a calendar.
 - **Window switcher**: hold Command (or Option) and press Tab to step through
   open windows, one tile per window with a live picture, most recently used
   first. Release to switch.
@@ -146,7 +148,3 @@ Code is split in two:
 
 Coding and testing rules are in [AGENTS.md](AGENTS.md). Work done so far is in
 [CHANGELOG.md](CHANGELOG.md).
-
-## Roadmap
-
-- Volume control in the system tray
