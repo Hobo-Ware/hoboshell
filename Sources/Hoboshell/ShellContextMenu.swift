@@ -19,6 +19,10 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
     private var groupingItems: [(TaskbarGrouping, DSMenuItem)] = []
     private var groupingChoice: GroupingChoice?
 
+    private let iconPackItems: [(IconPack, NSMenuItem)] = IconPack.allCases.map { pack in
+        (pack, DSMenuItem(pack.title) { IconPack.current = pack })
+    }
+
     init(switchTitle: String, grouping: GroupingChoice? = nil, onSwitchVariant: @escaping () -> Void) {
         super.init(title: "")
         DSMenu.style(self)
@@ -30,6 +34,7 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
             }
             addItem(DSMenu.submenu("Group windows", groupingItems.map(\.1)))
         }
+        addItem(DSMenu.submenu("Folder style", iconPackItems.map(\.1)))
         addItem(commandTabItem)
         addItem(keepAboveBarItem)
         addItem(replaceDockItem)
@@ -49,6 +54,9 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
         replaceDockItem.state = SystemChrome.isWanted ? .on : .off
         keepAboveBarItem.state = WindowNudger.isEnabled ? .on : .off
         commandTabItem.state = SwitcherSettings.takesCommandTab ? .on : .off
+        for (pack, item) in iconPackItems {
+            item.state = pack == IconPack.current ? .on : .off
+        }
         guard let current = groupingChoice?.current() else { return }
         for (mode, item) in groupingItems {
             item.state = mode == current ? .on : .off

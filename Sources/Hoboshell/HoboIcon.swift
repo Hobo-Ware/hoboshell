@@ -47,11 +47,12 @@ enum HoboIcon: String {
 
     func image(side: CGFloat) -> NSImage? {
         let scale = NSScreen.main?.backingScaleFactor ?? 2
-        let key = "\(rawValue)@\(side)x\(scale)"
+        let pack = IconPack.current
+        let key = "\(pack.rawValue)/\(rawValue)@\(side)x\(scale)"
         if let cached = Self.cached(key) {
             return cached
         }
-        guard let svg = HoboIconData.svg[rawValue], let source = NSImage(data: Data(svg.utf8)) else { return nil }
+        guard let svg = pack.svg(named: rawValue), let source = NSImage(data: Data(svg.utf8)) else { return nil }
         let pixels = Int(side * scale)
         guard let bitmap = NSBitmapImageRep(
             bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels, bitsPerSample: 8, samplesPerPixel: 4,
@@ -99,6 +100,12 @@ enum HoboIcon: String {
         var rect = NSRect(x: 0, y: 0, width: side * decodedPixelsPerPoint, height: side * decodedPixelsPerPoint)
         guard let bitmap = image.cgImage(forProposedRect: &rect, context: nil, hints: nil) else { return image }
         return NSImage(cgImage: bitmap, size: NSSize(width: side, height: side))
+    }
+
+    static func forgetRenderedIcons() {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        rendered = [:]
     }
 
     private static func cached(_ key: String) -> NSImage? {

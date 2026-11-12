@@ -5,6 +5,9 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Added
+- Folder style: right-click a bar and pick how folders and places look. Tin
+  folder (the new default), roped suitcase, bean can, patched sack or broken
+  crate. Open windows and the desktop change at once.
 - `scripts/selftest.sh` runs `Hoboshell --selftest realtime`: the shell opens
   a small helper app (`HoboshellProbe`) with plain windows that never take
   keyboard focus, opens, retitles, minimises, restores and closes them, and

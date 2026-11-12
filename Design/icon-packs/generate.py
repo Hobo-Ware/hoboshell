@@ -1,4 +1,4 @@
-import pathlib, shutil
+import pathlib
 src = pathlib.Path(__file__).resolve().parent.parent / 'icons'
 def lg(i, stops, h=False):
     s = "".join(f'<stop offset="{o}" stop-color="{c}"/>' for o, c in stops)
@@ -9,6 +9,9 @@ GLYPH = {
  "documents": '<path d="M108 130a5 5 0 0 1 5-5h22l13 13v38a5 5 0 0 1-5 5h-30a5 5 0 0 1-5-5z"/><g fill="{bg}"><rect x="115" y="146" width="26" height="5" rx="2.500"/><rect x="115" y="156" width="26" height="5" rx="2.500"/><rect x="115" y="166" width="16" height="5" rx="2.500"/></g>',
  "downloads": '<path d="M120 128h16v24h14l-22 26-22-26h14z"/>',
  "pictures": '<circle cx="146" cy="138" r="8"/><path d="M100 180l22-32 14 18 8-10 14 24z"/>',
+ "desktop": '<path d="M104 136a5 5 0 0 1 5-5h38a5 5 0 0 1 5 5v24a5 5 0 0 1-5 5h-38a5 5 0 0 1-5-5zm7 2v20h34v-20z" fill-rule="evenodd"/><rect x="123" y="165" width="10" height="8"/><rect x="112" y="172" width="32" height="6" rx="3"/>',
+ "movies": '<path d="M114 130l38 26-38 26z"/>',
+ "applications": '<rect x="104" y="132" width="20" height="20" rx="5"/><rect x="132" y="132" width="20" height="20" rx="5"/><rect x="104" y="160" width="20" height="20" rx="5"/><rect x="132" y="160" width="20" height="20" rx="5"/>',
  "music": '<path d="M120 132l30-8v38a10 9 0 1 1-8-8.800V139l-14 3.600V170a10 9 0 1 1-8-8.800z"/>',
 }
 def patch(glyph, dy=0, rot=-5):
@@ -123,11 +126,9 @@ def tin_can(glyph):
       + duct_tape(70, 150, 78, 60))
     return d, body + patch(glyph, -8, 0)
 
-concepts = {"2-suitcase": hobo_suitcase, "3-bean-can": tin_can, "4-sack": hobo_sack, "5-crate": hobo_crate}
-names = ["folder", "documents", "downloads", "pictures", "music"]
+concepts = {"suitcase": hobo_suitcase, "bean-can": tin_can, "sack": hobo_sack, "crate": hobo_crate}
+names = ["folder", "desktop", "documents", "downloads", "pictures", "music", "movies", "applications"]
 here = pathlib.Path(__file__).resolve().parent
-out = here / "1-cardboard"; out.mkdir(exist_ok=True)
-for n in names: shutil.copy(src / f"{n}.svg", out / f"{n}.svg")
 for concept, draw in concepts.items():
     out = here / concept; out.mkdir(exist_ok=True)
     for n in names:
