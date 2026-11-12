@@ -14,6 +14,7 @@ final class WindowEventObserver {
     ]
 
     var onChange: (() -> Void)?
+    var onDestroyed: ((AXUIElement) -> Void)?
     private var observers: [pid_t: AXObserver] = [:]
 
     func watch(apps: [NSRunningApplication]) {
@@ -29,9 +30,13 @@ final class WindowEventObserver {
 
     private func makeObserver(for pid: pid_t) -> AXObserver? {
         var created: AXObserver?
-        let callback: AXObserverCallback = { _, _, _, context in
+        let callback: AXObserverCallback = { _, element, notification, context in
             guard let context else { return }
-            Unmanaged<WindowEventObserver>.fromOpaque(context).takeUnretainedValue().onChange?()
+            let observer = Unmanaged<WindowEventObserver>.fromOpaque(context).takeUnretainedValue()
+            if notification as String == kAXUIElementDestroyedNotification {
+                observer.onDestroyed?(element)
+            }
+            observer.onChange?()
         }
         guard AXObserverCreate(pid, callback, &created) == .success, let observer = created else { return nil }
         let app = AXUIElementCreateApplication(pid)
