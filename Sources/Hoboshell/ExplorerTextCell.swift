@@ -4,6 +4,7 @@ final class ExplorerTextCell: NSTableCellView {
     static let identifier = NSUserInterfaceItemIdentifier("ExplorerTextCell")
 
     private let label = DSLabel(color: DSColor.dimText)
+    private lazy var trailing = label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -DSSpacing.s)
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -13,7 +14,7 @@ final class ExplorerTextCell: NSTableCellView {
         textField = label
         NSLayoutConstraint.activate([
             label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: DSSpacing.s),
-            label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -DSSpacing.s),
+            trailing,
             label.centerYAnchor.constraint(equalTo: centerYAnchor),
         ])
     }
@@ -26,5 +27,6 @@ final class ExplorerTextCell: NSTableCellView {
     func show(_ text: String, alignment: NSTextAlignment) {
         label.stringValue = text
         label.alignment = alignment
+        trailing.constant = alignment == .right ? -DSSpacing.m : -DSSpacing.s
     }
 }

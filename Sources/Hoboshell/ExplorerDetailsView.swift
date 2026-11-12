@@ -2,7 +2,8 @@ import AppKit
 import HoboshellCore
 
 final class ExplorerDetailsView: NSScrollView, ExplorerItemsView, NSTableViewDataSource, NSTableViewDelegate {
-    private static let rowHeight = DSControlHeight.compact.value
+    private static let rowHeight = DSControlHeight.row.value
+    private static let nameInset = DSSpacing.s + DSIconSize.toolbar + DSSpacing.s
 
     private struct ColumnSpec {
         let column: ExplorerSortColumn
@@ -12,9 +13,9 @@ final class ExplorerDetailsView: NSScrollView, ExplorerItemsView, NSTableViewDat
 
     private static let columns = [
         ColumnSpec(column: .name, width: 320, minWidth: 140),
-        ColumnSpec(column: .modified, width: 140, minWidth: 100),
+        ColumnSpec(column: .modified, width: 180, minWidth: 130),
         ColumnSpec(column: .kind, width: 140, minWidth: 80),
-        ColumnSpec(column: .size, width: 80, minWidth: 60),
+        ColumnSpec(column: .size, width: 90, minWidth: 70),
     ]
 
     weak var itemsDelegate: ExplorerItemsDelegate?
@@ -48,6 +49,7 @@ final class ExplorerDetailsView: NSScrollView, ExplorerItemsView, NSTableViewDat
         isApplyingSort = true
         table.sortDescriptors = [NSSortDescriptor(key: sort.column.rawValue, ascending: sort.ascending)]
         isApplyingSort = false
+        table.headerView?.needsDisplay = true
         table.reloadData()
         let rows = IndexSet(entries.indices.filter { paths.contains(entries[$0].url.path) })
         table.selectRowIndexes(rows, byExtendingSelection: false)
@@ -89,7 +91,9 @@ final class ExplorerDetailsView: NSScrollView, ExplorerItemsView, NSTableViewDat
     }
 
     func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? {
-        tableView.makeView(withIdentifier: DSTableRowView.identifier, owner: nil) as? DSTableRowView ?? DSTableRowView()
+        let row = tableView.makeView(withIdentifier: DSTableRowView.identifier, owner: nil) as? DSTableRowView ?? DSTableRowView()
+        row.useAccentStyle()
+        return row
     }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
@@ -98,7 +102,7 @@ final class ExplorerDetailsView: NSScrollView, ExplorerItemsView, NSTableViewDat
         let entry = entries[row]
         if column == .name {
             let cell = tableView.makeView(withIdentifier: ExplorerNameCell.identifier, owner: nil) as? ExplorerNameCell ?? ExplorerNameCell()
-            cell.show(name: entry.name, icon: NSWorkspace.shared.icon(forFile: entry.url.path))
+            cell.show(name: entry.name, icon: HoboIcon.image(forFile: entry.url.path))
             return cell
         }
         let cell = tableView.makeView(withIdentifier: ExplorerTextCell.identifier, owner: nil) as? ExplorerTextCell ?? ExplorerTextCell()
@@ -176,15 +180,20 @@ final class ExplorerDetailsView: NSScrollView, ExplorerItemsView, NSTableViewDat
     private func configureTable() {
         for spec in Self.columns {
             let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(spec.column.rawValue))
-            column.title = spec.column.title
+            let isSize = spec.column == .size
+            column.headerCell = ExplorerHeaderCell(
+                title: spec.column.title,
+                sortKey: spec.column.rawValue,
+                leadingInset: spec.column == .name ? Self.nameInset : DSSpacing.s,
+                trailingInset: isSize ? DSSpacing.m : DSSpacing.s,
+                alignment: isSize ? .right : .left
+            )
             column.width = spec.width
             column.minWidth = spec.minWidth
             column.sortDescriptorPrototype = NSSortDescriptor(key: spec.column.rawValue, ascending: true)
-            if spec.column == .size {
-                column.headerCell.alignment = .right
-            }
             table.addTableColumn(column)
         }
+        table.headerView = ExplorerHeaderView(frame: NSRect(x: 0, y: 0, width: 0, height: Self.rowHeight))
         table.rowHeight = Self.rowHeight
         table.style = .plain
         table.intercellSpacing = .zero

@@ -22,7 +22,7 @@ final class DSSegmentedSwitch: NSView {
 
     init(segments: [Segment], selectedIndex: Int = 0, height: DSControlHeight = .regular) {
         self.selectedIndex = selectedIndex
-        buttons = segments.map { DSButton(symbol: $0.symbol, tip: $0.tip, height: height) }
+        buttons = segments.map { DSButton(symbol: $0.symbol, tip: $0.tip, height: height, weight: .medium) }
         super.init(frame: .zero)
         wantsLayer = true
         layer?.cornerRadius = DSRadius.control
@@ -44,6 +44,7 @@ final class DSSegmentedSwitch: NSView {
         ])
         for (index, button) in buttons.enumerated() {
             button.cornerRadius = DSRadius.none
+            button.selectedFill = DSColor.accentTint
             button.onPress = { [weak self] in
                 self?.choose(index)
             }

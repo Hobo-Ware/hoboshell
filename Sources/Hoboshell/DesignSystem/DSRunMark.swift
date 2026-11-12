@@ -5,11 +5,13 @@ final class DSRunMark: NSView {
         case none
         case running
         case active
+        case background
     }
 
-    static let height: CGFloat = 2
-    static let runningWidth: CGFloat = 8
-    static let activeWidth: CGFloat = 16
+    static let height: CGFloat = 3
+    static let runningWidth: CGFloat = 12
+    static let activeWidth: CGFloat = 20
+    static let backgroundSize: CGFloat = 4
 
     var state = State.none {
         didSet {
@@ -19,6 +21,7 @@ final class DSRunMark: NSView {
     }
 
     private var widthConstraint: NSLayoutConstraint?
+    private var heightConstraint: NSLayoutConstraint?
 
     init() {
         super.init(frame: .zero)
@@ -27,7 +30,9 @@ final class DSRunMark: NSView {
         translatesAutoresizingMaskIntoConstraints = false
         let width = widthAnchor.constraint(equalToConstant: Self.runningWidth)
         widthConstraint = width
-        NSLayoutConstraint.activate([width, heightAnchor.constraint(equalToConstant: Self.height)])
+        let height = heightAnchor.constraint(equalToConstant: Self.height)
+        heightConstraint = height
+        NSLayoutConstraint.activate([width, height])
         refresh()
     }
 
@@ -36,9 +41,20 @@ final class DSRunMark: NSView {
         fatalError("init(coder:) is not supported")
     }
 
+    private static func size(of state: State) -> CGSize {
+        switch state {
+        case .none, .running: return CGSize(width: runningWidth, height: height)
+        case .active: return CGSize(width: activeWidth, height: height)
+        case .background: return CGSize(width: backgroundSize, height: backgroundSize)
+        }
+    }
+
     private func refresh() {
         isHidden = state == .none
-        widthConstraint?.constant = state == .active ? Self.activeWidth : Self.runningWidth
-        layer?.backgroundColor = (state == .active ? DSColor.accent : DSColor.dimText).cgColor
+        let size = Self.size(of: state)
+        widthConstraint?.constant = size.width
+        heightConstraint?.constant = size.height
+        layer?.cornerRadius = size.height / 2
+        layer?.backgroundColor = (state == .active ? DSColor.accent : DSColor.runMark).cgColor
     }
 }
