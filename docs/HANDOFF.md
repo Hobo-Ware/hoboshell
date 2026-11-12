@@ -61,7 +61,7 @@ Not yet confirmed on screen by anyone: the switcher's look and the Command+Tab t
 
 ## Open choice: the container for folders and places
 
-`Design/icon-concepts` holds five drawn options for what a folder looks like, each with the plain container and four places: 1 cardboard folder (the one in use), 2 suitcase, 3 lunchbox, 4 sack, 5 crate. `generate.py` there redraws options 2 to 5. The owner has not picked yet. After a pick, draw the remaining places and Home in that style into `Design/icons`, then run `scripts/embed-icons.py`.
+`Design/icon-concepts` holds five drawn options for what a folder looks like, each with the plain container and four places: 1 cardboard folder (the one in use), 2 roped suitcase, 3 dented bean can, 4 patched sack, 5 broken crate. `generate.py` there redraws options 2 to 5. The owner has not picked yet. After a pick, draw the remaining places and Home in that style into `Design/icons`, then run `scripts/embed-icons.py`.
 
 ## Known rough spots
 
