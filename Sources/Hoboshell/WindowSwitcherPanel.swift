@@ -239,7 +239,6 @@ final class WindowSwitcherPanel: NSPanel {
             windowID: window.id,
             pid: window.app.processIdentifier,
             title: window.title,
-            frame: window.frame,
             isMinimized: window.isMinimized
         )
         WindowPreview.askForAccessOnce()

@@ -46,7 +46,10 @@ public struct ShellState: Equatable {
         case .windowTitleChanged(let id, let title):
             edit(id, into: &change) { $0.title = title }
         case .windowMinimized(let id):
-            edit(id, into: &change) { $0.isMinimized = true }
+            edit(id, into: &change) {
+                $0.isMinimized = true
+                $0.isFocused = false
+            }
         case .windowRestored(let id):
             edit(id, into: &change) { $0.isMinimized = false }
         case .windowFocused(let id):
