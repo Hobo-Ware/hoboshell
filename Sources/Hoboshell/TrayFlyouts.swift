@@ -60,6 +60,7 @@ final class TrayFlyouts {
         switch kind {
         case .apps: return (TrayAppsFlyoutView(context: context), Self.appsWidth)
         case .volume: return (TrayVolumeFlyoutView(context: context), Self.volumeWidth)
+        case .calendar: return (TrayCalendarFlyoutView(context: context), TrayCalendarFlyoutView.contentWidth)
         }
     }
 

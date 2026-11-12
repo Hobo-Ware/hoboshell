@@ -5,6 +5,11 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Added
+- The tray clock now follows the Mac's region settings (12 or 24 hour, date
+  order) instead of a fixed 24-hour pattern. Click it for a calendar flyout:
+  today's date, a month grid with week numbers and today marked, previous and
+  next month arrows, a "Today" button and a "Date and time settings" button.
+  `--show tray=calendar` opens it for screenshots.
 - A volume item in the tray that follows the level and mute state of the
   current output device. Scroll over it to change the volume in 5% steps; click
   it for a slider, a mute button, the list of outputs (click one to switch) and
