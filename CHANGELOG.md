@@ -5,6 +5,14 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Added
+- Apps that are running with no window (for example Slack after you press the
+  red button) now show as small icons at the left end of the tray, with their
+  unread count on the icon. Click one to bring its window back, right-click for
+  Open and Quit. With more than three, an arrow opens a "Running in the
+  background" list. A pinned app that runs with no window gets a small dot under
+  its taskbar button instead of the line. `--show tray=apps` opens the list for
+  screenshots (with sample rows when nothing is in the background), and the
+  `--gallery` window shows the tray icon, its badge and the dot.
 - "Replace the Mac Dock and desktop icons" (the old "Hide the Mac Dock" item,
   same setting) now keeps the real Dock on screen under the bar, the same
   thickness and never hidden, and draws the bar on top of it. Maximised and

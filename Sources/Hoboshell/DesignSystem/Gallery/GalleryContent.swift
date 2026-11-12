@@ -10,7 +10,7 @@ enum GalleryContent {
 
     static func page() -> NSView {
         let sections = [
-            colors(), scales(), text(), buttons(), toggles(), fields(), menus(), rows(), grid(), startMenu(), switcher(), chrome(), taskbar(), dialogs(),
+            colors(), scales(), text(), buttons(), toggles(), fields(), menus(), rows(), grid(), startMenu(), switcher(), chrome(), taskbar(), tray(), dialogs(),
         ]
         let stack = NSStackView(views: [DSLabel("Hoboshell design system", style: .title, weight: .semibold)] + sections)
         stack.orientation = .vertical
@@ -268,7 +268,7 @@ enum GalleryContent {
     private static func taskbar() -> NSView {
         let folder = NSImage(named: NSImage.folderName)
         let marks: [(String, NSView)] = [
-            ("none", DSRunMark()), ("running", mark(.running)), ("active", mark(.active)),
+            ("none", DSRunMark()), ("running", mark(.running)), ("active", mark(.active)), ("background", mark(.background)),
         ]
         func button(_ configure: @escaping (DSTaskbarButton) -> Void) -> () -> DSControl {
             {
@@ -282,6 +282,7 @@ enum GalleryContent {
             GalleryRow.states("pinned, not running", button { _ in }),
             GalleryRow.states("running", button { $0.runState = .running }),
             GalleryRow.states("active window", button { $0.runState = .active }),
+            GalleryRow.states("pinned, no window", button { $0.runState = .background }),
             GalleryRow.states("group with count", button {
                 $0.runState = .running
                 $0.countText = "3"
@@ -291,6 +292,15 @@ enum GalleryContent {
                 $0.notificationText = "12"
             }),
         ])
+    }
+
+    private static func tray() -> NSView {
+        let folder = NSImage(named: NSImage.folderName)
+        let icons: [(String, NSView)] = [
+            ("icon", DSTrayIcon(icon: folder, tip: "Documents")),
+            ("with unread badge", DSTrayIcon(icon: folder, tip: "Documents", badge: "12")),
+        ]
+        return GalleryRow.section("DSTrayIcon", [GalleryRow.make("background app", icons)])
     }
 
     private static func mark(_ state: DSRunMark.State) -> DSRunMark {
