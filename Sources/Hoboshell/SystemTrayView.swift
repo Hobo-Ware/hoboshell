@@ -5,11 +5,9 @@ import Network
 
 final class SystemTrayView: NSStackView {
     private static let refreshInterval: TimeInterval = 5
-    private static let networkSettings = "x-apple.systempreferences:com.apple.wifi-settings-extension"
-    private static let batterySettings = "x-apple.systempreferences:com.apple.Battery-Settings.extension"
-    private static let dateSettings = "x-apple.systempreferences:com.apple.Date-Time-Settings.extension"
 
     private let networkIcon = DSIconView(side: DSIconSize.inline)
+    private let volumeIcon = DSIconView(side: DSIconSize.inline)
     private let batteryIcon = DSIconView(side: DSIconSize.inline)
     private let batteryLabel = DSLabel(style: .caption, monospacedDigits: true)
     private let clock = DSLabel(style: .caption, monospacedDigits: true)
@@ -20,6 +18,8 @@ final class SystemTrayView: NSStackView {
     private var refreshTimer: Timer?
     private var trayItems: [DSButton] = []
     private var batteryItem: DSButton?
+    private var volumeItem: DSButton?
+    private var volumeObserver: NSObjectProtocol?
     private let appsView: TrayAppsView
 
     init(clockOnOneLine: Bool, height: DSControlHeight) {
@@ -36,17 +36,31 @@ final class SystemTrayView: NSStackView {
         clock.alignment = .right
         clock.maximumNumberOfLines = clockOnOneLine ? 1 : 2
 
-        let networkItem = Self.item([networkIcon], height: height, tip: "Network settings", pane: Self.networkSettings)
-        let batteryItem = Self.item([batteryIcon, batteryLabel], height: height, tip: "Battery settings", pane: Self.batterySettings)
-        let clockItem = Self.item([clock], height: height, tip: "Date and time settings", pane: Self.dateSettings)
+        let networkItem = Self.item([networkIcon], height: height, tip: "Network settings", pane: TraySettings.network)
+        let volumeItem = TrayVolumeButton(views: [volumeIcon], height: height, tip: "Volume")
+        volumeItem.onPress = {
+            TrayFlyouts.shared.toggle(.volume)
+        }
+        let batteryItem = Self.item([batteryIcon, batteryLabel], height: height, tip: "Battery settings", pane: TraySettings.battery)
+        let clockItem = Self.item([clock], height: height, tip: "Date and time settings", pane: TraySettings.dateAndTime)
         self.batteryItem = batteryItem
-        trayItems = [networkItem, batteryItem, clockItem]
+        trayItems = [networkItem, volumeItem, batteryItem, clockItem]
+        self.volumeItem = volumeItem
         addArrangedSubview(appsView)
         trayItems.forEach(addArrangedSubview)
         TrayFlyouts.shared.register(.apps) { [weak self] in
             guard let self else { return nil }
             return self.appsView.isHidden ? self : self.appsView
         }
+
+        TrayFlyouts.shared.register(.volume) { [weak volumeItem] in volumeItem }
+        TrayVolumeControl.shared.start()
+        volumeObserver = NotificationCenter.default.addObserver(
+            forName: TrayVolumeControl.didChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.showVolume()
+        }
+        showVolume()
 
         showNetwork(isOnline: true)
         networkMonitor.pathUpdateHandler = { [weak self] path in
@@ -70,10 +84,21 @@ final class SystemTrayView: NSStackView {
 
     deinit {
         networkMonitor.cancel()
+        if let volumeObserver {
+            NotificationCenter.default.removeObserver(volumeObserver)
+        }
     }
 
     private func showNetwork(isOnline: Bool) {
         networkIcon.image = DSIconSize.symbol(isOnline ? "wifi" : "wifi.slash", description: "Network")
+    }
+
+    private func showVolume() {
+        let state = TrayVolumeControl.shared.state()
+        let level = state?.level ?? 0
+        let isMuted = state?.isMuted ?? false
+        volumeIcon.image = DSIconSize.symbol(TrayVolume.symbol(level: level, isMuted: isMuted), description: "Volume")
+        volumeItem?.toolTip = isMuted ? "Volume (muted)" : "Volume \(TrayVolume.percentText(level))"
     }
 
     private func refresh() {
@@ -93,14 +118,9 @@ final class SystemTrayView: NSStackView {
     private static func item(_ views: [NSView], height: DSControlHeight, tip: String, pane: String) -> DSButton {
         let item = DSButton(views: views, height: height, tip: tip)
         item.onPress = {
-            openSettings(pane)
+            TraySettings.open(pane)
         }
         return item
-    }
-
-    private static func openSettings(_ pane: String) {
-        guard let url = URL(string: pane) else { return }
-        NSWorkspace.shared.open(url)
     }
 
     private static func readBattery() -> BatteryStatus? {

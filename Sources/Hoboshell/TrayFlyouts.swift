@@ -6,6 +6,7 @@ final class TrayFlyouts {
     static let shared = TrayFlyouts()
 
     private static let appsWidth: CGFloat = 280
+    private static let volumeWidth: CGFloat = 280
 
     var staysOpenForCapture = false
 
@@ -58,6 +59,7 @@ final class TrayFlyouts {
     private func makeContent(_ kind: TrayItemKind, context: TrayFlyoutContext) -> (NSView, CGFloat) {
         switch kind {
         case .apps: return (TrayAppsFlyoutView(context: context), Self.appsWidth)
+        case .volume: return (TrayVolumeFlyoutView(context: context), Self.volumeWidth)
         }
     }
 
