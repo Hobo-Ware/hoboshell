@@ -1,11 +1,17 @@
-public struct WindowRecency {
+public struct WindowRecency: Equatable {
     private var order: [Int] = []
 
     public init() {}
 
+    public var mostRecent: Int? { order.first }
+
     public mutating func activated(_ id: Int) {
         order.removeAll { $0 == id }
         order.insert(id, at: 0)
+    }
+
+    public mutating func forget(_ id: Int) {
+        order.removeAll { $0 == id }
     }
 
     public mutating func forget(keeping live: Set<Int>) {
