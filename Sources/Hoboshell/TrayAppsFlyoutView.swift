@@ -2,19 +2,34 @@ import AppKit
 
 final class TrayAppsFlyoutView: NSView {
     private let context: TrayFlyoutContext
-    private var observer: NSObjectProtocol?
-    private var stack: NSStackView?
+    private var observers: [NSObjectProtocol] = []
+    private let rowsStack = NSStackView()
+    private lazy var rows = KeyedStack<DSListRow>(stack: rowsStack)
 
     init(context: TrayFlyoutContext) {
         self.context = context
         super.init(frame: .zero)
+        rowsStack.orientation = .vertical
+        rowsStack.alignment = .leading
+        rowsStack.spacing = DSSpacing.xxs
+        let outer = TrayFlyoutStack.make([DSSectionHeader("Running in the background"), rowsStack])
+        outer.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(outer)
+        NSLayoutConstraint.activate([
+            outer.leadingAnchor.constraint(equalTo: leadingAnchor),
+            outer.trailingAnchor.constraint(equalTo: trailingAnchor),
+            outer.topAnchor.constraint(equalTo: topAnchor),
+            outer.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
         reload()
-        observer = NotificationCenter.default.addObserver(
-            forName: TrayAppsStore.didChange, object: nil, queue: .main
-        ) { [weak self] _ in
+        let reload: (Notification) -> Void = { [weak self] _ in
             self?.reload()
             self?.context.refit()
         }
+        observers = [
+            NotificationCenter.default.addObserver(forName: TrayAppsStore.didChange, object: nil, queue: .main, using: reload),
+            NotificationCenter.default.addObserver(forName: AppIcons.didLoad, object: nil, queue: .main, using: reload),
+        ]
     }
 
     @available(*, unavailable)
@@ -23,35 +38,32 @@ final class TrayAppsFlyoutView: NSView {
     }
 
     deinit {
-        if let observer {
-            NotificationCenter.default.removeObserver(observer)
-        }
+        observers.forEach(NotificationCenter.default.removeObserver)
     }
 
     private func reload() {
-        stack?.removeFromSuperview()
-        let rows = TrayAppsStore.shared.flyoutApps.map(makeRow)
-        let next = TrayFlyoutStack.make([DSSectionHeader("Running in the background")] + rows)
-        next.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(next)
-        NSLayoutConstraint.activate([
-            next.leadingAnchor.constraint(equalTo: leadingAnchor),
-            next.trailingAnchor.constraint(equalTo: trailingAnchor),
-            next.topAnchor.constraint(equalTo: topAnchor),
-            next.bottomAnchor.constraint(equalTo: bottomAnchor),
-        ])
-        stack = next
-    }
-
-    private func makeRow(_ app: TrayApp) -> NSView {
-        let row = DSListRow(title: app.name, image: app.icon, detail: app.badge, height: .row)
-        row.onPress = { [weak self] in
-            self?.context.dismiss()
-            app.open()
-        }
-        row.menu = TrayAppMenu.make(for: app) { [weak self] in
-            self?.context.dismiss()
-        }
-        return row
+        let apps = TrayAppsStore.shared.flyoutApps
+        let byID = Dictionary(apps.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        rows.apply(
+            keys: apps.map(\.id),
+            animated: false,
+            make: { [weak self] _ in
+                let row = DSListRow(title: "", image: nil, height: .row)
+                guard let self else { return row }
+                row.widthAnchor.constraint(equalTo: self.rowsStack.widthAnchor).isActive = true
+                return row
+            },
+            update: { [weak self] row, id in
+                guard let app = byID[id] else { return }
+                row.update(title: app.name, image: app.resolvedIcon, detail: app.badge)
+                row.onPress = { [weak self] in
+                    self?.context.dismiss()
+                    app.open()
+                }
+                row.menu = TrayAppMenu.make(for: app) { [weak self] in
+                    self?.context.dismiss()
+                }
+            }
+        )
     }
 }

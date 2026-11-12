@@ -33,8 +33,8 @@ final class TopBarDockChrome: ShellChrome {
         dock.orderOut(nil)
     }
 
-    func update(items: [TaskbarItem]) {
-        dock.update(items: items)
+    func update(state: ShellState, isTrusted: Bool) {
+        dock.update(state: state, isTrusted: isTrusted)
     }
 
     func reposition(to layout: ShellLayout) {

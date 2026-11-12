@@ -28,13 +28,20 @@ final class DSBadge: NSView {
         }
     }
 
+    var text: String {
+        get { label.stringValue }
+        set { label.stringValue = newValue }
+    }
+
+    private let label: DSLabel
+
     init(_ text: String, tone: Tone = .neutral, size: Size = .regular) {
+        label = DSLabel(text, style: .caption, weight: .semibold)
         super.init(frame: .zero)
         wantsLayer = true
         layer?.cornerRadius = DSRadius.control
         layer?.backgroundColor = tone.fill.cgColor
         translatesAutoresizingMaskIntoConstraints = false
-        let label = DSLabel(text, style: .caption, weight: .semibold)
         label.translatesAutoresizingMaskIntoConstraints = false
         addSubview(label)
         NSLayoutConstraint.activate([

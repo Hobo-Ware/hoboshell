@@ -2,22 +2,21 @@ import AppKit
 import HoboshellCore
 
 enum TaskbarMenu {
-    static func make(for model: TaskbarButtonModel, onTogglePin: @escaping () -> Void) -> NSMenu {
-        let isPinned = model.slot.isPinned
+    static func make(for spec: TaskbarButtonSpec, name: String, onTogglePin: @escaping () -> Void) -> NSMenu {
         let pinItem = DSMenuItem(
-            isPinned ? "Unpin from taskbar" : "Pin to taskbar",
-            isEnabled: isPinned || TaskbarAppID.isPinnable(model.appID),
+            spec.isPinned ? "Unpin from taskbar" : "Pin to taskbar",
+            isEnabled: spec.isPinned || TaskbarAppID.isPinnable(spec.appID),
             handler: onTogglePin
         )
-        guard model.slot.isRunning else {
-            let open = DSMenuItem("Open", isEnabled: model.launch != nil) { model.launch?() }
+        guard spec.isRunning else {
+            let open = DSMenuItem("Open") { AppIcons.shared.launch(bundleID: spec.appID) }
             return DSMenu.make([open, pinItem])
         }
-        let closers = model.items.compactMap(\.close)
-        let close = model.isGroup
-            ? DSMenuItem("Close all windows") { closers.forEach { $0() } }
-            : DSMenuItem("Close window", isEnabled: !closers.isEmpty) { closers.forEach { $0() } }
-        let quit = DSMenuItem("Quit \(model.name)", isEnabled: model.quit != nil) { model.quit?() }
+        let hasWindows = !spec.windowIDs.isEmpty
+        let close = spec.isGroup
+            ? DSMenuItem("Close all windows") { TaskbarActions.close(spec, in: ShellStore.shared.state) }
+            : DSMenuItem("Close window", isEnabled: hasWindows) { TaskbarActions.close(spec, in: ShellStore.shared.state) }
+        let quit = DSMenuItem("Quit \(name)", isEnabled: spec.pid != nil) { TaskbarActions.quit(spec) }
         return DSMenu.make([close, quit, DSMenu.separator(), pinItem])
     }
 }
