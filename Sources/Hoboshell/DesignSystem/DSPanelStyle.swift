@@ -12,7 +12,7 @@ enum DSPanelStyle {
     @discardableResult
     static func apply(to panel: NSPanel, kind: Kind, level: NSWindow.Level = .statusBar) -> DSCard {
         panel.level = level
-        panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle, .fullScreenAuxiliary]
+        panel.collectionBehavior = [.canJoinAllSpaces, .ignoresCycle, .fullScreenAuxiliary]
         panel.appearance = NSAppearance(named: .darkAqua)
         panel.isFloatingPanel = true
         panel.hidesOnDeactivate = false

@@ -15,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let windowEvents = WindowEventObserver()
     private let dockBadges = DockBadges()
     private var backgroundApps = BackgroundApps()
+    private var otherDesktopApps = OtherDesktopApps()
     private let showDesktop = TaskbarShowDesktop()
     private let nudger = WindowNudger()
     private let hidesSystemUI = ProcessInfo.processInfo.environment["HOBOSHELL_HIDE_SYSTEM_UI"] == "1"
@@ -53,6 +54,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.showDesktop.userActivatedApp()
         }
         tracker.start()
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(desktopChanged),
+            name: NSWorkspace.activeSpaceDidChangeNotification,
+            object: nil
+        )
         windowEvents.onDestroyed = { [weak self] element in
             self?.catalog.noteDestroyed(element)
         }
@@ -219,14 +226,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    @objc private func desktopChanged() {
+        otherDesktopApps.desktopChanged()
+        catalog.noteDesktopChanged()
+        refreshTaskbar()
+    }
+
     private func refreshBackgroundApps(apps: [NSRunningApplication], windows: [ShellWindow]) -> Set<String> {
         let windowCounts = Dictionary(grouping: windows, by: { $0.app.processIdentifier }).mapValues(\.count)
         let readable = catalog.readablePIDs
+        let appsWithWindowsHere = Set(windowCounts.keys)
         let candidates = apps.map {
-            BackgroundApps.Candidate(
+            let isElsewhere = otherDesktopApps.hasWindowsElsewhere($0.processIdentifier, appsWithWindowsHere: appsWithWindowsHere)
+            return BackgroundApps.Candidate(
                 id: Self.appID(of: $0),
                 pid: $0.processIdentifier,
-                windowCount: windowCounts[$0.processIdentifier] ?? 0,
+                windowCount: windowCounts[$0.processIdentifier] ?? (isElsewhere ? 1 : 0),
                 windowsReadable: readable.contains($0.processIdentifier)
             )
         }
