@@ -19,6 +19,7 @@ final class WindowCatalog {
     private var nextID = 0
     private var retention = WindowRetention()
     private var destroyed: [AXUIElement] = []
+    private var dropsMissingWindowsOnce = false
     private(set) var readablePIDs = Set<pid_t>()
 
     func load(apps: [NSRunningApplication], completion: @escaping ([ShellWindow]) -> Void) {
@@ -30,6 +31,12 @@ final class WindowCatalog {
                 self.readablePIDs = readable
                 completion(windows)
             }
+        }
+    }
+
+    func noteDesktopChanged() {
+        queue.async { [weak self] in
+            self?.dropsMissingWindowsOnce = true
         }
     }
 
@@ -60,13 +67,15 @@ final class WindowCatalog {
         let destroyedIDs = Set(missing.filter { entry in
             destroyedElements.contains { CFEqual($0, entry.window.element) }
         }.map(\.id))
-        let kept = retention.keptIDs(
+        let retained = retention.keptIDs(
             missing: missing.map { WindowRetention.Known(id: $0.id, pid: $0.window.app.processIdentifier) },
             readablePIDs: readablePIDs,
             runningPIDs: Set(apps.filter { !$0.isTerminated }.map(\.processIdentifier)),
             destroyed: destroyedIDs,
             now: now
         )
+        let kept = dropsMissingWindowsOnce ? [] : retained
+        dropsMissingWindowsOnce = false
 
         var result: [(id: Int, window: ShellWindow)] = []
         for app in apps {

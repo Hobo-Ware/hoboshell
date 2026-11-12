@@ -153,6 +153,10 @@ Record of work, newest first. Each entry says what a user would notice.
   shows in the window.
 
 ### Fixed
+- Switching desktops no longer makes the taskbar slide away with the desktop,
+  and its buttons change once to the new desktop's windows instead of in
+  several steps. An app whose windows are on another desktop is not shown as
+  running in the background.
 - The Start menu header lines up: "Pinned" and "All apps >" sit on one row
   with the control at the right end and a small arrow, and the Back row of the
   All apps list is centred the same way. A tooltip with your name no longer
