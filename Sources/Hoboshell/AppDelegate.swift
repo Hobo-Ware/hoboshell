@@ -180,7 +180,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         TaskbarAppEntry(
             id: appID(of: app),
             name: app.localizedName ?? "",
-            icon: app.icon,
+            icon: HoboIcon.image(for: app),
             isActive: app.isActive,
             activate: {
                 if app.isActive {
@@ -194,7 +194,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private static func item(for app: NSRunningApplication) -> TaskbarItem {
-        var item = TaskbarItem(icon: app.icon, title: app.localizedName ?? "", isActive: app.isActive) {
+        var item = TaskbarItem(icon: HoboIcon.image(for: app), title: app.localizedName ?? "", isActive: app.isActive) {
             if app.isActive {
                 app.hide()
             } else {
@@ -209,7 +209,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private static func item(for window: ShellWindow) -> TaskbarItem {
-        var item = TaskbarItem(icon: window.app.icon, title: window.title, isActive: window.isFocused) {
+        var item = TaskbarItem(icon: HoboIcon.image(for: window.app), title: window.title, isActive: window.isFocused) {
             if window.isFocused {
                 WindowCatalog.minimize(window)
             } else {

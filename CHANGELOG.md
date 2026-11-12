@@ -107,6 +107,9 @@ Record of work, newest first. Each entry says what a user would notice.
   with the control at the right end and a small arrow, and the Back row of the
   All apps list is centred the same way. A tooltip with your name no longer
   pops up over other parts of the menu.
+- App icons in the Start menu and on the taskbar no longer pop in late. They
+  are kept in memory, and the pinned and installed apps are loaded in the
+  background when Hoboshell starts.
 - Desktop icons now react: they light up under the pointer, select on a
   click, open on a double click and have a right-click menu. Finder's own
   desktop was sitting on top and taking every click; it is now covered.

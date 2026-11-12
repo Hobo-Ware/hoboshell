@@ -4,8 +4,6 @@ import HoboshellCore
 enum StartMenuPages {
     static let pinnedColumns = 5
 
-    private static var icons: [String: NSImage] = [:]
-
     static func pinned(apps: [StartMenuApp], recents: [URL], actions: StartMenuActions) -> StartMenuPage {
         let allApps = DSButton(
             views: [DSLabel("All apps", style: .caption), DSIconView(side: DSIconSize.chevron, image: DSIconSize.symbol("chevron.right"))],
@@ -83,7 +81,7 @@ enum StartMenuPages {
 
     private static func tile(for app: StartMenuApp, actions: StartMenuActions) -> DSGridCell {
         let cell = DSGridCell()
-        cell.show(name: app.name, icon: icon(forFile: app.url.path, side: DSIconSize.grid))
+        cell.show(name: app.name, icon: HoboIcon.image(forFile: app.url.path, side: DSIconSize.grid))
         cell.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             cell.widthAnchor.constraint(equalToConstant: DSGridCell.size.width),
@@ -95,7 +93,7 @@ enum StartMenuPages {
     }
 
     private static func appItem(_ app: StartMenuApp, actions: StartMenuActions) -> StartMenuItem {
-        let row = DSListRow(title: app.name, image: icon(forFile: app.url.path, side: DSIconSize.toolbar))
+        let row = DSListRow(title: app.name, image: HoboIcon.image(forFile: app.url.path, side: DSIconSize.toolbar))
         row.menu = actions.appMenu(app)
         row.onPress = { actions.open(app) }
         return StartMenuItem(view: row, activate: { actions.open(app) })
@@ -104,7 +102,7 @@ enum StartMenuPages {
     private static func fileItem(_ url: URL, actions: StartMenuActions) -> StartMenuItem {
         let row = DSListRow(
             title: url.lastPathComponent,
-            image: icon(forFile: url.path, side: DSIconSize.toolbar),
+            image: HoboIcon.image(forFile: url.path, side: DSIconSize.toolbar),
             detail: url.deletingLastPathComponent().lastPathComponent
         )
         row.menu = actions.fileMenu(url)
@@ -116,16 +114,6 @@ enum StartMenuPages {
         let row = DSListRow(title: pane.name, image: HoboIcon.settings.image(side: DSIconSize.toolbar), detail: "Settings")
         row.onPress = { actions.openSetting(pane) }
         return StartMenuItem(view: row, activate: { actions.openSetting(pane) })
-    }
-
-    private static func icon(forFile path: String, side: CGFloat) -> NSImage {
-        let key = "\(path)@\(side)"
-        if let cached = icons[key] {
-            return cached
-        }
-        let image = HoboIcon.image(forFile: path, side: side)
-        icons[key] = image
-        return image
     }
 
     private static func emptyNote(_ text: String) -> NSView {

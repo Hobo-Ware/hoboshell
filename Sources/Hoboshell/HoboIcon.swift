@@ -20,7 +20,9 @@ enum HoboIcon: String {
     case drive
     case network
 
+    private static let cacheLock = NSLock()
     private static var rendered: [String: NSImage] = [:]
+    private static let decodedPixelsPerPoint: CGFloat = 2
     private static let places: [String: HoboIcon] = {
         let files = FileManager.default
         let known: [(FileManager.SearchPathDirectory, HoboIcon)] = [
@@ -46,7 +48,7 @@ enum HoboIcon: String {
     func image(side: CGFloat) -> NSImage? {
         let scale = NSScreen.main?.backingScaleFactor ?? 2
         let key = "\(rawValue)@\(side)x\(scale)"
-        if let cached = Self.rendered[key] {
+        if let cached = Self.cached(key) {
             return cached
         }
         guard let svg = HoboIconData.svg[rawValue], let source = NSImage(data: Data(svg.utf8)) else { return nil }
@@ -62,13 +64,53 @@ enum HoboIcon: String {
         NSGraphicsContext.restoreGraphicsState()
         let image = NSImage(size: bitmap.size)
         image.addRepresentation(bitmap)
-        Self.rendered[key] = image
+        Self.store(image, key: key)
         return image
     }
 
     static func image(forFile path: String, side: CGFloat = DSIconSize.grid) -> NSImage {
         let url = URL(fileURLWithPath: path).standardizedFileURL
-        return kind(of: url)?.image(side: side) ?? NSWorkspace.shared.icon(forFile: path)
+        let isCacheable = url.lastPathComponent != ".Trash"
+        let key = "file:\(path)@\(side)"
+        if isCacheable, let cached = cached(key) {
+            return cached
+        }
+        let image = kind(of: url)?.image(side: side) ?? decoded(NSWorkspace.shared.icon(forFile: path), side: side)
+        if isCacheable {
+            store(image, key: key)
+        }
+        return image
+    }
+
+    static func image(for app: NSRunningApplication) -> NSImage? {
+        guard let path = app.bundleURL?.path else { return app.icon }
+        return image(forFile: path)
+    }
+
+    static func warm(paths: [String], sides: [CGFloat]) {
+        for side in sides {
+            for path in paths {
+                _ = image(forFile: path, side: side)
+            }
+        }
+    }
+
+    private static func decoded(_ image: NSImage, side: CGFloat) -> NSImage {
+        var rect = NSRect(x: 0, y: 0, width: side * decodedPixelsPerPoint, height: side * decodedPixelsPerPoint)
+        guard let bitmap = image.cgImage(forProposedRect: &rect, context: nil, hints: nil) else { return image }
+        return NSImage(cgImage: bitmap, size: NSSize(width: side, height: side))
+    }
+
+    private static func cached(_ key: String) -> NSImage? {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        return rendered[key]
+    }
+
+    private static func store(_ image: NSImage, key: String) {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        rendered[key] = image
     }
 
     private static func kind(of url: URL) -> HoboIcon? {
