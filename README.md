@@ -145,6 +145,17 @@ Code is split in two:
 - `Sources/HoboshellCore` - logic with no windows (snap geometry, file
   listing). Unit tested.
 - `Sources/Hoboshell` - the app itself: windows, panels and system calls.
+- `Sources/HoboshellProbe` - a tiny helper app used only by the self-test.
+
+### Self-test
+
+`./scripts/selftest.sh` checks that the taskbar and tray follow real windows
+in real time. It opens a few small windows from a helper app that never takes
+keyboard focus, closes and minimises them, and prints how many milliseconds
+each change took to show. Every step must be under 150 ms. It needs the
+Accessibility permission for the `Hoboshell` binary, and it opens windows on
+your screen, so run it by hand. `./scripts/selftest.sh report.txt` also writes
+the result to a file.
 
 Coding and testing rules are in [AGENTS.md](AGENTS.md). Work done so far is in
 [CHANGELOG.md](CHANGELOG.md).
