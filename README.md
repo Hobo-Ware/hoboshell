@@ -159,3 +159,9 @@ the result to a file.
 
 Coding and testing rules are in [AGENTS.md](AGENTS.md). Work done so far is in
 [CHANGELOG.md](CHANGELOG.md).
+
+## License
+
+Hoboshell is free software under the [GNU General Public License v3.0](LICENSE).
+You may use, change and share it, and anything you distribute that is built on
+it must stay open under the same license.

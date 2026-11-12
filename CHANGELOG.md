@@ -111,6 +111,8 @@ Record of work, newest first. Each entry says what a user would notice.
   the home folder or that folder. Handy for screenshots.
 - `Hoboshell --gallery` also shows the running and active marks, the group
   count and the unread badge.
+- GPL v3.0 license. Hoboshell is open source, and versions built on it must
+  stay open too.
 
 ### Changed
 - The taskbar, the tray background list, the side dock and the Option+Tab
