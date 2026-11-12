@@ -21,21 +21,19 @@ final class MainThreadWatchdog {
     }
 
     private func ping() {
-        let now = ShellClock.now()
-        if let since = pending {
-            report(stalledSince: since, now: now)
-            return
-        }
-        pending = now
+        guard pending == nil else { return }
+        let sent = ShellClock.now()
+        pending = sent
         DispatchQueue.main.async { [weak self] in
             self?.queue.async {
-                self?.pending = nil
+                self?.answered(sentAt: sent)
             }
         }
     }
 
-    private func report(stalledSince since: UInt64, now: UInt64) {
-        let milliseconds = Double(now &- since) / 1_000_000
+    private func answered(sentAt sent: UInt64) {
+        pending = nil
+        let milliseconds = Double(ShellClock.now() &- sent) / 1_000_000
         guard milliseconds > Self.stallThreshold * 1_000 else { return }
         PerfLog.stalls.notice("main thread stalled for \(milliseconds, format: .fixed(precision: 0)) ms")
     }

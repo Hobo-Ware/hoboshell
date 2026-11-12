@@ -21,10 +21,6 @@ final class AXWorker {
         runLoop = box.value ?? CFRunLoopGetMain()
     }
 
-    var isCurrent: Bool {
-        CFRunLoopGetCurrent() == runLoop
-    }
-
     func async(_ block: @escaping () -> Void) {
         CFRunLoopPerformBlock(runLoop, CFRunLoopMode.defaultMode.rawValue, block)
         CFRunLoopWakeUp(runLoop)
