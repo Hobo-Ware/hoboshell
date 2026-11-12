@@ -46,6 +46,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.showDesktop.userActivatedApp()
         }
         tracker.start()
+        windowEvents.onDestroyed = { [weak self] element in
+            self?.catalog.noteDestroyed(element)
+        }
         windowEvents.onChange = { [weak self] in
             self?.refreshTaskbar()
             DispatchQueue.main.asyncAfter(deadline: .now() + Self.windowEventSettleDelay) {
