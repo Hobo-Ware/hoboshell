@@ -7,6 +7,7 @@ let package = Package(
     targets: [
         .target(name: "HoboshellCore", path: "Sources/HoboshellCore"),
         .executableTarget(name: "Hoboshell", dependencies: ["HoboshellCore"], path: "Sources/Hoboshell"),
+        .executableTarget(name: "HoboshellProbe", dependencies: ["HoboshellCore"], path: "Sources/HoboshellProbe"),
         .testTarget(name: "HoboshellCoreTests", dependencies: ["HoboshellCore"], path: "Tests/HoboshellCoreTests"),
     ]
 )

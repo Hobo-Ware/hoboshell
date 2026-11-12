@@ -15,6 +15,13 @@ struct TaskbarItem {
     var windowID: Int?
 }
 
+struct TaskbarButtonInfo {
+    let pid: Int32?
+    let tip: String
+    let windowCount: Int
+    let view: ObjectIdentifier
+}
+
 struct ShellActions {
     var onStart: (() -> Void)?
     var onFiles: (() -> Void)?
@@ -29,6 +36,11 @@ protocol ShellChrome: AnyObject {
     func update(state: ShellState, isTrusted: Bool)
     func reposition(to layout: ShellLayout)
     func startMenuOrigin(menuSize: NSSize) -> NSPoint
+    var shownButtons: [TaskbarButtonInfo] { get }
+}
+
+extension ShellChrome {
+    var shownButtons: [TaskbarButtonInfo] { [] }
 }
 
 extension ShellLayout {

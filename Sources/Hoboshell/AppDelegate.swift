@@ -23,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var switcher: SwitcherController?
     private var signalSources: [DispatchSourceSignal] = []
     private var trayEntries: [BackgroundEntry] = []
+    private var selfTest: RealtimeSelfTest?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         terminateCleanlyOnSignals()
@@ -47,6 +48,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.render(update.state)
         }
         engine.start()
+        startSelfTestIfRequested()
         registerHotKeys()
         openRequestedWindows()
         if hidesSystemUI || SystemChrome.isWanted {
@@ -71,6 +73,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if SystemChrome.isActive {
             SystemChrome.restore()
         }
+    }
+
+    private func startSelfTestIfRequested() {
+        guard let arguments = SelfTestArguments.parse(CommandLine.arguments), let chrome else { return }
+        guard variant == .bottomTaskbar else {
+            print("realtime self-test could not run: start with --variant bottom-taskbar")
+            exit(2)
+        }
+        let test = RealtimeSelfTest(engine: engine, chrome: chrome, reportPath: arguments.reportPath)
+        selfTest = test
+        test.start()
     }
 
     private func buildShell() {
