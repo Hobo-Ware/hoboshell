@@ -36,6 +36,28 @@ import Testing
         #expect(try FileEntry.contents(of: folder).map(\.isFolder) == [false])
     }
 
+    @Test func hiddenFilesAppearOnlyWhenAsked() throws {
+        let folder = try makeFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        for name in ["a.txt", ".hidden"] {
+            try Data("x".utf8).write(to: folder.appendingPathComponent(name))
+        }
+
+        #expect(try FileEntry.contents(of: folder).map(\.name) == ["a.txt"])
+        #expect(try FileEntry.contents(of: folder, showHidden: true).map(\.name) == [".hidden", "a.txt"])
+    }
+
+    @Test func contentsFollowTheRequestedSort() throws {
+        let folder = try makeFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        try Data("xx".utf8).write(to: folder.appendingPathComponent("big.txt"))
+        try Data("x".utf8).write(to: folder.appendingPathComponent("small.txt"))
+
+        let entries = try FileEntry.contents(of: folder, sort: ExplorerSort(column: .size, ascending: false))
+
+        #expect(entries.map(\.name) == ["big.txt", "small.txt"])
+    }
+
     @Test func missingFolderThrows() {
         let missing = FileManager.default.temporaryDirectory.appendingPathComponent("hoboshell-missing-\(UUID().uuidString)")
         #expect(throws: (any Error).self) {

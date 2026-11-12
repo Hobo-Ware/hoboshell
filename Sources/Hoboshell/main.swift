@@ -6,7 +6,8 @@ if CommandLine.arguments.contains("--restore") {
 }
 
 let app = NSApplication.shared
-let delegate = AppDelegate()
+let isGallery = CommandLine.arguments.contains("--gallery")
+let delegate: NSApplicationDelegate = isGallery ? GalleryApp() : AppDelegate()
 app.delegate = delegate
-app.setActivationPolicy(.accessory)
+app.setActivationPolicy(isGallery ? .regular : .accessory)
 app.run()

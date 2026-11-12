@@ -11,7 +11,11 @@ final class TopBarDockChrome: ShellChrome {
         var switchVariant: (() -> Void)?
         let makeMenu = { ShellContextMenu(switchTitle: switchTitle) { switchVariant?() } }
         topBar = TopBarPanel(frame: layout.bar, contextMenu: makeMenu())
-        dock = SideDockPanel(frame: layout.dock ?? .zero, contextMenu: makeMenu())
+        dock = SideDockPanel(
+            frame: layout.dock ?? .zero,
+            contextMenu: makeMenu(),
+            kind: layout.dockReservation.isOn ? .opaqueBar : .bar
+        )
 
         switchVariant = { [weak self] in self?.actions.onSwitchVariant?() }
         topBar.onOverview = { [weak self] in self?.actions.onStart?() }
@@ -29,8 +33,8 @@ final class TopBarDockChrome: ShellChrome {
         dock.orderOut(nil)
     }
 
-    func update(items: [TaskbarItem]) {
-        dock.update(items: items)
+    func update(state: ShellState, isTrusted: Bool) {
+        dock.update(state: state, isTrusted: isTrusted)
     }
 
     func reposition(to layout: ShellLayout) {

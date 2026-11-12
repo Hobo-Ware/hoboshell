@@ -1,64 +1,88 @@
 import AppKit
 import HoboshellCore
-import IOKit.ps
-import Network
 
 final class SystemTrayView: NSStackView {
     private static let refreshInterval: TimeInterval = 5
-    private static let networkSettings = "x-apple.systempreferences:com.apple.wifi-settings-extension"
-    private static let batterySettings = "x-apple.systempreferences:com.apple.Battery-Settings.extension"
-    private static let dateSettings = "x-apple.systempreferences:com.apple.Date-Time-Settings.extension"
 
-    private let networkIcon = NSImageView()
-    private let batteryIcon = NSImageView()
-    private let batteryLabel = NSTextField(labelWithString: "")
-    private let clock = NSTextField(labelWithString: "")
+    private let networkIcon = DSIconView(side: DSIconSize.inline)
+    private let volumeIcon = DSIconView(side: DSIconSize.inline)
+    private let batteryIcon = DSIconView(side: DSIconSize.inline)
+    private let batteryLabel = DSLabel(style: .caption, monospacedDigits: true)
+    private let clock = DSLabel(style: .caption, monospacedDigits: true)
     private let timeFormatter = DateFormatter()
     private let dateFormatter = DateFormatter()
-    private let networkMonitor = NWPathMonitor()
     private let clockOnOneLine: Bool
     private var refreshTimer: Timer?
-    private var batteryItem: TrayItemView?
+    private var trayItems: [DSButton] = []
+    private var batteryItem: DSButton?
+    private var volumeItem: DSButton?
+    private var volumeObserver: NSObjectProtocol?
+    private var networkObserver: NSObjectProtocol?
+    private let appsView: TrayAppsView
 
-    init(clockOnOneLine: Bool) {
+    init(clockOnOneLine: Bool, height: DSControlHeight) {
         self.clockOnOneLine = clockOnOneLine
+        appsView = TrayAppsView(height: height)
         super.init(frame: .zero)
         orientation = .horizontal
-        spacing = 2
+        spacing = DSSpacing.xs
+        alignment = .centerY
         setHuggingPriority(.required, for: .horizontal)
-        timeFormatter.dateFormat = "HH:mm"
+        timeFormatter.locale = .autoupdatingCurrent
+        timeFormatter.timeStyle = .short
+        dateFormatter.locale = .autoupdatingCurrent
         dateFormatter.dateStyle = .short
 
-        for icon in [networkIcon, batteryIcon] {
-            icon.contentTintColor = .white
-            icon.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
-        }
-        batteryLabel.font = .monospacedDigitSystemFont(ofSize: 11, weight: .regular)
-        clock.font = .monospacedDigitSystemFont(ofSize: 11, weight: .regular)
         clock.alignment = .right
         clock.maximumNumberOfLines = clockOnOneLine ? 1 : 2
 
-        batteryItem = TrayItemView([batteryIcon, batteryLabel], tip: "Battery settings") {
-            Self.openSettings(Self.batterySettings)
+        let networkItem = DSButton(views: [networkIcon], height: height, tip: "Network")
+        networkItem.onPress = {
+            TrayFlyouts.shared.toggle(.network)
         }
-        addArrangedSubview(TrayItemView([networkIcon], tip: "Network settings") {
-            Self.openSettings(Self.networkSettings)
-        })
-        if let batteryItem {
-            addArrangedSubview(batteryItem)
+        let volumeItem = TrayVolumeButton(views: [volumeIcon], height: height, tip: "Volume")
+        volumeItem.onPress = {
+            TrayFlyouts.shared.toggle(.volume)
         }
-        addArrangedSubview(TrayItemView([clock], tip: "Date and time settings") {
-            Self.openSettings(Self.dateSettings)
-        })
+        let batteryItem = DSButton(views: [batteryIcon, batteryLabel], height: height, tip: "Battery")
+        batteryItem.onPress = {
+            TrayFlyouts.shared.toggle(.battery)
+        }
+        let clockItem = DSButton(views: [clock], height: height, tip: "Calendar")
+        clockItem.onPress = {
+            TrayFlyouts.shared.toggle(.calendar)
+        }
+        self.batteryItem = batteryItem
+        trayItems = [networkItem, volumeItem, batteryItem, clockItem]
+        self.volumeItem = volumeItem
+        TrayFlyouts.shared.register(.network) { [weak networkItem] in networkItem }
+        TrayFlyouts.shared.register(.battery) { [weak self, weak batteryItem] in
+            batteryItem?.isHidden == false ? batteryItem : self
+        }
+        TrayFlyouts.shared.register(.calendar) { [weak clockItem] in clockItem }
+        addArrangedSubview(appsView)
+        trayItems.forEach(addArrangedSubview)
+        TrayFlyouts.shared.register(.apps) { [weak self] in
+            guard let self else { return nil }
+            return self.appsView.isHidden ? self : self.appsView
+        }
 
-        showNetwork(isOnline: true)
-        networkMonitor.pathUpdateHandler = { [weak self] path in
-            let isOnline = path.status == .satisfied
-            DispatchQueue.main.async {
-                self?.showNetwork(isOnline: isOnline)
-            }
+        TrayFlyouts.shared.register(.volume) { [weak volumeItem] in volumeItem }
+        TrayVolumeControl.shared.start()
+        volumeObserver = NotificationCenter.default.addObserver(
+            forName: TrayVolumeControl.didChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.showVolume()
         }
-        networkMonitor.start(queue: DispatchQueue(label: "dev.hoboware.hoboshell.network"))
+        showVolume()
+
+        TrayNetwork.shared.start()
+        networkObserver = NotificationCenter.default.addObserver(
+            forName: TrayNetwork.didChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.showNetwork()
+        }
+        showNetwork()
 
         refresh()
         refreshTimer = Timer.scheduledTimer(withTimeInterval: Self.refreshInterval, repeats: true) { [weak self] _ in
@@ -72,11 +96,21 @@ final class SystemTrayView: NSStackView {
     }
 
     deinit {
-        networkMonitor.cancel()
+        for observer in [volumeObserver, networkObserver].compactMap({ $0 }) {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
 
-    private func showNetwork(isOnline: Bool) {
-        networkIcon.image = NSImage(systemSymbolName: isOnline ? "wifi" : "wifi.slash", accessibilityDescription: "Network")
+    private func showNetwork() {
+        networkIcon.image = DSIconSize.symbol(TrayNetwork.shared.summary.symbolName, description: "Network")
+    }
+
+    private func showVolume() {
+        let state = TrayVolumeControl.shared.state()
+        let level = state?.level ?? 0
+        let isMuted = state?.isMuted ?? false
+        volumeIcon.image = DSIconSize.symbol(TrayVolume.symbol(level: level, isMuted: isMuted), description: "Volume")
+        volumeItem?.toolTip = isMuted ? "Volume (muted)" : "Volume \(TrayVolume.percentText(level))"
     }
 
     private func refresh() {
@@ -84,66 +118,20 @@ final class SystemTrayView: NSStackView {
         let separator = clockOnOneLine ? "  " : "\n"
         clock.stringValue = timeFormatter.string(from: now) + separator + dateFormatter.string(from: now)
 
-        let battery = Self.readBattery()
+        let battery = TrayBatteryReader.read()?.status
         batteryItem?.isHidden = battery == nil
         if let battery {
-            batteryIcon.image = NSImage(systemSymbolName: battery.symbolName, accessibilityDescription: "Battery")
+            batteryIcon.image = DSIconSize.symbol(battery.symbolName, description: "Battery")
             batteryLabel.stringValue = battery.label
         }
+        trayItems.forEach { $0.invalidateIntrinsicContentSize() }
     }
 
-    private static func openSettings(_ pane: String) {
-        guard let url = URL(string: pane) else { return }
-        NSWorkspace.shared.open(url)
-    }
-
-    private static func readBattery() -> BatteryStatus? {
-        guard let snapshot = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
-              let sources = IOPSCopyPowerSourcesList(snapshot)?.takeRetainedValue() as? [CFTypeRef] else { return nil }
-        for source in sources {
-            guard let details = IOPSGetPowerSourceDescription(snapshot, source)?.takeUnretainedValue() as? [String: Any],
-                  let current = details[kIOPSCurrentCapacityKey] as? Int,
-                  let capacity = details[kIOPSMaxCapacityKey] as? Int,
-                  capacity > 0 else { continue }
-            return BatteryStatus(
-                percent: current * 100 / capacity,
-                isCharging: details[kIOPSIsChargingKey] as? Bool ?? false
-            )
+    private static func item(_ views: [NSView], height: DSControlHeight, tip: String, pane: String) -> DSButton {
+        let item = DSButton(views: views, height: height, tip: tip)
+        item.onPress = {
+            TraySettings.open(pane)
         }
-        return nil
-    }
-}
-
-private final class TrayItemView: HoverView {
-    private static let sidePadding: CGFloat = 8
-    private static let edgePadding: CGFloat = 4
-
-    private let onClick: () -> Void
-
-    init(_ views: [NSView], tip: String, onClick: @escaping () -> Void) {
-        self.onClick = onClick
-        super.init(frame: .zero)
-        toolTip = tip
-        translatesAutoresizingMaskIntoConstraints = false
-
-        let content = NSStackView(views: views)
-        content.orientation = .horizontal
-        content.spacing = 6
-        content.setHuggingPriority(.required, for: .horizontal)
-        views.forEach { $0.setContentHuggingPriority(.required, for: .horizontal) }
-        content.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(content)
-        NSLayoutConstraint.activate([
-            content.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Self.sidePadding),
-            content.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Self.sidePadding),
-            content.topAnchor.constraint(equalTo: topAnchor, constant: Self.edgePadding),
-            content.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -Self.edgePadding),
-        ])
-    }
-
-    override func mouseUp(with event: NSEvent) {
-        if bounds.contains(convert(event.locationInWindow, from: nil)) {
-            onClick()
-        }
+        return item
     }
 }
