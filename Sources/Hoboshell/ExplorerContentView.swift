@@ -1,14 +1,14 @@
 import AppKit
 
 final class ExplorerContentView: NSView {
+    private static let sidebarWidth: CGFloat = 190
     private static let minimumSidebarWidth: CGFloat = 150
     private static let sidebarHoldingPriority: Float = 260
-    private static let statusInset: CGFloat = 10
 
     init(toolbar: NSView, commandBar: NSView, sidebar: NSView, items: [NSView], status: NSView) {
         super.init(frame: .zero)
         wantsLayer = true
-        layer?.backgroundColor = ExplorerTheme.background.cgColor
+        layer?.backgroundColor = DSColor.surface.cgColor
 
         let itemsContainer = NSView()
         for view in items {
@@ -29,37 +29,42 @@ final class ExplorerContentView: NSView {
         split.addArrangedSubview(itemsContainer)
         split.setHoldingPriority(NSLayoutConstraint.Priority(Self.sidebarHoldingPriority), forSubviewAt: 0)
         sidebar.widthAnchor.constraint(greaterThanOrEqualToConstant: Self.minimumSidebarWidth).isActive = true
-        sidebar.widthAnchor.constraint(lessThanOrEqualToConstant: ExplorerTheme.sidebarWidth * 2).isActive = true
-        let preferred = sidebar.widthAnchor.constraint(equalToConstant: ExplorerTheme.sidebarWidth)
+        sidebar.widthAnchor.constraint(lessThanOrEqualToConstant: Self.sidebarWidth * 2).isActive = true
+        let preferred = sidebar.widthAnchor.constraint(equalToConstant: Self.sidebarWidth)
         preferred.priority = .defaultHigh
         preferred.isActive = true
 
-        let topLine = ExplorerTheme.separator()
-        let middleLine = ExplorerTheme.separator()
-        let bottomLine = ExplorerTheme.separator()
-        for view in [toolbar, commandBar, split, status, topLine, middleLine, bottomLine] {
+        let statusBar = NSView()
+        status.translatesAutoresizingMaskIntoConstraints = false
+        statusBar.addSubview(status)
+        NSLayoutConstraint.activate([
+            status.leadingAnchor.constraint(equalTo: statusBar.leadingAnchor, constant: DSSpacing.m),
+            status.trailingAnchor.constraint(equalTo: statusBar.trailingAnchor, constant: -DSSpacing.m),
+            status.centerYAnchor.constraint(equalTo: statusBar.centerYAnchor),
+        ])
+
+        let topLine = DSDivider()
+        let middleLine = DSDivider()
+        let bottomLine = DSDivider()
+        for view in [toolbar, commandBar, split, statusBar, topLine, middleLine, bottomLine] {
             view.translatesAutoresizingMaskIntoConstraints = false
             addSubview(view)
         }
         NSLayoutConstraint.activate([
             toolbar.topAnchor.constraint(equalTo: topAnchor),
-            toolbar.heightAnchor.constraint(equalToConstant: ExplorerTheme.toolbarHeight),
             topLine.topAnchor.constraint(equalTo: toolbar.bottomAnchor),
             commandBar.topAnchor.constraint(equalTo: topLine.bottomAnchor),
-            commandBar.heightAnchor.constraint(equalToConstant: ExplorerTheme.commandBarHeight),
             middleLine.topAnchor.constraint(equalTo: commandBar.bottomAnchor),
             split.topAnchor.constraint(equalTo: middleLine.bottomAnchor),
             bottomLine.topAnchor.constraint(equalTo: split.bottomAnchor),
-            status.topAnchor.constraint(equalTo: bottomLine.bottomAnchor),
-            status.heightAnchor.constraint(equalToConstant: ExplorerTheme.statusBarHeight),
-            status.bottomAnchor.constraint(equalTo: bottomAnchor),
+            statusBar.topAnchor.constraint(equalTo: bottomLine.bottomAnchor),
+            statusBar.heightAnchor.constraint(equalToConstant: DSControlHeight.compact.value),
+            statusBar.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
-        for view in [toolbar, commandBar, split, topLine, middleLine, bottomLine] {
+        for view in [toolbar, commandBar, split, statusBar, topLine, middleLine, bottomLine] {
             view.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
             view.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
         }
-        status.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Self.statusInset).isActive = true
-        status.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Self.statusInset).isActive = true
     }
 
     @available(*, unavailable)

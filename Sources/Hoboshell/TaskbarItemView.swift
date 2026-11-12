@@ -1,50 +1,47 @@
 import AppKit
+import HoboshellCore
 
-final class TaskbarItemView: HoverView {
-    private static let sidePadding: CGFloat = 10
-    private static let iconToTitleGap: CGFloat = 8
-
-    private let onClick: () -> Void
-
-    init(icon: NSImage?, title: String?, isActive: Bool, size: NSSize, onClick: @escaping () -> Void) {
-        self.onClick = onClick
-        super.init(frame: NSRect(origin: .zero, size: size))
-        restingBackground = isActive ? ShellButton.activeBackground : nil
-        translatesAutoresizingMaskIntoConstraints = false
-
-        let content = NSStackView()
-        content.orientation = .horizontal
-        content.spacing = Self.iconToTitleGap
-        content.translatesAutoresizingMaskIntoConstraints = false
-        if let icon {
-            content.addArrangedSubview(NSImageView(image: icon))
-        }
-        if let title {
-            let label = NSTextField(labelWithString: title)
-            label.font = .systemFont(ofSize: 12)
-            label.lineBreakMode = .byTruncatingTail
-            label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-            content.addArrangedSubview(label)
-        }
-        addSubview(content)
-
-        var constraints = [
-            widthAnchor.constraint(equalToConstant: size.width),
-            heightAnchor.constraint(equalToConstant: size.height),
-            content.centerYAnchor.constraint(equalTo: centerYAnchor),
-        ]
-        if title == nil {
-            constraints.append(content.centerXAnchor.constraint(equalTo: centerXAnchor))
-        } else {
-            constraints.append(content.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Self.sidePadding))
-            constraints.append(content.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -Self.sidePadding))
-        }
-        NSLayoutConstraint.activate(constraints)
+enum TaskbarItemView {
+    struct Look {
+        let title: String
+        let tip: String
+        let icon: NSImage?
+        let isActive: Bool
+        let runState: DSRunMark.State
+        let width: CGFloat
+        let isLabelled: Bool
+        let count: String?
+        let badge: String?
     }
 
-    override func mouseUp(with event: NSEvent) {
-        if bounds.contains(convert(event.locationInWindow, from: nil)) {
-            onClick()
+    static func make() -> TaskbarButton {
+        TaskbarButton(title: "", image: nil, height: .taskbar, width: TaskbarLayout.iconOnlyWidth, alignment: .center)
+    }
+
+    static func apply(_ look: Look, to button: TaskbarButton) {
+        let title = look.isLabelled ? look.title : ""
+        if button.title != title {
+            button.title = title
         }
+        let alignment: DSButton.Alignment = look.isLabelled ? .leading : .center
+        if button.alignment != alignment {
+            button.alignment = alignment
+        }
+        button.fixedWidth = look.width
+        if button.image !== look.icon {
+            button.image = look.icon
+        }
+        if button.isSelected != look.isActive {
+            button.isSelected = look.isActive
+        }
+        if button.runState != look.runState {
+            button.runState = look.runState
+        }
+        if button.toolTip != look.tip {
+            button.toolTip = look.tip
+            button.setAccessibilityLabel(look.tip)
+        }
+        button.countText = look.count
+        button.notificationText = look.badge
     }
 }

@@ -2,8 +2,8 @@ import AppKit
 import HoboshellCore
 
 final class ExplorerIconsView: NSScrollView, ExplorerItemsView, NSCollectionViewDataSource, NSCollectionViewDelegate {
-    private static let spacing: CGFloat = 6
-    private static let inset: CGFloat = 12
+    private static let spacing = DSSpacing.m
+    private static let inset = DSSpacing.l
 
     weak var itemsDelegate: ExplorerItemsDelegate?
 
@@ -75,7 +75,7 @@ final class ExplorerIconsView: NSScrollView, ExplorerItemsView, NSCollectionView
         let item = collectionView.makeItem(withIdentifier: ExplorerIconItem.identifier, for: indexPath)
         if let item = item as? ExplorerIconItem, entries.indices.contains(indexPath.item) {
             let entry = entries[indexPath.item]
-            item.show(name: entry.name, icon: NSWorkspace.shared.icon(forFile: entry.url.path))
+            item.show(entry.url, name: entry.name)
         }
         return item
     }
@@ -136,7 +136,7 @@ final class ExplorerIconsView: NSScrollView, ExplorerItemsView, NSCollectionView
 
     private func configureCollection() {
         let layout = NSCollectionViewFlowLayout()
-        layout.itemSize = ExplorerIconItem.size
+        layout.itemSize = DSTile.size
         layout.minimumInteritemSpacing = Self.spacing
         layout.minimumLineSpacing = Self.spacing
         layout.sectionInset = NSEdgeInsets(top: Self.inset, left: Self.inset, bottom: Self.inset, right: Self.inset)

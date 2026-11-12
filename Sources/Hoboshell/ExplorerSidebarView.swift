@@ -7,9 +7,7 @@ final class ExplorerSidebarView: NSScrollView, NSTableViewDataSource, NSTableVie
         case place(ExplorerPlace)
     }
 
-    private static let rowHeight: CGFloat = 28
-    private static let headerHeight: CGFloat = 26
-    private static let iconSide: CGFloat = 18
+    private static let rowHeight = DSControlHeight.row.value
 
     var onSelect: ((URL) -> Void)?
 
@@ -23,7 +21,10 @@ final class ExplorerSidebarView: NSScrollView, NSTableViewDataSource, NSTableVie
         super.init(frame: frameRect)
         table.addTableColumn(NSTableColumn(identifier: NSUserInterfaceItemIdentifier("place")))
         table.headerView = nil
-        table.style = .sourceList
+        table.style = .plain
+        table.floatsGroupRows = false
+        table.intercellSpacing = .zero
+        table.backgroundColor = .clear
         table.dataSource = self
         table.delegate = self
         documentView = table
@@ -78,17 +79,20 @@ final class ExplorerSidebarView: NSScrollView, NSTableViewDataSource, NSTableVie
     }
 
     func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
-        if case .header = rows[row] { return Self.headerHeight }
+        if case .header = rows[row] { return DSSectionHeader.height }
         return Self.rowHeight
+    }
+
+    func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? {
+        let row = tableView.makeView(withIdentifier: DSTableRowView.identifier, owner: nil) as? DSTableRowView ?? DSTableRowView()
+        row.useAccentStyle()
+        return row
     }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         switch rows[row] {
         case .header(let title):
-            let label = NSTextField(labelWithString: title.uppercased())
-            label.font = .systemFont(ofSize: 10, weight: .semibold)
-            label.textColor = .secondaryLabelColor
-            return label
+            return DSSectionHeader(title)
         case .place(let place):
             return Self.placeCell(place)
         }
@@ -111,23 +115,12 @@ final class ExplorerSidebarView: NSScrollView, NSTableViewDataSource, NSTableVie
     }
 
     private static func placeCell(_ place: ExplorerPlace) -> NSView {
-        let cell = HoverView()
-        let icon = NSImageView(image: NSWorkspace.shared.icon(forFile: place.url.path))
-        let label = NSTextField(labelWithString: place.name)
-        label.lineBreakMode = .byTruncatingTail
-        for subview in [icon, label] {
-            subview.translatesAutoresizingMaskIntoConstraints = false
-            cell.addSubview(subview)
-        }
-        NSLayoutConstraint.activate([
-            icon.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 4),
-            icon.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
-            icon.widthAnchor.constraint(equalToConstant: iconSide),
-            icon.heightAnchor.constraint(equalToConstant: iconSide),
-            label.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 6),
-            label.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
-            label.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
-        ])
+        let cell = DSListRow(
+            title: place.name,
+            image: HoboIcon.image(forFile: place.url.path),
+            height: .row
+        )
+        cell.makeStatic()
         return cell
     }
 
