@@ -32,7 +32,9 @@ final class ShellEngine {
         }
         tracker.start()
         observeSystem()
-        store.apply(ShellEvent(.appsRead(tracker.shellApps.map(ShellApp.init(running:))), observedAt: ShellClock.now()))
+        let apps = tracker.shellApps.map(ShellApp.init(running:))
+        AppIcons.shared.warm(paths: apps.compactMap(\.bundlePath))
+        store.apply(ShellEvent(.appsRead(apps), observedAt: ShellClock.now()))
         if isTrusted {
             syncWatchers(snapshot: .launch)
         }

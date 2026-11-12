@@ -12,22 +12,7 @@ struct TaskbarItem {
     var appName: String?
     var appID: String?
     var reveal: (() -> Void)?
-}
-
-struct TaskbarAppEntry {
-    let id: String
-    let name: String
-    let icon: NSImage?
-    let isActive: Bool
-    let activate: () -> Void
-    let quit: () -> Void
-}
-
-struct TaskbarSnapshot {
-    var items: [TaskbarItem]
-    var apps: [TaskbarAppEntry] = []
-    var badges: [String: String] = [:]
-    var windowless: Set<String> = []
+    var windowID: Int?
 }
 
 struct ShellActions {
@@ -41,16 +26,9 @@ protocol ShellChrome: AnyObject {
     var actions: ShellActions { get set }
     func show()
     func dismiss()
-    func update(items: [TaskbarItem])
-    func update(snapshot: TaskbarSnapshot)
+    func update(state: ShellState, isTrusted: Bool)
     func reposition(to layout: ShellLayout)
     func startMenuOrigin(menuSize: NSSize) -> NSPoint
-}
-
-extension ShellChrome {
-    func update(snapshot: TaskbarSnapshot) {
-        update(items: snapshot.items)
-    }
 }
 
 extension ShellLayout {

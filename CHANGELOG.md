@@ -108,6 +108,16 @@ Record of work, newest first. Each entry says what a user would notice.
   count and the unread badge.
 
 ### Changed
+- The taskbar, the tray background list, the side dock and the Option+Tab
+  switcher now follow windows and apps as they change instead of checking every
+  second and a half. A new window, a closed window, a minimise, a restore, a new
+  title or a quit shows up at once, and an app moves to the tray the moment its
+  last window closes. Buttons are updated in place, so hover and pressed looks
+  no longer reset and nothing flickers. Windows that are minimised never lose
+  their button.
+- Hover highlights appear instantly and fade out in 0.08 s. The window preview
+  card opens after 0.3 s and shows the last picture of the window straight away
+  while a fresh one loads.
 - Taskbar running marks are easier to see: a 12 wide white line under running
   apps and a 20 wide accent line under the focused window, both a little
   thicker. The Start logo and the Files bindle are drawn at 32 pt instead of

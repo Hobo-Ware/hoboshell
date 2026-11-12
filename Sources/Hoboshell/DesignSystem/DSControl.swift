@@ -212,6 +212,6 @@ class DSControl: NSView {
         alphaValue = isEnabled ? 1 : DSColor.disabledAlpha
         layer.borderWidth = isFocused ? Self.focusRingWidth : 0
         layer.borderColor = DSColor.focusRing.cgColor
-        DSMotion.fill(layer, to: fill?.cgColor)
+        DSMotion.fill(layer, to: fill?.cgColor, kind: fill == nil ? .hoverOut : .hoverIn)
     }
 }

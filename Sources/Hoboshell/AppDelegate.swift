@@ -22,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var startMenu: StartMenuPanel?
     private var switcher: SwitcherController?
     private var signalSources: [DispatchSourceSignal] = []
+    private var trayEntries: [BackgroundEntry] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         terminateCleanlyOnSignals()
@@ -42,8 +43,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         engine.windowEvents.onGeometryChange = { [weak self] window in
             self?.nudger.windowChanged(window)
         }
-        engine.store.subscribe { [weak self] _ in
-            self?.refreshTaskbar()
+        engine.store.subscribe { [weak self] update in
+            self?.render(update.state)
         }
         engine.start()
         registerHotKeys()
@@ -167,99 +168,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func refreshTaskbar() {
-        let state = engine.store.state
-        let running = Dictionary(engine.tracker.shellApps.map { ($0.processIdentifier, $0) }, uniquingKeysWith: { first, _ in first })
-        let apps = state.apps.filter { $0.policy == .regular }.compactMap { running[$0.pid] }
-        let items: [TaskbarItem]
-        if engine.isTrusted {
-            items = state.visibleWindows.compactMap { window in
-                running[window.pid].map { Self.item(for: ShellWindow(
-                    id: window.id, app: $0, title: window.title, isMinimized: window.isMinimized, isFocused: window.isFocused
-                )) }
-            }
-        } else {
-            items = apps.map(Self.item(for:))
-        }
-        refreshTray(state: state, running: running)
-        chrome?.update(snapshot: TaskbarSnapshot(
-            items: items,
-            apps: apps.map(Self.entry(for:)),
-            badges: state.badges,
-            windowless: TrayModel.windowlessAppIDs(state)
-        ))
+        render(engine.store.state)
     }
 
-    private func refreshTray(state: ShellState, running: [pid_t: NSRunningApplication]) {
+    private func render(_ state: ShellState) {
+        chrome?.update(state: state, isTrusted: engine.isTrusted)
+        refreshTray(state)
+    }
+
+    private func refreshTray(_ state: ShellState) {
         let excluded = Set(Self.neverInTray + [Bundle.main.bundleIdentifier].compactMap { $0 })
-        TrayAppsStore.shared.update(TrayModel.backgroundApps(state, excluded: excluded).compactMap { entry in
-            running[entry.pid].map { TrayApp(running: $0, id: entry.appID, badge: entry.badge) }
+        let entries = TrayModel.backgroundApps(state, excluded: excluded)
+        guard entries != trayEntries else { return }
+        trayEntries = entries
+        TrayAppsStore.shared.update(entries.compactMap { entry in
+            NSRunningApplication(processIdentifier: entry.pid).map { TrayApp(running: $0, id: entry.appID, badge: entry.badge) }
         })
-    }
-
-    private static func appID(of app: NSRunningApplication) -> String {
-        TaskbarAppID.make(bundleIdentifier: app.bundleIdentifier, pid: app.processIdentifier)
-    }
-
-    private static func reveal(_ app: NSRunningApplication) {
-        app.unhide()
-        app.activate()
-    }
-
-    private static func entry(for app: NSRunningApplication) -> TaskbarAppEntry {
-        TaskbarAppEntry(
-            id: appID(of: app),
-            name: app.localizedName ?? "",
-            icon: HoboIcon.image(for: app),
-            isActive: app.isActive,
-            activate: {
-                if app.isActive {
-                    app.hide()
-                } else {
-                    reveal(app)
-                }
-            },
-            quit: { app.terminate() }
-        )
-    }
-
-    private static func item(for app: NSRunningApplication) -> TaskbarItem {
-        var item = TaskbarItem(icon: HoboIcon.image(for: app), title: app.localizedName ?? "", isActive: app.isActive) {
-            if app.isActive {
-                app.hide()
-            } else {
-                reveal(app)
-            }
-        }
-        item.quit = { app.terminate() }
-        item.appName = app.localizedName
-        item.appID = appID(of: app)
-        item.reveal = { reveal(app) }
-        return item
-    }
-
-    private static func item(for window: ShellWindow) -> TaskbarItem {
-        var item = TaskbarItem(icon: HoboIcon.image(for: window.app), title: window.title, isActive: window.isFocused) {
-            if window.isFocused {
-                WindowCatalog.shared.minimize(window)
-            } else {
-                WindowCatalog.shared.focus(window)
-            }
-        }
-        let request = PreviewRequest(
-            windowID: window.id,
-            pid: window.app.processIdentifier,
-            title: window.title,
-            isMinimized: window.isMinimized
-        )
-        item.preview = { limit, completion in
-            WindowPreview.capture(request, limit: limit, completion: completion)
-        }
-        item.close = { WindowCatalog.shared.close(window) }
-        item.quit = { window.app.terminate() }
-        item.appName = window.app.localizedName
-        item.appID = appID(of: window.app)
-        item.reveal = { WindowCatalog.shared.focus(window) }
-        return item
     }
 
     private func registerHotKeys() {
