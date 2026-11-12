@@ -5,6 +5,11 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Added
+- Click the battery in the tray for a flyout with the charge, whether it is
+  charging, plugged in or on battery, the time left or to full when the Mac
+  reports it, whether Low Power Mode is on, and a "Battery settings" button.
+  `--show tray=battery` opens it for screenshots. Macs without a battery still
+  show no battery item.
 - The tray clock now follows the Mac's region settings (12 or 24 hour, date
   order) instead of a fixed 24-hour pattern. Click it for a calendar flyout:
   today's date, a month grid with week numbers and today marked, previous and
