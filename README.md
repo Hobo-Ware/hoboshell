@@ -16,8 +16,9 @@ APIs only. No System Integrity Protection changes, no private frameworks.
   windows or quit it. Pinned apps stay on the bar, running apps get a line
   under the button, and many windows of one app can fold into one button.
 - **System tray** with network state, battery level, and a clock with the date.
-- **Window switcher**: hold Option and press Tab to step through open windows,
-  release Option to switch.
+- **Window switcher**: hold Command (or Option) and press Tab to step through
+  open windows, one tile per window with a live picture, most recently used
+  first. Release to switch.
 - **Start menu** with pinned apps, an All apps list, recent files, grouped
   search (apps, files, Settings), a left rail of places, your account menu
   and a power menu. Open it from the Start button or with Option+Space.
@@ -43,7 +44,8 @@ is remembered.
 
 | Keys | What happens |
 | --- | --- |
-| Option+Tab | Step through open windows; release Option to switch |
+| Command+Tab, Command+Shift+Tab | Open the window switcher and step forward or back; release Command to switch. Arrow keys move, Escape cancels, Q quits the app, W closes the window. Turn off in the bar's right-click menu |
+| Option+Tab | The same switcher, held with Option |
 | Control+Option+Left | Snap the last used window to the left half |
 | Control+Option+Right | Snap it to the right half |
 | Control+Option+Up | Fill the area above the taskbar |

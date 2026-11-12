@@ -21,4 +21,16 @@ import Testing
     @Test func startTargetsCombineWithOthers() {
         #expect(ShowTarget.parse(arguments: ["--show", "start=all", "--show=files"]) == [.startAll, .files(path: nil)])
     }
+
+    @Test func switcherOpensTheWindowSwitcher() {
+        #expect(ShowTarget.parse(arguments: ["--show", "switcher"]) == [.switcher])
+    }
+
+    @Test func switcherCombinesWithOtherTargets() {
+        #expect(ShowTarget.parse(arguments: ["--show=switcher", "--show", "start"]) == [.switcher, .start])
+    }
+
+    @Test func switcherWithAValueIsIgnored() {
+        #expect(ShowTarget.parse(arguments: ["--show=switcher=all"]).isEmpty)
+    }
 }

@@ -10,7 +10,7 @@ enum GalleryContent {
 
     static func page() -> NSView {
         let sections = [
-            colors(), scales(), text(), buttons(), toggles(), fields(), menus(), rows(), grid(), startMenu(), chrome(), taskbar(), dialogs(),
+            colors(), scales(), text(), buttons(), toggles(), fields(), menus(), rows(), grid(), startMenu(), switcher(), chrome(), taskbar(), dialogs(),
         ]
         let stack = NSStackView(views: [DSLabel("Hoboshell design system", style: .title, weight: .semibold)] + sections)
         stack.orientation = .vertical
@@ -202,6 +202,29 @@ enum GalleryContent {
             },
             GalleryRow.make("letter header", [("A", letter)]),
             GalleryRow.make("avatar", [("picture", DSAvatar(side: DSIconSize.taskbar, image: application)), ("none", DSAvatar(side: DSIconSize.taskbar))]),
+        ])
+    }
+
+    private static func switcher() -> NSView {
+        let application = NSImage(named: NSImage.applicationIconName)
+        let photo = NSImage(size: DSSwitcherTile.pictureSize, flipped: false) { rect in
+            DSColor.raisedSurface.setFill()
+            rect.fill()
+            return true
+        }
+        func tile(picture: NSImage?) -> () -> DSControl {
+            {
+                let tile = DSSwitcherTile()
+                tile.show(title: "Quarterly plan - Notes", icon: application)
+                if let picture {
+                    tile.show(picture: picture)
+                }
+                return tile
+            }
+        }
+        return GalleryRow.section("DSSwitcherTile", [
+            GalleryRow.states("icon placeholder", tile(picture: nil)),
+            GalleryRow.states("window picture", tile(picture: photo)),
         ])
     }
 

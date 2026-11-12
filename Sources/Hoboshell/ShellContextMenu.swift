@@ -10,6 +10,9 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
     private let hideSystemUIItem = DSMenuItem("Hide the Mac Dock and desktop icons") {
         SystemChrome.setWanted(!SystemChrome.isWanted)
     }
+    private let commandTabItem = DSMenuItem("Use Hoboshell for Command+Tab") {
+        SwitcherSettings.setTakesCommandTab(!SwitcherSettings.takesCommandTab)
+    }
     private var groupingItems: [(TaskbarGrouping, DSMenuItem)] = []
     private var groupingChoice: GroupingChoice?
 
@@ -24,6 +27,7 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
             }
             addItem(DSMenu.submenu("Group windows", groupingItems.map(\.1)))
         }
+        addItem(commandTabItem)
         addItem(hideSystemUIItem)
         delegate = self
         addItem(DSMenu.separator())
@@ -39,6 +43,7 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         hideSystemUIItem.state = SystemChrome.isWanted ? .on : .off
+        commandTabItem.state = SwitcherSettings.takesCommandTab ? .on : .off
         guard let current = groupingChoice?.current() else { return }
         for (mode, item) in groupingItems {
             item.state = mode == current ? .on : .off
