@@ -7,8 +7,7 @@ final class ExplorerSidebarView: NSScrollView, NSTableViewDataSource, NSTableVie
         case place(ExplorerPlace)
     }
 
-    private static let rowHeight = DSControlHeight.compact.value
-    private static let headerHeight = DSControlHeight.compact.value
+    private static let rowHeight = DSControlHeight.row.value
 
     var onSelect: ((URL) -> Void)?
 
@@ -80,12 +79,14 @@ final class ExplorerSidebarView: NSScrollView, NSTableViewDataSource, NSTableVie
     }
 
     func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
-        if case .header = rows[row] { return Self.headerHeight }
+        if case .header = rows[row] { return DSSectionHeader.height }
         return Self.rowHeight
     }
 
     func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? {
-        tableView.makeView(withIdentifier: DSTableRowView.identifier, owner: nil) as? DSTableRowView ?? DSTableRowView()
+        let row = tableView.makeView(withIdentifier: DSTableRowView.identifier, owner: nil) as? DSTableRowView ?? DSTableRowView()
+        row.useAccentStyle()
+        return row
     }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
@@ -116,8 +117,8 @@ final class ExplorerSidebarView: NSScrollView, NSTableViewDataSource, NSTableVie
     private static func placeCell(_ place: ExplorerPlace) -> NSView {
         let cell = DSListRow(
             title: place.name,
-            image: NSWorkspace.shared.icon(forFile: place.url.path),
-            height: .compact
+            image: HoboIcon.image(forFile: place.url.path),
+            height: .row
         )
         cell.makeStatic()
         return cell

@@ -4,7 +4,7 @@ final class ExplorerNameCell: NSTableCellView {
     static let identifier = NSUserInterfaceItemIdentifier("ExplorerNameCell")
 
     let nameField = ExplorerNameField(labelWithString: "")
-    private let iconView = DSIconView(side: DSIconSize.inline)
+    private let iconView = DSIconView(side: DSIconSize.toolbar)
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)

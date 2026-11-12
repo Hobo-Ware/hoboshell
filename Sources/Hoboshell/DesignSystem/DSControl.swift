@@ -40,6 +40,10 @@ class DSControl: NSView {
         didSet { refresh() }
     }
 
+    var selectedFill = DSColor.selected {
+        didSet { refresh() }
+    }
+
     var isEnabled = true {
         didSet {
             guard oldValue != isEnabled else { return }
@@ -173,6 +177,10 @@ class DSControl: NSView {
         onPress?()
     }
 
+    func cancelPress() {
+        isPressed = false
+    }
+
     func preview(_ state: DSControlState) {
         isPreviewing = true
         isEnabled = state != .disabled
@@ -194,7 +202,7 @@ class DSControl: NSView {
 
     private var fill: NSColor? {
         if isPressed { return DSColor.pressed }
-        if isSelected { return DSColor.selected }
+        if isSelected { return selectedFill }
         if isHovered { return DSColor.hover }
         return restingFill
     }
@@ -204,6 +212,6 @@ class DSControl: NSView {
         alphaValue = isEnabled ? 1 : DSColor.disabledAlpha
         layer.borderWidth = isFocused ? Self.focusRingWidth : 0
         layer.borderColor = DSColor.focusRing.cgColor
-        DSMotion.fill(layer, to: fill?.cgColor)
+        DSMotion.fill(layer, to: fill?.cgColor, kind: fill == nil ? .hoverOut : .hoverIn)
     }
 }

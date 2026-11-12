@@ -1,15 +1,38 @@
 import AppKit
+import HoboshellCore
 
 final class ShellContextMenu: NSMenu, NSMenuDelegate {
-    private let hideSystemUIItem = DSMenuItem("Hide the Mac Dock and desktop icons") {
-        SystemChrome.setWanted(!SystemChrome.isWanted)
+    struct GroupingChoice {
+        let current: () -> TaskbarGrouping
+        let choose: (TaskbarGrouping) -> Void
     }
 
-    init(switchTitle: String, onSwitchVariant: @escaping () -> Void) {
+    private let replaceDockItem = DSMenuItem("Replace the Mac Dock and desktop icons") {
+        SystemChrome.setWanted(!SystemChrome.isWanted)
+    }
+    private let keepAboveBarItem = DSMenuItem("Keep windows above the taskbar") {
+        WindowNudger.setEnabled(!WindowNudger.isEnabled)
+    }
+    private let commandTabItem = DSMenuItem("Use Hoboshell for Command+Tab") {
+        SwitcherSettings.setTakesCommandTab(!SwitcherSettings.takesCommandTab)
+    }
+    private var groupingItems: [(TaskbarGrouping, DSMenuItem)] = []
+    private var groupingChoice: GroupingChoice?
+
+    init(switchTitle: String, grouping: GroupingChoice? = nil, onSwitchVariant: @escaping () -> Void) {
         super.init(title: "")
         DSMenu.style(self)
+        groupingChoice = grouping
         addItem(DSMenuItem(switchTitle, handler: onSwitchVariant))
-        addItem(hideSystemUIItem)
+        if let grouping {
+            groupingItems = TaskbarGrouping.allCases.map { mode in
+                (mode, DSMenuItem(mode.displayName) { grouping.choose(mode) })
+            }
+            addItem(DSMenu.submenu("Group windows", groupingItems.map(\.1)))
+        }
+        addItem(commandTabItem)
+        addItem(keepAboveBarItem)
+        addItem(replaceDockItem)
         delegate = self
         addItem(DSMenu.separator())
         addItem(DSMenuItem("Quit Hoboshell") {
@@ -23,6 +46,12 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
-        hideSystemUIItem.state = SystemChrome.isWanted ? .on : .off
+        replaceDockItem.state = SystemChrome.isWanted ? .on : .off
+        keepAboveBarItem.state = WindowNudger.isEnabled ? .on : .off
+        commandTabItem.state = SwitcherSettings.takesCommandTab ? .on : .off
+        guard let current = groupingChoice?.current() else { return }
+        for (mode, item) in groupingItems {
+            item.state = mode == current ? .on : .off
+        }
     }
 }

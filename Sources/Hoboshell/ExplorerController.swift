@@ -10,7 +10,7 @@ final class ExplorerController: NSObject {
     var sort = ExplorerSort.standard
     var query = ""
     var showsHidden = false
-    var mode = ExplorerViewMode.details
+    var mode = ExplorerViewMode.saved
     var typeAhead = ExplorerTypeAhead()
     var isRenaming = false
     var reloadWaitsForRename = false
