@@ -5,6 +5,10 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Added
+- A volume item in the tray that follows the level and mute state of the
+  current output device. Scroll over it to change the volume in 5% steps; click
+  it for a slider, a mute button, the list of outputs (click one to switch) and
+  a "Sound settings" button. `--show tray=volume` opens it for screenshots.
 - Apps that are running with no window (for example Slack after you press the
   red button) now show as small icons at the left end of the tray, with their
   unread count on the icon. Click one to bring its window back, right-click for

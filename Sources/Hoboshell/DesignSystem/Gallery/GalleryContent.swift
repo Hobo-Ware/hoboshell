@@ -300,7 +300,14 @@ enum GalleryContent {
             ("icon", DSTrayIcon(icon: folder, tip: "Documents")),
             ("with unread badge", DSTrayIcon(icon: folder, tip: "Documents", badge: "12")),
         ]
-        return GalleryRow.section("DSTrayIcon", [GalleryRow.make("background app", icons)])
+        let slider = DSSlider()
+        slider.doubleValue = 0.55
+        let disabled = DSSlider()
+        disabled.isEnabled = false
+        return GalleryRow.section("Tray: DSTrayIcon, DSSlider", [
+            GalleryRow.make("background app", icons),
+            GalleryRow.make("DSSlider", [("level", sized(slider)), ("disabled", sized(disabled))]),
+        ])
     }
 
     private static func mark(_ state: DSRunMark.State) -> DSRunMark {
