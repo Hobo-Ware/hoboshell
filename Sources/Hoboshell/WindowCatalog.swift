@@ -47,7 +47,9 @@ final class WindowCatalog {
             guard let element = registry.element(of: id),
                   let button = Self.attribute(kAXCloseButtonAttribute, of: element),
                   CFGetTypeID(button) == AXUIElementGetTypeID() else { return }
-            _ = AXUIElementPerformAction(button as! AXUIElement, kAXPressAction as CFString)
+            let pressable = button as! AXUIElement
+            Self.timeout(pressable)
+            _ = AXUIElementPerformAction(pressable, kAXPressAction as CFString)
         }
     }
 
