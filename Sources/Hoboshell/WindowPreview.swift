@@ -1,11 +1,30 @@
 import AppKit
 import HoboshellCore
+import os
 import ScreenCaptureKit
+
+struct PreviewRequest {
+    let windowID: Int
+    let pid: pid_t
+    let title: String
+    let frame: CGRect?
+    let isMinimized: Bool
+}
 
 enum WindowPreview {
     private static let frameTolerance: CGFloat = 4
     private static let pixelsPerPoint: CGFloat = 2
+    private static let rememberedPictures = 64
+    private static let log = Logger(subsystem: "dev.hoboware.hoboshell", category: "preview")
     private static var hasAskedForAccess = false
+    private static var pictures: [Int: NSImage] = [:]
+    private static var pictureOrder: [Int] = []
+    private static var loggedFailures = Set<String>()
+
+    private enum Outcome {
+        case picture(NSImage)
+        case failure(String)
+    }
 
     static func askForAccessOnce() {
         guard !hasAskedForAccess, !CGPreflightScreenCaptureAccess() else { return }
@@ -13,41 +32,85 @@ enum WindowPreview {
         CGRequestScreenCaptureAccess()
     }
 
-    static func capture(pid: pid_t, frame: CGRect, limit: CGSize, completion: @escaping (NSImage?) -> Void) {
-        guard #available(macOS 14.0, *), CGPreflightScreenCaptureAccess() else {
-            completion(nil)
+    static func capture(_ request: PreviewRequest, limit: CGSize, completion: @escaping (NSImage?) -> Void) {
+        let remembered = pictures[request.windowID]
+        guard !request.isMinimized else {
+            logOnce(request, remembered == nil ? "minimised and no earlier picture" : nil)
+            completion(remembered)
+            return
+        }
+        guard #available(macOS 14.0, *) else {
+            logOnce(request, "needs macOS 14 for window pictures")
+            completion(remembered)
+            return
+        }
+        guard CGPreflightScreenCaptureAccess() else {
+            logOnce(request, "Screen Recording access is off")
+            completion(remembered)
             return
         }
         Task {
-            let image = await image(pid: pid, frame: frame, limit: limit)
+            let outcome = await image(request, limit: limit)
             await MainActor.run {
-                completion(image)
+                switch outcome {
+                case .picture(let image):
+                    remember(image, for: request.windowID)
+                    completion(image)
+                case .failure(let reason):
+                    logOnce(request, reason)
+                    completion(remembered)
+                }
             }
         }
     }
 
-    @available(macOS 14.0, *)
-    private static func image(pid: pid_t, frame: CGRect, limit: CGSize) async -> NSImage? {
-        guard let content = try? await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true) else {
-            return nil
+    private static func remember(_ image: NSImage, for windowID: Int) {
+        if pictures.updateValue(image, forKey: windowID) == nil {
+            pictureOrder.append(windowID)
         }
-        let candidates = content.windows.filter { $0.owningApplication?.processID == pid && $0.windowLayer == 0 }
-        guard let index = WindowMatch.closestIndex(
-            to: frame,
-            among: candidates.map(\.frame),
-            tolerance: frameTolerance
-        ) else { return nil }
+        while pictureOrder.count > rememberedPictures {
+            pictures[pictureOrder.removeFirst()] = nil
+        }
+    }
 
-        let size = PreviewCardLayout.fit(frame.size, within: limit)
+    private static func logOnce(_ request: PreviewRequest, _ reason: String?) {
+        guard let reason, loggedFailures.insert("\(request.pid)|\(reason)").inserted else { return }
+        log.notice("no picture for a window of pid \(request.pid): \(reason, privacy: .public)")
+    }
+
+    @available(macOS 14.0, *)
+    private static func image(_ request: PreviewRequest, limit: CGSize) async -> Outcome {
+        guard let content = try? await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: false) else {
+            return .failure("the list of windows could not be read")
+        }
+        let windows = content.windows.filter { $0.owningApplication?.processID == request.pid && $0.windowLayer == 0 }
+        let outcome = WindowMatch.resolve(
+            frame: request.frame,
+            title: request.title,
+            among: windows.map {
+                WindowCandidate(frame: $0.frame, title: $0.title ?? "", isNormal: !$0.frame.isEmpty)
+            },
+            tolerance: frameTolerance
+        )
+        let index: Int
+        switch outcome {
+        case .match(let found, _):
+            index = found
+        case .failure(let failure):
+            return .failure("no matching window: \(failure.rawValue) among \(windows.count)")
+        }
+
+        let size = PreviewCardLayout.fit(request.frame?.size ?? windows[index].frame.size, within: limit)
         let configuration = SCStreamConfiguration()
         configuration.width = Int(size.width * pixelsPerPoint)
         configuration.height = Int(size.height * pixelsPerPoint)
         configuration.showsCursor = false
-        let filter = SCContentFilter(desktopIndependentWindow: candidates[index])
-        guard let captured = try? await SCScreenshotManager.captureImage(
-            contentFilter: filter,
-            configuration: configuration
-        ) else { return nil }
-        return NSImage(cgImage: captured, size: size)
+        let filter = SCContentFilter(desktopIndependentWindow: windows[index])
+        do {
+            let captured = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
+            return .picture(NSImage(cgImage: captured, size: size))
+        } catch {
+            return .failure("capture failed: \(error.localizedDescription)")
+        }
     }
 }
