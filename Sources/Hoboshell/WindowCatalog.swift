@@ -9,6 +9,7 @@ struct ShellWindow {
     let frame: CGRect?
     let isMinimized: Bool
     let isFocused: Bool
+    var id = 0
 }
 
 final class WindowCatalog {
@@ -47,7 +48,9 @@ final class WindowCatalog {
             readablePIDs.insert(pid)
             for window in windows {
                 let id = listed.first { CFEqual($0.window.element, window.element) }?.id ?? makeID()
-                seen.append((id, window))
+                var identified = window
+                identified.id = id
+                seen.append((id, identified))
             }
         }
         let seenIDs = Set(seen.map(\.id))
@@ -89,7 +92,8 @@ final class WindowCatalog {
             title: window.title,
             frame: frame(of: window.element) ?? window.frame,
             isMinimized: attribute(kAXMinimizedAttribute, of: window.element) as? Bool ?? window.isMinimized,
-            isFocused: false
+            isFocused: false,
+            id: window.id
         )
     }
 

@@ -219,11 +219,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 WindowCatalog.focus(window)
             }
         }
-        if let frame = window.frame, !window.isMinimized {
-            let pid = window.app.processIdentifier
-            item.preview = { limit, completion in
-                WindowPreview.capture(pid: pid, frame: frame, limit: limit, completion: completion)
-            }
+        let request = PreviewRequest(
+            windowID: window.id,
+            pid: window.app.processIdentifier,
+            title: window.title,
+            frame: window.frame,
+            isMinimized: window.isMinimized
+        )
+        item.preview = { limit, completion in
+            WindowPreview.capture(request, limit: limit, completion: completion)
         }
         item.close = { WindowCatalog.close(window) }
         item.quit = { window.app.terminate() }

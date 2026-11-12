@@ -113,6 +113,11 @@ Record of work, newest first. Each entry says what a user would notice.
 - A taskbar button no longer vanishes and comes back while its window
   minimises. A window stays listed until its app quits, the window is closed,
   or it has been missing from two reads half a second apart.
+- Hovering a taskbar button now shows a window picture for apps like Chrome
+  that showed only an icon before. The picture is found among all of the app's
+  windows (other Spaces and full screen included), by position, then by title,
+  then as the app's only window. A minimised window shows its last picture.
+  The reason for any miss is written to the system log once.
 - Desktop icons now react: they light up under the pointer, select on a
   click, open on a double click and have a right-click menu. Finder's own
   desktop was sitting on top and taking every click; it is now covered.
