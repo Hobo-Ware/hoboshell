@@ -22,7 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var chrome: ShellChrome?
     private var desktop: DesktopWindow?
     private var startMenu: StartMenuPanel?
-    private var switcher: WindowSwitcherPanel?
+    private var switcher: SwitcherController?
     private var windowRefreshTimer: Timer?
     private var signalSources: [DispatchSourceSignal] = []
     private var badges: [String: String] = [:]
@@ -36,7 +36,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         MainMenu.install()
 
         startMenu = StartMenuPanel()
-        switcher = WindowSwitcherPanel()
+        switcher = SwitcherController(catalog: catalog) { [weak self] in
+            self?.appsWithWindows ?? []
+        }
+        switcher?.start()
         buildShell()
 
         tracker.onChange = { [weak self] in
@@ -130,6 +133,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 showStartMenu(.allApps)
             case .startSearch(let text):
                 showStartMenu(.search(text))
+            case .switcher:
+                switcher?.showForCapture()
             case .files(let path):
                 let folder = path.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
                 ExplorerWindow.open(at: folder ?? FileManager.default.homeDirectoryForCurrentUser)
@@ -166,6 +171,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowEvents.watch(apps: appsWithWindows)
         catalog.load(apps: appsWithWindows) { [weak self] windows in
             guard let self else { return }
+            self.switcher?.windowsDidRefresh(windows)
             self.chrome?.update(snapshot: TaskbarSnapshot(items: windows.map(Self.item(for:)), apps: entries, badges: self.badges))
         }
     }
@@ -250,26 +256,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         HotKeyCenter.shared.register(keyCode: kVK_Tab, modifiers: optionKey) { [weak self] in
-            self?.cycleWindows()
+            self?.switcher?.openFromHotKey()
         }
         HotKeyCenter.shared.register(keyCode: kVK_Space, modifiers: optionKey) { [weak self] in
             self?.toggleStartMenu()
-        }
-    }
-
-    private func cycleWindows() {
-        guard Accessibility.isTrusted else {
-            Accessibility.requestTrust()
-            return
-        }
-        guard let switcher, let screen = NSScreen.main else { return }
-        if switcher.isVisible {
-            switcher.advance()
-            return
-        }
-        catalog.load(apps: appsWithWindows) { windows in
-            let focusedFirst = windows.filter(\.isFocused) + windows.filter { !$0.isFocused }
-            switcher.begin(with: focusedFirst, on: screen)
         }
     }
 

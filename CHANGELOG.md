@@ -5,6 +5,16 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Added
+- A new window switcher on Command+Tab and Command+Shift+Tab (Option+Tab still
+  works). It shows one tile per window with a live picture, the app icon and
+  the title, most recently used first, and wraps onto more rows when needed.
+  Hold Command and press Tab or Shift+Tab to move, use the arrow keys to move
+  in the grid, release Command to switch, press Escape to cancel, Q to quit
+  the highlighted app, W to close its window, or click a tile. A quick press
+  and release switches to the previous window. Turn it off with "Use Hoboshell
+  for Command+Tab" in the bar's right-click menu to get the Mac switcher back.
+- `--show switcher` opens the switcher for screenshots, and the `--gallery`
+  window shows the switcher tile.
 - The explorer remembers whether you last used the details or the icons view.
 - The Start menu is now a full flyout. A grid of pinned apps (Safari, Mail,
   Calendar, Notes, Music, Photos, System Settings and Terminal to begin with)

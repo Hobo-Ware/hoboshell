@@ -3,6 +3,7 @@ public enum ShowTarget: Equatable {
     case startAll
     case startSearch(text: String)
     case files(path: String?)
+    case switcher
 
     public static func parse(arguments: [String]) -> [ShowTarget] {
         var targets: [ShowTarget] = []
@@ -25,6 +26,9 @@ public enum ShowTarget: Equatable {
         }
         if value.hasPrefix("start=search:"), value.count > "start=search:".count {
             return [.startSearch(text: String(value.dropFirst("start=search:".count)))]
+        }
+        if value == "switcher" {
+            return [.switcher]
         }
         if value == "files" {
             return [.files(path: nil)]
