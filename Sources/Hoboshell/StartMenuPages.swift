@@ -8,12 +8,12 @@ enum StartMenuPages {
 
     static func pinned(apps: [StartMenuApp], recents: [URL], actions: StartMenuActions) -> StartMenuPage {
         let allApps = DSButton(
-            views: [DSLabel("All apps", style: .caption), DSIconView(side: DSIconSize.inline, image: DSIconSize.symbol("chevron.right"))],
-            height: .compact,
-            tip: "All apps"
+            views: [DSLabel("All apps", style: .caption), DSIconView(side: DSIconSize.chevron, image: DSIconSize.symbol("chevron.right"))],
+            height: .compact
         )
+        allApps.setAccessibilityLabel("All apps")
         allApps.onPress = actions.showAllApps
-        let header = headerRow(DSSectionHeader("Pinned"), trailing: allApps)
+        let header = DSHeaderRow(title: "Pinned", trailing: allApps)
 
         let tiles = apps.map { (id: $0.bundleID ?? $0.url.path, app: $0, cell: tile(for: $0, actions: actions)) }
         var views: [NSView] = [header]
@@ -40,9 +40,11 @@ enum StartMenuPages {
     }
 
     static func allApps(apps: [StartMenuApp], actions: StartMenuActions) -> StartMenuPage {
-        let back = DSButton(title: "Back", image: DSIconSize.symbol("chevron.left"), height: .compact, tip: "Back to pinned apps")
+        let back = DSButton(title: "Back", image: DSIconSize.symbol("chevron.left"), height: .compact)
+        back.iconSide = DSIconSize.chevron
+        back.setAccessibilityLabel("Back to pinned apps")
         back.onPress = actions.showPinned
-        var views: [NSView] = [headerRow(DSSectionHeader("All apps"), leading: back)]
+        var views: [NSView] = [DSHeaderRow(title: "All apps", leading: back)]
         var rows: [StartMenuItem] = []
         for group in StartLetterGroups.group(apps.map(\.name)) {
             views.append(DSLetterHeader(group.letter))
@@ -124,15 +126,6 @@ enum StartMenuPages {
         let image = HoboIcon.image(forFile: path, side: side)
         icons[key] = image
         return image
-    }
-
-    private static func headerRow(_ title: NSView, leading: NSView? = nil, trailing: NSView? = nil) -> NSView {
-        title.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        let row = NSStackView(views: [leading, title, trailing].compactMap { $0 })
-        row.orientation = .horizontal
-        row.alignment = .centerY
-        row.spacing = DSSpacing.xs
-        return row
     }
 
     private static func emptyNote(_ text: String) -> NSView {
