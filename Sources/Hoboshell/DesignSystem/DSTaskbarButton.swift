@@ -1,4 +1,5 @@
 import AppKit
+import HoboshellCore
 
 class DSTaskbarButton: DSButton {
     var runState: DSRunMark.State {
@@ -7,11 +8,17 @@ class DSTaskbarButton: DSButton {
     }
 
     var countText: String? {
-        didSet { countBadge = replace(countBadge, with: countText, tone: .neutral, corner: .bottomTrailing) }
+        didSet {
+            guard oldValue != countText else { return }
+            countBadge = replace(countBadge, with: countText, tone: .neutral, corner: .bottomTrailing)
+        }
     }
 
     var notificationText: String? {
-        didSet { notificationBadge = replace(notificationBadge, with: notificationText, tone: .danger, corner: .topTrailing) }
+        didSet {
+            guard oldValue != notificationText else { return }
+            notificationBadge = replace(notificationBadge, with: notificationText, tone: .danger, corner: .topTrailing)
+        }
     }
 
     private enum Corner {
@@ -34,9 +41,10 @@ class DSTaskbarButton: DSButton {
     ) {
         super.init(title: title, image: image, views: views, height: height, width: width, alignment: alignment, tip: tip)
         addSubview(runMark)
+        let barMargin = (ShellLayout.taskbarHeight - self.height.value) / 2
         NSLayoutConstraint.activate([
             runMark.centerXAnchor.constraint(equalTo: centerXAnchor),
-            runMark.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -DSSpacing.xxs),
+            runMark.bottomAnchor.constraint(equalTo: bottomAnchor, constant: DSSpacing.xxs - barMargin),
         ])
     }
 

@@ -33,10 +33,12 @@ final class DSTextField: NSView, NSTextFieldDelegate {
         placeholder: String = "",
         height: DSControlHeight = .regular,
         leading: NSView? = nil,
-        trailing: NSView? = nil
+        trailing: NSView? = nil,
+        radius: CGFloat = DSRadius.control
     ) {
         self.height = height
         super.init(frame: .zero)
+        box.radius = radius
         let font = height.textStyle.font()
         field.font = font
         field.textColor = DSColor.text

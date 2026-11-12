@@ -190,6 +190,14 @@ import Testing
         #expect(ShowTarget.parse(arguments: ["--show", "nope", "--show"]).isEmpty)
     }
 
+    @Test func trayValuesAreParsed() {
+        #expect(ShowTarget.parse(arguments: ["--show", "tray=apps"]) == [.tray(.apps)])
+    }
+
+    @Test func anUnknownTrayValueIsIgnored() {
+        #expect(ShowTarget.parse(arguments: ["--show", "tray=nope", "--show", "tray="]).isEmpty)
+    }
+
     @Test func anEmptyPathIsIgnored() {
         #expect(ShowTarget.parse(arguments: ["--show", "files="]).isEmpty)
     }

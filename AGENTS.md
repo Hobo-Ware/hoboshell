@@ -12,8 +12,10 @@ Integrity Protection, and never use private frameworks.
 | `Sources/HoboshellCore` | Logic with no windows: geometry, file listing, filtering. No AppKit views. Everything here is unit tested. |
 | `Sources/Hoboshell` | The app: windows, panels, system calls (Accessibility, NSWorkspace, `defaults`). |
 | `Tests/HoboshellCoreTests` | Swift Testing suites for `HoboshellCore`. |
+| `Sources/HoboshellProbe` | A tiny helper app that opens and closes plain windows on command. Used only by the self-test. |
 | `Support/Info.plist` | Keys for the packaged `.app` (`LSUIElement`, folder access texts). |
 | `scripts/test.sh` | The one way to run tests. Works with or without full Xcode. |
+| `scripts/selftest.sh` | Builds the bundle and runs `Hoboshell --selftest realtime` through `open`, so macOS applies Hoboshell's own Accessibility permission. It starts the probe helper, which opens small windows without taking keyboard focus, and fails unless every step passes. Stop a running Hoboshell first. |
 | `scripts/bundle.sh` | Builds a signed `dist/Hoboshell.app`. Signs with the local certificate named `Hoboshell Dev` when the keychain has one, so macOS permissions survive rebuilds; otherwise ad-hoc. Delete `dist/` when you are done with it. |
 | `Design/icons` | The icon set as SVG files, the source of truth. After changing one, run `scripts/embed-icons.py` to rebuild `Sources/Hoboshell/HoboIconData.swift`. |
 | `scripts/capture.sh` | Saves a picture of each Hoboshell window that is on screen into a folder, for checking work by eye. Captures Hoboshell's own windows only. |
@@ -60,6 +62,27 @@ it fails with `no such module 'Testing'`. The script adds the framework paths.
   (one or two lines, say what the system does).
 - Swift language mode 5, deployment target macOS 13. Do not raise either
   without asking.
+
+## Realtime and performance
+
+- Shell state changes come from events through the Core reducer
+  (`ShellState.apply`). No polling drives the model. The only repeating timers
+  allowed to feed it: the 1 s Dock badge poll (macOS has no badge
+  notification) and the 10 s safety sweep that logs missed events as drift. The
+  clock and battery readout in the tray are not model state.
+- Views update by diff, keyed by stable id (`KeyedStack`). Never remove all
+  subviews and add them again. Hover and pressed states must survive updates.
+- Nothing slow on the main thread: no Accessibility call, disk read, icon
+  decode, process launch or screen capture. Accessibility work runs on the
+  Accessibility thread with a 0.25 s messaging timeout.
+- Every user-visible reaction has a budget: 50 ms from observed event to
+  applied view change, 150 ms end to end. Each one needs a Core test or a
+  self-test step.
+- A heuristic delay needs a written reason next to it. Current ones: launch
+  snapshot retries at 0.1, 0.3 and 1 s (an app has no windows for a moment after
+  it starts), a second desktop snapshot 0.25 s after a desktop change (the window
+  list lags the switch), and a 0.5 s Accessibility trust recheck (macOS flips
+  trust a moment after it announces it).
 
 ## System safety
 
