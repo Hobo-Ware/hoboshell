@@ -1,45 +1,59 @@
 import AppKit
 import Carbon.HIToolbox
 import HoboshellCore
+import os
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private static let windowRefreshInterval: TimeInterval = 1.5
+    private static let neverInTray = ["com.apple.finder"]
     private static let savedVariantKey = "ShellVariant"
+    private static let snapLog = Logger(subsystem: "dev.hoboware.hoboshell", category: "snap")
 
-    private let tracker = AppTracker()
-    private let catalog = WindowCatalog()
+    private let engine = ShellEngine()
+    private let showDesktop = TaskbarShowDesktop()
+    private let nudger = WindowNudger()
     private let hidesSystemUI = ProcessInfo.processInfo.environment["HOBOSHELL_HIDE_SYSTEM_UI"] == "1"
     private var variant = ShellVariant.resolve(
         arguments: CommandLine.arguments,
         saved: UserDefaults.standard.string(forKey: AppDelegate.savedVariantKey)
     )
+    private var dockReservation = DockReservation.off
     private var chrome: ShellChrome?
     private var desktop: DesktopWindow?
     private var startMenu: StartMenuPanel?
-    private var switcher: WindowSwitcherPanel?
-    private var windowRefreshTimer: Timer?
+    private var switcher: SwitcherController?
     private var signalSources: [DispatchSourceSignal] = []
+    private var trayEntries: [BackgroundEntry] = []
+    private var selfTest: RealtimeSelfTest?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         terminateCleanlyOnSignals()
-        if hidesSystemUI {
-            SystemChrome.hide()
+        if !hidesSystemUI && !SystemChrome.isWanted && SystemChrome.isActive {
+            SystemChrome.restore()
         }
         Accessibility.requestTrust()
         MainMenu.install()
 
         startMenu = StartMenuPanel()
-        switcher = WindowSwitcherPanel()
+        switcher = SwitcherController(engine: engine)
+        switcher?.start()
         buildShell()
 
-        tracker.onChange = { [weak self] in
-            self?.refreshTaskbar()
+        engine.tracker.onUserActivation = { [weak self] in
+            self?.showDesktop.userActivatedApp()
         }
-        tracker.start()
-        windowRefreshTimer = Timer.scheduledTimer(withTimeInterval: Self.windowRefreshInterval, repeats: true) { [weak self] _ in
-            self?.refreshTaskbar()
+        engine.windowEvents.onGeometryChange = { [weak self] window in
+            self?.nudger.windowChanged(window)
         }
+        engine.store.subscribe { [weak self] update in
+            self?.render(update.state)
+        }
+        engine.start()
+        startSelfTestIfRequested()
         registerHotKeys()
+        openRequestedWindows()
+        if hidesSystemUI || SystemChrome.isWanted {
+            engageDock()
+        }
 
         NotificationCenter.default.addObserver(
             self,
@@ -47,25 +61,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             name: NSApplication.didChangeScreenParametersNotification,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(dockWantedChanged),
+            name: SystemChrome.wantedDidChange,
+            object: nil
+        )
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        if hidesSystemUI {
+        if SystemChrome.isActive {
             SystemChrome.restore()
         }
     }
 
-    private var appsWithWindows: [NSRunningApplication] {
-        tracker.taskbarApps + [.current]
+    private func startSelfTestIfRequested() {
+        guard let arguments = SelfTestArguments.parse(CommandLine.arguments), let chrome else { return }
+        guard variant == .bottomTaskbar else {
+            print("realtime self-test could not run: start with --variant bottom-taskbar")
+            exit(2)
+        }
+        let test = RealtimeSelfTest(engine: engine, chrome: chrome, reportPath: arguments.reportPath)
+        selfTest = test
+        test.start()
     }
 
     private func buildShell() {
-        guard let screen = NSScreen.main else { return }
+        guard let screen = shellScreen else { return }
         chrome?.dismiss()
         desktop?.orderOut(nil)
         startMenu?.orderOut(nil)
 
-        let layout = ShellLayout(variant: variant, screen: screen)
+        let layout = ShellLayout(variant: variant, screen: screen, dockReservation: reservation(on: screen))
+        nudger.barFrame = variant == .bottomTaskbar ? layout.bar : nil
         let desktop = DesktopWindow(screen: screen, reserved: layout.reserved, color: variant.desktopColor)
         desktop.orderFront(nil)
         self.desktop = desktop
@@ -76,17 +104,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             : TopBarDockChrome(layout: layout, switchTitle: switchTitle)
         chrome.actions = ShellActions(
             onStart: { [weak self] in
-                guard let self, let chrome = self.chrome else { return }
-                self.startMenu?.toggle(origin: chrome.startMenuOrigin(menuSize:))
+                self?.toggleStartMenu()
             },
             onFiles: {
                 ExplorerWindow.open(at: FileManager.default.homeDirectoryForCurrentUser)
             },
             onShowDesktop: { [weak self] in
-                self?.tracker.taskbarApps.forEach { $0.hide() }
-            },
-            onSnap: { [weak self] region in
-                self?.snapLastActiveWindow(to: region)
+                guard let self else { return }
+                self.showDesktop.toggle(apps: self.engine.tracker.taskbarApps)
             },
             onSwitchVariant: { [weak self] in
                 self?.switchVariant()
@@ -97,41 +122,81 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshTaskbar()
     }
 
+    private var shellScreen: NSScreen? {
+        dockReservation.isOn ? NSScreen.screens.first : NSScreen.main
+    }
+
+    private func reservation(on screen: NSScreen) -> DockReservation {
+        screen == NSScreen.screens.first ? dockReservation : .off
+    }
+
     private func switchVariant() {
         variant = variant.other
         UserDefaults.standard.set(variant.rawValue, forKey: Self.savedVariantKey)
+        dockReservation = .off
         buildShell()
+        if SystemChrome.isActive {
+            engageDock()
+        }
+    }
+
+    private func engageDock() {
+        SystemChrome.engage(variant: variant) { [weak self] reservation in
+            self?.dockReservation = reservation
+            self?.buildShell()
+        }
+    }
+
+    private func openRequestedWindows() {
+        for target in ShowTarget.parse(arguments: CommandLine.arguments) {
+            switch target {
+            case .start:
+                showStartMenu(.pinned)
+            case .startAll:
+                showStartMenu(.allApps)
+            case .startSearch(let text):
+                showStartMenu(.search(text))
+            case .switcher:
+                switcher?.showForCapture()
+            case .tray(let kind):
+                DispatchQueue.main.async {
+                    TrayFlyouts.shared.showForCapture(kind)
+                }
+            case .files(let path):
+                let folder = path.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
+                ExplorerWindow.open(at: folder ?? FileManager.default.homeDirectoryForCurrentUser)
+            }
+        }
+    }
+
+    private func toggleStartMenu() {
+        guard let chrome else { return }
+        startMenu?.toggle(origin: chrome.startMenuOrigin(menuSize:))
+    }
+
+    private func showStartMenu(_ opening: StartMenuOpening) {
+        guard let chrome else { return }
+        startMenu?.staysOpenForCapture = true
+        startMenu?.present(origin: chrome.startMenuOrigin(menuSize:), opening: opening)
     }
 
     private func refreshTaskbar() {
-        guard Accessibility.isTrusted else {
-            chrome?.update(items: tracker.taskbarApps.map(Self.item(for:)))
-            return
-        }
-        catalog.load(apps: appsWithWindows) { [weak self] windows in
-            self?.chrome?.update(items: windows.map(Self.item(for:)))
-        }
+        render(engine.store.state)
     }
 
-    private static func item(for app: NSRunningApplication) -> TaskbarItem {
-        TaskbarItem(icon: app.icon, title: app.localizedName ?? "", isActive: app.isActive) {
-            if app.isActive {
-                app.hide()
-            } else {
-                app.unhide()
-                app.activate()
-            }
-        }
+    private func render(_ state: ShellState) {
+        chrome?.update(state: state, isTrusted: engine.isTrusted)
+        refreshTray(state)
     }
 
-    private static func item(for window: ShellWindow) -> TaskbarItem {
-        TaskbarItem(icon: window.app.icon, title: window.title, isActive: window.isFocused) {
-            if window.isFocused {
-                WindowCatalog.minimize(window)
-            } else {
-                WindowCatalog.focus(window)
-            }
-        }
+    private func refreshTray(_ state: ShellState) {
+        let excluded = Set(Self.neverInTray + [Bundle.main.bundleIdentifier].compactMap { $0 })
+        let entries = TrayModel.backgroundApps(state, excluded: excluded)
+        guard entries != trayEntries else { return }
+        trayEntries = entries
+        TrayAppsStore.shared.update(entries.compactMap { entry in
+            NSRunningApplication(processIdentifier: entry.pid).map { TrayApp(running: $0, id: entry.appID, badge: entry.badge) }
+        })
     }
 
     private func registerHotKeys() {
@@ -147,34 +212,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         HotKeyCenter.shared.register(keyCode: kVK_Tab, modifiers: optionKey) { [weak self] in
-            self?.cycleWindows()
+            self?.switcher?.openFromHotKey()
         }
-    }
-
-    private func cycleWindows() {
-        guard Accessibility.isTrusted else {
-            Accessibility.requestTrust()
-            return
-        }
-        guard let switcher, let screen = NSScreen.main else { return }
-        if switcher.isVisible {
-            switcher.advance()
-            return
-        }
-        catalog.load(apps: appsWithWindows) { windows in
-            let focusedFirst = windows.filter(\.isFocused) + windows.filter { !$0.isFocused }
-            switcher.begin(with: focusedFirst, on: screen)
+        HotKeyCenter.shared.register(keyCode: kVK_Space, modifiers: optionKey) { [weak self] in
+            self?.toggleStartMenu()
         }
     }
 
     private func snapLastActiveWindow(to region: SnapRegion) {
         guard Accessibility.isTrusted else {
+            Self.snapLog.notice("snap skipped: Accessibility access is off")
             Accessibility.requestTrust()
             return
         }
-        guard let app = tracker.lastActiveApp, let screen = NSScreen.main else { return }
-        let reserved = ShellLayout(variant: variant, screen: screen).reserved
-        WindowSnapper.snapFocusedWindow(of: app, to: region, on: screen, reserved: reserved)
+        guard let app = engine.tracker.lastActiveApp ?? NSWorkspace.shared.frontmostApplication, let screen = NSScreen.main else {
+            Self.snapLog.notice("snap skipped: no app has been active yet")
+            return
+        }
+        let reserved = ShellLayout(variant: variant, screen: screen, dockReservation: reservation(on: screen)).reserved
+        let outcome = WindowSnapper.snapFrontWindow(of: app, to: region, on: screen, reserved: reserved)
+        let appName = app.localizedName ?? "unknown app"
+        Self.snapLog.notice("snap region \(region.rawValue) on \(appName, privacy: .public): \(outcome.description, privacy: .public)")
     }
 
     private func terminateCleanlyOnSignals() {
@@ -190,6 +248,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func screensChanged() {
+        buildShell()
+    }
+
+    @objc private func dockWantedChanged() {
+        if SystemChrome.isWanted {
+            engageDock()
+            return
+        }
+        SystemChrome.restore()
+        dockReservation = .off
         buildShell()
     }
 }

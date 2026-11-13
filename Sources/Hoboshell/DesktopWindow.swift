@@ -4,8 +4,8 @@ import HoboshellCore
 final class DesktopWindow: NSWindow {
     init(screen: NSScreen, reserved: ShellInsets, color: NSColor) {
         super.init(contentRect: screen.frame, styleMask: .borderless, backing: .buffered, defer: false)
-        // Finder draws its own icons at this level; one step lower and the system wallpaper would cover us.
-        level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopIconWindow)))
+        // Finder's own desktop sits at desktopIconWindow and takes every click there, so we sit one step above it.
+        level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopIconWindow)) + 1)
         collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         isMovable = false
         hasShadow = false
@@ -13,10 +13,10 @@ final class DesktopWindow: NSWindow {
         isOpaque = true
         backgroundColor = color
         let insets = NSEdgeInsets(
-            top: screen.frame.maxY - screen.visibleFrame.maxY + reserved.top + 12,
-            left: reserved.left + 12,
-            bottom: reserved.bottom + 12,
-            right: reserved.right + 12
+            top: screen.frame.maxY - screen.visibleFrame.maxY + reserved.top + DSSpacing.m,
+            left: reserved.left + DSSpacing.m,
+            bottom: reserved.bottom + DSSpacing.m,
+            right: reserved.right + DSSpacing.m
         )
         contentView = DesktopGridView(
             frame: NSRect(origin: .zero, size: screen.frame.size),
@@ -34,10 +34,11 @@ final class DesktopWindow: NSWindow {
 }
 
 final class DesktopGridView: NSView {
-    private static let cellSize = NSSize(width: 96, height: 92)
+    private static let cellSize = DSGridCell.size
 
     private let folder: URL
     private let insets: NSEdgeInsets
+    private var iconPackObserver: NSObjectProtocol?
 
     init(frame: NSRect, folder: URL, insets: NSEdgeInsets) {
         self.folder = folder
@@ -45,6 +46,11 @@ final class DesktopGridView: NSView {
         super.init(frame: frame)
         autoresizingMask = [.width, .height]
         reload()
+        iconPackObserver = NotificationCenter.default.addObserver(
+            forName: IconPack.didChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.reload()
+        }
     }
 
     @available(*, unavailable)
@@ -59,6 +65,16 @@ final class DesktopGridView: NSView {
         layoutIcons()
     }
 
+    override func mouseDown(with event: NSEvent) {
+        select(nil)
+    }
+
+    func select(_ cell: DSGridCell?) {
+        for case let other as DSGridCell in subviews {
+            other.isSelected = other === cell
+        }
+    }
+
     func reload() {
         subviews.forEach { $0.removeFromSuperview() }
         let files = (try? FileManager.default.contentsOfDirectory(
@@ -67,7 +83,7 @@ final class DesktopGridView: NSView {
             options: .skipsHiddenFiles
         )) ?? []
         for file in files.sorted(by: { $0.lastPathComponent.localizedCaseInsensitiveCompare($1.lastPathComponent) == .orderedAscending }) {
-            addSubview(DesktopIconView(file: file, size: Self.cellSize))
+            addSubview(makeCell(for: file))
         }
         layoutIcons()
     }
@@ -84,46 +100,43 @@ final class DesktopGridView: NSView {
             ))
         }
     }
-}
 
-final class DesktopIconView: NSView {
-    private let file: URL
-
-    init(file: URL, size: NSSize) {
-        self.file = file
-        super.init(frame: NSRect(origin: .zero, size: size))
-
-        let icon = NSImageView(image: NSWorkspace.shared.icon(forFile: file.path))
-        icon.frame = NSRect(x: (size.width - 48) / 2, y: 4, width: 48, height: 48)
-
-        let label = NSTextField(labelWithString: file.lastPathComponent)
-        label.frame = NSRect(x: 2, y: 54, width: size.width - 4, height: 34)
-        label.alignment = .center
-        label.textColor = .white
-        label.font = .systemFont(ofSize: 11)
-        label.maximumNumberOfLines = 2
-        label.lineBreakMode = .byTruncatingMiddle
-
-        addSubview(icon)
-        addSubview(label)
-
-        let doubleClick = NSClickGestureRecognizer(target: self, action: #selector(open))
-        doubleClick.numberOfClicksRequired = 2
-        addGestureRecognizer(doubleClick)
+    private func makeCell(for file: URL) -> DSGridCell {
+        let cell = DSGridCell()
+        cell.show(name: file.lastPathComponent, icon: HoboIcon.image(forFile: file.path))
+        cell.toolTip = file.lastPathComponent
+        cell.onSelect = { [weak self, weak cell] in
+            self?.select(cell)
+        }
+        cell.onOpen = { [weak self] in
+            self?.open(file)
+        }
+        cell.menu = DSMenu.make([
+            DSMenuItem("Open") { [weak self] in
+                self?.open(file)
+            },
+            DSMenu.separator(),
+            DSMenuItem("Move to Trash") { [weak self] in
+                self?.moveToTrash(file)
+            },
+        ])
+        return cell
     }
 
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) is not supported")
-    }
-
-    override var isFlipped: Bool { true }
-
-    @objc private func open() {
+    private func open(_ file: URL) {
         if FileEntry.isBrowsableFolder(file) {
             ExplorerWindow.open(at: file)
             return
         }
         NSWorkspace.shared.open(file)
+    }
+
+    private func moveToTrash(_ file: URL) {
+        do {
+            try FileManager.default.trashItem(at: file, resultingItemURL: nil)
+            reload()
+        } catch {
+            DSDialog.showError(error)
+        }
     }
 }

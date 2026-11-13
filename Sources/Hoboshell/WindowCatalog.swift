@@ -2,60 +2,87 @@ import AppKit
 import ApplicationServices
 
 struct ShellWindow {
+    let id: Int
     let app: NSRunningApplication
-    let element: AXUIElement
     let title: String
     let isMinimized: Bool
     let isFocused: Bool
 }
 
 final class WindowCatalog {
-    private static let messagingTimeout: Float = 0.25
-    private let queue = DispatchQueue(label: "dev.hoboware.hoboshell.windows", qos: .userInitiated)
+    static let shared = WindowCatalog()
+    static let messagingTimeout: Float = 0.25
 
-    func load(apps: [NSRunningApplication], completion: @escaping ([ShellWindow]) -> Void) {
-        let frontmost = NSWorkspace.shared.frontmostApplication?.processIdentifier
-        queue.async {
-            let windows = apps.flatMap { Self.windows(of: $0, isFrontmost: $0.processIdentifier == frontmost) }
-            DispatchQueue.main.async {
-                completion(windows)
+    let registry = WindowRegistry()
+
+    func focus(_ window: ShellWindow) {
+        let app = window.app
+        perform(on: window) { element in
+            _ = AXUIElementSetAttributeValue(element, kAXMinimizedAttribute as CFString, kCFBooleanFalse)
+            _ = AXUIElementPerformAction(element, kAXRaiseAction as CFString)
+            _ = AXUIElementSetAttributeValue(element, kAXMainAttribute as CFString, kCFBooleanTrue)
+        }
+        app.unhide()
+        app.activate()
+    }
+
+    func minimize(_ window: ShellWindow) {
+        perform(on: window) { element in
+            _ = AXUIElementSetAttributeValue(element, kAXMinimizedAttribute as CFString, kCFBooleanTrue)
+        }
+    }
+
+    func close(_ window: ShellWindow) {
+        perform(on: window) { element in
+            guard let button = Self.attribute(kAXCloseButtonAttribute, of: element),
+                  CFGetTypeID(button) == AXUIElementGetTypeID() else { return }
+            let pressable = button as! AXUIElement
+            Self.timeout(pressable)
+            _ = AXUIElementPerformAction(pressable, kAXPressAction as CFString)
+        }
+    }
+
+    private func perform(on window: ShellWindow, _ action: @escaping (AXUIElement) -> Void) {
+        let id = window.id
+        let isOwnWindow = window.app.processIdentifier == ProcessInfo.processInfo.processIdentifier
+        AXWorker.shared.async { [registry] in
+            guard let element = registry.element(of: id) else { return }
+            Self.timeout(element)
+            // AppKit answers Accessibility calls on our own windows inside this process and only on the main thread.
+            if isOwnWindow {
+                DispatchQueue.main.async { action(element) }
+            } else {
+                action(element)
             }
         }
     }
 
-    static func focus(_ window: ShellWindow) {
-        _ = AXUIElementSetAttributeValue(window.element, kAXMinimizedAttribute as CFString, kCFBooleanFalse)
-        _ = AXUIElementPerformAction(window.element, kAXRaiseAction as CFString)
-        _ = AXUIElementSetAttributeValue(window.element, kAXMainAttribute as CFString, kCFBooleanTrue)
-        window.app.unhide()
-        window.app.activate()
-    }
-
-    static func minimize(_ window: ShellWindow) {
-        _ = AXUIElementSetAttributeValue(window.element, kAXMinimizedAttribute as CFString, kCFBooleanTrue)
-    }
-
-    private static func windows(of app: NSRunningApplication, isFrontmost: Bool) -> [ShellWindow] {
-        let appElement = AXUIElementCreateApplication(app.processIdentifier)
-        // An app that has stopped responding would otherwise hold each call for the system default of 6 seconds.
-        AXUIElementSetMessagingTimeout(appElement, messagingTimeout)
-        guard let elements = attribute(kAXWindowsAttribute, of: appElement) as? [AXUIElement] else { return [] }
-        let focused = attribute(kAXFocusedWindowAttribute, of: appElement)
-        let appName = app.localizedName ?? ""
-        return elements.compactMap { element in
-            guard attribute(kAXSubroleAttribute, of: element) as? String == kAXStandardWindowSubrole else { return nil }
-            let title = attribute(kAXTitleAttribute, of: element) as? String ?? ""
-            return ShellWindow(
-                app: app,
-                element: element,
-                title: title.isEmpty ? appName : title,
-                isMinimized: attribute(kAXMinimizedAttribute, of: element) as? Bool ?? false,
-                isFocused: isFrontmost && focused.map { CFEqual($0, element) } ?? false
-            )
+    func frame(of id: Int) async -> CGRect? {
+        await withCheckedContinuation { continuation in
+            AXWorker.shared.async { [registry] in
+                continuation.resume(returning: registry.element(of: id).flatMap(Self.frame(of:)))
+            }
         }
     }
 
-    private static func attribute(_ name: String, of element: AXUIElement) -> CFTypeRef? {
+    static func timeout(_ element: AXUIElement) {
+        AXUIElementSetMessagingTimeout(element, messagingTimeout)
+    }
+
+    static func frame(of element: AXUIElement) -> CGRect? {
+        guard let position = attribute(kAXPositionAttribute, of: element),
+              let size = attribute(kAXSizeAttribute, of: element),
+              CFGetTypeID(position) == AXValueGetTypeID(),
+              CFGetTypeID(size) == AXValueGetTypeID() else { return nil }
+        var origin = CGPoint.zero
+        var extent = CGSize.zero
+        guard AXValueGetValue(position as! AXValue, .cgPoint, &origin),
+              AXValueGetValue(size as! AXValue, .cgSize, &extent) else { return nil }
+        return CGRect(origin: origin, size: extent)
+    }
+
+    static func attribute(_ name: String, of element: AXUIElement) -> CFTypeRef? {
+        timeout(element)
         var value: CFTypeRef?
         return AXUIElementCopyAttributeValue(element, name as CFString, &value) == .success ? value : nil
     }
