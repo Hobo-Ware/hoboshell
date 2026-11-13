@@ -2,6 +2,12 @@
 
 Record of work, newest first. Each entry says what a user would notice.
 
+## Unreleased
+
+### Added
+- A drives item in the tray whenever an external or removable drive is
+  connected. Click it to open a drive in the explorer or to eject it.
+
 ## 0.1.0
 
 First release.

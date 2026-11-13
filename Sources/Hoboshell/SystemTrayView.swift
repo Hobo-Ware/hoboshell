@@ -19,10 +19,12 @@ final class SystemTrayView: NSStackView {
     private var volumeObserver: NSObjectProtocol?
     private var networkObserver: NSObjectProtocol?
     private let appsView: TrayAppsView
+    private let drivesItem: TrayDrivesItem
 
     init(clockOnOneLine: Bool, height: DSControlHeight) {
         self.clockOnOneLine = clockOnOneLine
         appsView = TrayAppsView(height: height)
+        drivesItem = TrayDrivesItem(height: height)
         super.init(frame: .zero)
         orientation = .horizontal
         spacing = DSSpacing.xs
@@ -61,6 +63,7 @@ final class SystemTrayView: NSStackView {
         }
         TrayFlyouts.shared.register(.calendar) { [weak clockItem] in clockItem }
         addArrangedSubview(appsView)
+        addArrangedSubview(drivesItem.view)
         trayItems.forEach(addArrangedSubview)
         TrayFlyouts.shared.register(.apps) { [weak self] in
             guard let self else { return nil }
