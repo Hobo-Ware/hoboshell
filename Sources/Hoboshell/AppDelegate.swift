@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private let engine = ShellEngine()
     private let showDesktop = TaskbarShowDesktop()
+    private var dockCover: DockCoverPanel?
     private let nudger = WindowNudger()
     private let hidesSystemUI = ProcessInfo.processInfo.environment["HOBOSHELL_HIDE_SYSTEM_UI"] == "1"
     private var variant = ShellVariant.resolve(
@@ -118,6 +119,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         )
         chrome.show()
+        dockCover?.orderOut(nil)
+        dockCover = nil
+        if case .on = reservation(on: screen) {
+            let cover = DockCoverPanel(covering: variant == .bottomTaskbar ? layout.bar : layout.dock ?? layout.bar)
+            cover.orderFrontRegardless()
+            dockCover = cover
+        }
         self.chrome = chrome
         refreshTaskbar()
     }
