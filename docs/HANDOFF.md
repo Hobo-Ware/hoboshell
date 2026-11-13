@@ -59,6 +59,10 @@ Not yet confirmed on screen by anyone: the switcher's look and the Command+Tab t
 6. **Top bar with side dock look**: its own theme, dock pins and cards, app grid, overview, header-bar explorer.
 7. **Release**: auto-update, a settings window, the project card on the Hoboware site.
 
+## Folder styles
+
+Folders and places come in five styles, picked from the bar's right-click menu under "Folder style": tin folder (default), roped suitcase, bean can, patched sack, broken crate. The default set lives in `Design/icons`; the other four in `Design/icon-packs`, drawn by `generate.py` there. Run `scripts/embed-icons.py` after changing any of them. Home, drives, the Trash and the other icons are shared by all styles.
+
 ## Known rough spots
 
 - The Files icon looks smaller than the Start logo because its drawing has empty space around it.
