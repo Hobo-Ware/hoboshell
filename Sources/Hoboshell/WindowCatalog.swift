@@ -17,39 +17,43 @@ final class WindowCatalog {
 
     func focus(_ window: ShellWindow) {
         let app = window.app
-        let id = window.id
-        AXWorker.shared.async { [registry] in
-            if let element = registry.element(of: id) {
-                Self.timeout(element)
-                _ = AXUIElementSetAttributeValue(element, kAXMinimizedAttribute as CFString, kCFBooleanFalse)
-                _ = AXUIElementPerformAction(element, kAXRaiseAction as CFString)
-                _ = AXUIElementSetAttributeValue(element, kAXMainAttribute as CFString, kCFBooleanTrue)
-            }
-            DispatchQueue.main.async {
-                app.unhide()
-                app.activate()
-            }
+        perform(on: window) { element in
+            _ = AXUIElementSetAttributeValue(element, kAXMinimizedAttribute as CFString, kCFBooleanFalse)
+            _ = AXUIElementPerformAction(element, kAXRaiseAction as CFString)
+            _ = AXUIElementSetAttributeValue(element, kAXMainAttribute as CFString, kCFBooleanTrue)
         }
+        app.unhide()
+        app.activate()
     }
 
     func minimize(_ window: ShellWindow) {
-        let id = window.id
-        AXWorker.shared.async { [registry] in
-            guard let element = registry.element(of: id) else { return }
-            Self.timeout(element)
+        perform(on: window) { element in
             _ = AXUIElementSetAttributeValue(element, kAXMinimizedAttribute as CFString, kCFBooleanTrue)
         }
     }
 
     func close(_ window: ShellWindow) {
-        let id = window.id
-        AXWorker.shared.async { [registry] in
-            guard let element = registry.element(of: id),
-                  let button = Self.attribute(kAXCloseButtonAttribute, of: element),
+        perform(on: window) { element in
+            guard let button = Self.attribute(kAXCloseButtonAttribute, of: element),
                   CFGetTypeID(button) == AXUIElementGetTypeID() else { return }
             let pressable = button as! AXUIElement
             Self.timeout(pressable)
             _ = AXUIElementPerformAction(pressable, kAXPressAction as CFString)
+        }
+    }
+
+    private func perform(on window: ShellWindow, _ action: @escaping (AXUIElement) -> Void) {
+        let id = window.id
+        let isOwnWindow = window.app.processIdentifier == ProcessInfo.processInfo.processIdentifier
+        AXWorker.shared.async { [registry] in
+            guard let element = registry.element(of: id) else { return }
+            Self.timeout(element)
+            // AppKit answers Accessibility calls on our own windows inside this process and only on the main thread.
+            if isOwnWindow {
+                DispatchQueue.main.async { action(element) }
+            } else {
+                action(element)
+            }
         }
     }
 

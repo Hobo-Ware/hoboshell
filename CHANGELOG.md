@@ -2,7 +2,9 @@
 
 Record of work, newest first. Each entry says what a user would notice.
 
-## Unreleased
+## 0.1.0
+
+First release.
 
 ### Added
 - Folder style: right-click a bar and pick how folders and places look. Tin
@@ -173,6 +175,8 @@ Record of work, newest first. Each entry says what a user would notice.
   shows in the window.
 
 ### Fixed
+- Restoring a minimised Hoboshell window (the file explorer, for example)
+  from the taskbar no longer crashes the shell.
 - The taskbar now draws above the Mac Dock. It was sitting below it, so the
   Dock showed on top of the bar whenever the Dock was visible.
 - Switching desktops no longer makes the taskbar slide away with the desktop,
