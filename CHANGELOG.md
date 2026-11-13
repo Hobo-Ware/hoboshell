@@ -4,6 +4,10 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+### Fixed
+- With the Mac Dock replaced, the real Dock no longer shows in the overview
+  of all windows. A plain strip keeps it covered there.
+
 ### Added
 - A drives item in the tray whenever an external or removable drive is
   connected. Click it to open a drive in the explorer or to eject it.
