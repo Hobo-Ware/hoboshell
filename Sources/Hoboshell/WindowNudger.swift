@@ -45,7 +45,16 @@ final class WindowNudger {
         let screens = NSScreen.screens.map(\.frame)
         AXWorker.shared.async {
             for window in windows {
-                Self.nudge(window, bar: bar, screens: screens, primaryHeight: primaryHeight)
+                var owner: pid_t = 0
+                AXUIElementGetPid(window, &owner)
+                // AppKit answers Accessibility calls on our own windows inside this process and only on the main thread.
+                if owner == ProcessInfo.processInfo.processIdentifier {
+                    DispatchQueue.main.async {
+                        Self.nudge(window, bar: bar, screens: screens, primaryHeight: primaryHeight)
+                    }
+                } else {
+                    Self.nudge(window, bar: bar, screens: screens, primaryHeight: primaryHeight)
+                }
             }
         }
     }

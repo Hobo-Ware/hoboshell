@@ -2,7 +2,9 @@
 
 Record of work, newest first. Each entry says what a user would notice.
 
-## Unreleased
+## 0.1.0
+
+First release.
 
 ### Added
 - Folder style: right-click a bar and pick how folders and places look. Tin
@@ -114,6 +116,8 @@ Record of work, newest first. Each entry says what a user would notice.
   the home folder or that folder. Handy for screenshots.
 - `Hoboshell --gallery` also shows the running and active marks, the group
   count and the unread badge.
+- GPL v3.0 license. Hoboshell is open source, and versions built on it must
+  stay open too.
 
 ### Changed
 - The taskbar, the tray background list, the side dock and the Option+Tab
@@ -171,6 +175,8 @@ Record of work, newest first. Each entry says what a user would notice.
   shows in the window.
 
 ### Fixed
+- Restoring a minimised Hoboshell window (the file explorer, for example)
+  from the taskbar no longer crashes the shell.
 - The taskbar now draws above the Mac Dock. It was sitting below it, so the
   Dock showed on top of the bar whenever the Dock was visible.
 - Switching desktops no longer makes the taskbar slide away with the desktop,
@@ -210,8 +216,6 @@ Record of work, newest first. Each entry says what a user would notice.
   Control+Option+Left, Right and Up.
 
 ### Added
-- GPL v3.0 license. Hoboshell is open source, and versions built on it must
-  stay open too.
 - The explorer's icons view shows a small picture of each image, video and
   document instead of a generic file icon.
 - Rest the pointer on a window's taskbar button to get a card with a live
