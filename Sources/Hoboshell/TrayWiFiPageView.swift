@@ -3,6 +3,7 @@ import HoboshellCore
 
 final class TrayWiFiPageView: NSView {
     private static let rowInsets = NSEdgeInsets(top: 0, left: DSSpacing.s, bottom: 0, right: DSSpacing.s)
+    private static let reservedListRows = 6
     private static let hiddenNamesText = "macOS hides network names until you allow Location."
 
     var onBack: (() -> Void)?
@@ -26,6 +27,8 @@ final class TrayWiFiPageView: NSView {
     private let rowsStack = NSStackView()
     private lazy var rows = KeyedStack<DSNetworkRow>(stack: rowsStack)
     private var observers: [NSObjectProtocol] = []
+    private var list: NSStackView?
+    private var reservedListHeight: NSLayoutConstraint?
 
     init(context: TrayFlyoutContext) {
         self.context = context
@@ -44,6 +47,7 @@ final class TrayWiFiPageView: NSView {
         header.orientation = .horizontal
         header.alignment = .centerY
         header.spacing = DSSpacing.s
+        header.distribution = .fill
         header.edgeInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: DSSpacing.s)
 
         currentRow.makeStatic()
@@ -80,9 +84,14 @@ final class TrayWiFiPageView: NSView {
         footer.alignment = .centerY
         footer.spacing = DSSpacing.s
 
-        let all = TrayFlyoutStack.make([
-            header, statusRow, permissionRow, currentRow, othersHeader, nearbyHeader, rowsStack, lookingRow, emptyRow, DSDivider(), footer,
-        ], spacing: DSSpacing.xs)
+        let list = TrayFlyoutStack.make([othersHeader, nearbyHeader, rowsStack, lookingRow, emptyRow], spacing: DSSpacing.xs)
+        let reservedHeight = DSSectionHeader.height + DSSpacing.xs
+            + CGFloat(Self.reservedListRows) * DSControlHeight.row.value
+            + CGFloat(Self.reservedListRows - 1) * DSSpacing.xxs
+        reservedListHeight = list.heightAnchor.constraint(greaterThanOrEqualToConstant: reservedHeight)
+        self.list = list
+        let all = TrayFlyoutStack.make([header, statusRow, permissionRow, currentRow, list, DSDivider(), footer], spacing: DSSpacing.xs)
+        all.setCustomSpacing(DSSpacing.s, after: currentRow)
         all.translatesAutoresizingMaskIntoConstraints = false
         addSubview(all)
         NSLayoutConstraint.activate([
@@ -149,6 +158,8 @@ final class TrayWiFiPageView: NSView {
         permissionRow.isHidden = !needsPermission
         showCurrent(networks?.current)
         showOthers(networks)
+        list?.isHidden = networks == nil
+        reservedListHeight?.isActive = networks != nil && TrayWiFi.shared.isScanning
         let isScanning = networks?.progress == .scanning
         lookingRow.isHidden = !isScanning
         spinner.isHidden = DSMotion.isReduced

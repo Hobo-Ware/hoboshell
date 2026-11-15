@@ -2,9 +2,13 @@ import AppKit
 import HoboshellCore
 
 final class TrayClusterButton: DSButton {
-    private let networkIcon = DSIconView(side: DSIconSize.inline)
-    private let volumeIcon = DSIconView(side: DSIconSize.inline)
-    private let batteryIcon = DSIconView(side: DSIconSize.inline)
+    private static let networkPointSize: CGFloat = 15.5
+    private static let soundPointSize: CGFloat = 14
+    private static let batteryPointSize: CGFloat = 18
+
+    private let networkIcon = TrayClusterGlyph(pointSize: networkPointSize)
+    private let volumeIcon = TrayClusterGlyph(pointSize: soundPointSize)
+    private let batteryIcon = TrayClusterGlyph(pointSize: batteryPointSize)
     private var scroll = TrayScrollAccumulator()
     private var networkText = ""
     private var volumeText: String?
@@ -64,8 +68,10 @@ final class TrayClusterButton: DSButton {
             summary: TrayNetwork.shared.summary
         )
         networkText = icon.tooltipText(name: wifi.connection.name)
-        networkIcon.image = DSIconSize.firstSymbol(icon.symbolNames, variableValue: icon.variableValue, description: "Network")
-        networkIcon.contentTintColor = DSTrayTone.color(icon.tone)
+        networkIcon.show(
+            DSIconSize.firstSymbol(icon.symbolNames, variableValue: icon.variableValue, description: "Network"),
+            tint: DSTrayTone.color(icon.tone)
+        )
         refreshTip()
     }
 
@@ -74,7 +80,7 @@ final class TrayClusterButton: DSButton {
         let level = state?.level ?? 0
         let isMuted = state?.isMuted ?? false
         volumeText = state.map { _ in TrayClusterText.volume(level: level, isMuted: isMuted) }
-        volumeIcon.image = DSIconSize.symbol(TrayVolume.symbol(level: level, isMuted: isMuted), description: "Volume")
+        volumeIcon.show(DSIconSize.symbol(TrayVolume.symbol(level: level, isMuted: isMuted), description: "Volume"), tint: DSColor.text)
         refreshTip()
     }
 
@@ -87,14 +93,42 @@ final class TrayClusterButton: DSButton {
         }
         let icon = BatteryIcon(status: status, isLowPowerMode: ProcessInfo.processInfo.isLowPowerModeEnabled)
         batteryIcon.isHidden = false
-        batteryIcon.image = DSIconSize.symbol(icon.symbolName, description: "Battery")
-        batteryIcon.contentTintColor = DSTrayTone.color(icon.tone)
+        batteryIcon.show(DSIconSize.symbol(icon.symbolName, description: "Battery"), tint: DSTrayTone.color(icon.tone))
         batteryText = TrayClusterText.battery(status)
         refreshTip()
     }
 
     private func refreshTip() {
         toolTip = TrayClusterText.tooltip(network: networkText, volume: volumeText, battery: batteryText)
+        invalidateIntrinsicContentSize()
+    }
+}
+
+private final class TrayClusterGlyph: NSImageView {
+    private let pointSize: CGFloat
+
+    init(pointSize: CGFloat) {
+        self.pointSize = pointSize
+        super.init(frame: .zero)
+        imageScaling = .scaleNone
+        imageAlignment = .alignCenter
+        translatesAutoresizingMaskIntoConstraints = false
+        setContentHuggingPriority(.required, for: .horizontal)
+        setContentCompressionResistancePriority(.required, for: .horizontal)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
+
+    override var intrinsicContentSize: NSSize {
+        NSSize(width: image?.size.width ?? 0, height: DSIconSize.toolbar)
+    }
+
+    func show(_ symbol: NSImage?, tint: NSColor) {
+        image = symbol?.withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: pointSize, weight: .regular))
+        contentTintColor = tint
         invalidateIntrinsicContentSize()
     }
 }
