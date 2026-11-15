@@ -4,6 +4,38 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+## 0.2.0
+
+### Changed
+- The taskbar has a glass look with a thin line along its top edge. It turns
+  solid when Reduce Transparency is on. Buttons show a plate on hover, a line
+  under running apps that grows when the app gets focus, a stacked edge for
+  grouped windows and a dip when pressed.
+- Taskbar buttons are centred by default. The right-click menu has a **Taskbar
+  alignment** setting to move them back to the left.
+- The Wi-Fi, sound and battery icons now sit in one tray button with one hover
+  plate. One click opens quick settings, and scrolling over it still changes
+  the volume. Hover it for the network, volume and battery in one line.
+- Quick settings shows three tiles per row with the name under each tile.
+  Wi-Fi is a split tile: the icon turns Wi-Fi on or off and the arrow opens the
+  Wi-Fi page. Sliders have ring handles. The battery in the footer opens the
+  battery details.
+- Tray popups rise from the bar and sink back when closed. Nothing moves when
+  Reduce Motion is on.
+
+### Added
+- The tray icons follow what is happening: Wi-Fi strength in three steps, Wi-Fi
+  on but not joined, Wi-Fi off, no internet (amber) and a cable. The battery
+  turns green while charging, amber in Low Power Mode and red under 6 percent.
+- The Wi-Fi page puts the joined network on top with "Connected, secured" or
+  "Connected, open" and a **Disconnect** button. A refresh button looks for
+  networks again, and Wi-Fi off, looking for networks and hidden network names
+  each have their own screen.
+
+### Fixed
+- The Wi-Fi page no longer lists the joined network under "Other networks" with
+  no current row when macOS does not give out its name.
+
 ## 0.1.3
 
 ### Fixed
