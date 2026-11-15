@@ -44,13 +44,13 @@ final class TrayAppsFlyoutView: NSView {
     private func reload() {
         let apps = TrayAppsStore.shared.flyoutApps
         let byID = Dictionary(apps.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        var newRowWidths: [NSLayoutConstraint] = []
         rows.apply(
             keys: apps.map(\.id),
             animated: false,
-            make: { [weak self] _ in
+            make: { _ in
                 let row = DSListRow(title: "", image: nil, height: .row)
-                guard let self else { return row }
-                row.widthAnchor.constraint(equalTo: self.rowsStack.widthAnchor).isActive = true
+                newRowWidths.append(row.widthAnchor.constraint(equalTo: rowsStack.widthAnchor))
                 return row
             },
             update: { [weak self] row, id in
@@ -65,5 +65,6 @@ final class TrayAppsFlyoutView: NSView {
                 }
             }
         )
+        NSLayoutConstraint.activate(newRowWidths)
     }
 }

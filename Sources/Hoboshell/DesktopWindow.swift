@@ -35,10 +35,12 @@ final class DesktopWindow: NSWindow {
 
 final class DesktopGridView: NSView {
     private static let cellSize = DSGridCell.size
+    private static let listingQueue = DispatchQueue(label: "dev.hoboware.hoboshell.desktop", qos: .userInitiated)
 
     private let folder: URL
     private let insets: NSEdgeInsets
     private var iconPackObserver: NSObjectProtocol?
+    private var reloadCount = 0
 
     init(frame: NSRect, folder: URL, insets: NSEdgeInsets) {
         self.folder = folder
@@ -76,13 +78,26 @@ final class DesktopGridView: NSView {
     }
 
     func reload() {
+        reloadCount += 1
+        let request = reloadCount
+        let folder = folder
+        Self.listingQueue.async { [weak self] in
+            let files = (try? FileManager.default.contentsOfDirectory(
+                at: folder,
+                includingPropertiesForKeys: nil,
+                options: .skipsHiddenFiles
+            )) ?? []
+            let sorted = files.sorted { $0.lastPathComponent.localizedCaseInsensitiveCompare($1.lastPathComponent) == .orderedAscending }
+            DispatchQueue.main.async {
+                guard let self, request == self.reloadCount else { return }
+                self.show(sorted)
+            }
+        }
+    }
+
+    private func show(_ files: [URL]) {
         subviews.forEach { $0.removeFromSuperview() }
-        let files = (try? FileManager.default.contentsOfDirectory(
-            at: folder,
-            includingPropertiesForKeys: nil,
-            options: .skipsHiddenFiles
-        )) ?? []
-        for file in files.sorted(by: { $0.lastPathComponent.localizedCaseInsensitiveCompare($1.lastPathComponent) == .orderedAscending }) {
+        for file in files {
             addSubview(makeCell(for: file))
         }
         layoutIcons()

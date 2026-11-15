@@ -4,6 +4,19 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+## 0.1.3
+
+### Fixed
+- Hoboshell no longer hangs with nothing on screen while macOS asks for access
+  to the Desktop folder. The bars show at once and the desktop icons appear
+  when access is given. This hit every first start and every start after an
+  update.
+- Opening the Wi-Fi page, the list of sound outputs or the list of apps
+  running in the background no longer crashes the shell. Each list tied a new
+  row's width to the list before the row was in it.
+- Hoboshell stops watching an app that has quit before it ever showed a
+  window. A crash seen right after another app started and quit points here.
+
 ## 0.1.2
 
 ### Added

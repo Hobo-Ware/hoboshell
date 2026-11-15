@@ -276,14 +276,13 @@ final class TrayQuickSettingsView: NSView {
         guard showsDevices else { return }
         let outputs = state?.devices ?? []
         let byKey = Dictionary(outputs.map { (String($0.id), $0) }, uniquingKeysWith: { first, _ in first })
+        var newRowWidths: [NSLayoutConstraint] = []
         let diff = devices.apply(
             keys: outputs.map { String($0.id) },
             animated: false,
-            make: { [weak self] _ in
+            make: { _ in
                 let row = DSListRow(title: "", image: nil, height: .row)
-                if let self {
-                    row.widthAnchor.constraint(equalTo: self.devicesStack.widthAnchor).isActive = true
-                }
+                newRowWidths.append(row.widthAnchor.constraint(equalTo: devicesStack.widthAnchor))
                 return row
             },
             update: { row, key in
@@ -297,6 +296,7 @@ final class TrayQuickSettingsView: NSView {
                 }
             }
         )
+        NSLayoutConstraint.activate(newRowWidths)
         if !diff.inserted.isEmpty || !diff.removed.isEmpty {
             context.refit()
         }

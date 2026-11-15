@@ -111,14 +111,13 @@ final class TrayWiFiPageView: NSView {
         let byName = Dictionary(others.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
         othersHeader.isHidden = !showsNames
         rowsStack.isHidden = others.isEmpty
+        var newRowWidths: [NSLayoutConstraint] = []
         rows.apply(
             keys: others.map(\.name),
             animated: false,
-            make: { [weak self] _ in
+            make: { _ in
                 let row = DSNetworkRow()
-                if let self {
-                    row.widthAnchor.constraint(equalTo: self.rowsStack.widthAnchor).isActive = true
-                }
+                newRowWidths.append(row.widthAnchor.constraint(equalTo: rowsStack.widthAnchor))
                 return row
             },
             update: { [weak self] row, name in
@@ -130,6 +129,7 @@ final class TrayWiFiPageView: NSView {
                 }
             }
         )
+        NSLayoutConstraint.activate(newRowWidths)
         emptyLabel.stringValue = wifi.isScanning ? "Scanning for networks..." : "No other networks found."
         emptyRow.isHidden = !showsNames || !others.isEmpty
         context.refit()

@@ -43,7 +43,10 @@ final class AppTracker {
             let observedAt = ShellClock.now()
             let apps = change.newValue ?? []
             DispatchQueue.main.async {
-                apps.forEach { self?.announceWhenRegular($0, observedAt: observedAt) }
+                guard let self else { return }
+                let running = Set(apps.map(\.processIdentifier))
+                self.policyObservations = self.policyObservations.filter { running.contains($0.key) }
+                apps.forEach { self.announceWhenRegular($0, observedAt: observedAt) }
             }
         }
     }
