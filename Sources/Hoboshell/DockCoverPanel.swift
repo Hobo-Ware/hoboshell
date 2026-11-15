@@ -1,4 +1,5 @@
 import AppKit
+import HoboshellCore
 
 final class DockCoverPanel: NSPanel {
     init(covering strip: NSRect) {
@@ -7,8 +8,8 @@ final class DockCoverPanel: NSPanel {
         // A stationary window stays put there, so this plain strip keeps the Dock covered.
         collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle, .fullScreenAuxiliary]
         level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.dockWindow)) + 1)
-        isOpaque = true
-        backgroundColor = DSColor.surface
+        isOpaque = false
+        backgroundColor = DSColor.surface.withAlphaComponent(SolidSurfaceLook.alpha)
         hasShadow = false
         ignoresMouseEvents = true
         isReleasedWhenClosed = false
