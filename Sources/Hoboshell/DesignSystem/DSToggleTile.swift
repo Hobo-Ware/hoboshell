@@ -7,7 +7,10 @@ final class DSToggleTile: DSControl {
         case arrow(tip: String)
     }
 
-    static let height = DSControlHeight.taskbar.value + DSSpacing.m
+    static let height: CGFloat = 44
+    private static let arrowSectionWidth: CGFloat = 34
+    private static let pressedScale: CGFloat = 0.97
+    private static let opensSettingsInset = DSSpacing.xs + DSSpacing.xxs
 
     var onArrow: (() -> Void)?
 
@@ -19,10 +22,17 @@ final class DSToggleTile: DSControl {
         }
     }
 
+    override var isEnabled: Bool {
+        didSet { arrowButton?.isEnabled = isEnabled }
+    }
+
+    private(set) var title = ""
+    private(set) var detail = ""
+
     private let iconView = DSIconView(side: DSIconSize.toolbar)
-    private let titleLabel = DSLabel("", weight: .medium)
-    private let detailLabel = DSLabel("", style: .caption)
-    private let opensSettingsGlyph = DSIconView(side: DSIconSize.chevron, image: DSIconSize.symbol("arrow.up.right"))
+    private let divider = NSView()
+    private let opensSettingsGlyph = DSIconView(side: DSIconSize.chevron - 1, image: DSIconSize.symbol("arrow.up.right"))
+    private let iconSection = NSLayoutGuide()
     private var arrowButton: DSButton?
 
     init(symbol: String, title: String, detail: String = "", accessory: Accessory = .none) {
@@ -33,43 +43,48 @@ final class DSToggleTile: DSControl {
         selectedStateFills = (DSColor.accentFillHover, DSColor.accentFillPressed)
         setAccessibilityRole(.button)
 
-        titleLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        detailLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        detailLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        let text = NSStackView(views: [titleLabel, detailLabel])
-        text.orientation = .vertical
-        text.alignment = .leading
-        text.spacing = 0
-        text.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(iconView)
+        NSLayoutConstraint.activate([iconView.centerYAnchor.constraint(equalTo: centerYAnchor)])
 
-        var views: [NSView] = [iconView, text]
         switch accessory {
         case .none:
-            break
+            iconView.centerXAnchor.constraint(equalTo: centerXAnchor).isActive = true
         case .opensSettings:
-            views.append(opensSettingsGlyph)
+            iconView.centerXAnchor.constraint(equalTo: centerXAnchor).isActive = true
+            opensSettingsGlyph.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(opensSettingsGlyph)
+            NSLayoutConstraint.activate([
+                opensSettingsGlyph.topAnchor.constraint(equalTo: topAnchor, constant: Self.opensSettingsInset),
+                opensSettingsGlyph.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Self.opensSettingsInset),
+            ])
         case .arrow(let tip):
             let button = DSButton(symbol: "chevron.right", tip: tip, height: .row)
+            button.cornerRadius = DSRadius.card
             button.onPress = { [weak self] in
                 self?.onArrow?()
             }
             arrowButton = button
-            views.append(button)
+            button.translatesAutoresizingMaskIntoConstraints = false
+            divider.wantsLayer = true
+            divider.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(divider)
+            addSubview(button)
+            addLayoutGuide(iconSection)
+            NSLayoutConstraint.activate([
+                button.trailingAnchor.constraint(equalTo: trailingAnchor),
+                button.topAnchor.constraint(equalTo: topAnchor),
+                button.bottomAnchor.constraint(equalTo: bottomAnchor),
+                button.widthAnchor.constraint(equalToConstant: Self.arrowSectionWidth),
+                iconSection.leadingAnchor.constraint(equalTo: leadingAnchor),
+                iconSection.trailingAnchor.constraint(equalTo: button.leadingAnchor),
+                divider.trailingAnchor.constraint(equalTo: button.leadingAnchor),
+                divider.widthAnchor.constraint(equalToConstant: 1),
+                divider.topAnchor.constraint(equalTo: topAnchor, constant: DSSpacing.s),
+                divider.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -DSSpacing.s),
+                iconView.centerXAnchor.constraint(equalTo: iconSection.centerXAnchor),
+            ])
         }
-        let content = NSStackView(views: views)
-        content.orientation = .horizontal
-        content.alignment = .centerY
-        content.spacing = DSSpacing.s
-        content.edgeInsets = NSEdgeInsets(top: 0, left: DSSpacing.m, bottom: 0, right: DSSpacing.s)
-        content.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(content)
-        NSLayoutConstraint.activate([
-            content.leadingAnchor.constraint(equalTo: leadingAnchor),
-            content.trailingAnchor.constraint(equalTo: trailingAnchor),
-            content.topAnchor.constraint(equalTo: topAnchor),
-            content.bottomAnchor.constraint(equalTo: bottomAnchor),
-        ])
         update(symbol: symbol, title: title, detail: detail)
         applyColors()
     }
@@ -83,23 +98,55 @@ final class DSToggleTile: DSControl {
         NSSize(width: NSView.noIntrinsicMetric, height: Self.height)
     }
 
+    override func mouseDown(with event: NSEvent) {
+        super.mouseDown(with: event)
+        scale(isPressed)
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        super.mouseDragged(with: event)
+        scale(isPressed)
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        super.mouseUp(with: event)
+        scale(false)
+    }
+
     func update(symbol: String, title: String, detail: String) {
         iconView.image = DSIconSize.symbol(symbol, description: title)
-        if titleLabel.stringValue != title {
-            titleLabel.stringValue = title
-        }
-        if detailLabel.stringValue != detail {
-            detailLabel.stringValue = detail
-        }
-        detailLabel.isHidden = detail.isEmpty
+        self.title = title
+        self.detail = detail
         setAccessibilityLabel(detail.isEmpty ? title : "\(title), \(detail)")
     }
 
+    private func scale(_ pressed: Bool) {
+        guard let layer else { return }
+        let length = DSMotion.duration(.press)
+        let pivot = CGPoint(x: layer.anchorPoint.x * layer.bounds.width, y: layer.anchorPoint.y * layer.bounds.height)
+        let shift = CGPoint(x: layer.bounds.midX - pivot.x, y: layer.bounds.midY - pivot.y)
+        var target = CATransform3DIdentity
+        if pressed {
+            target = CATransform3DTranslate(target, shift.x, shift.y, 0)
+            target = CATransform3DScale(target, Self.pressedScale, Self.pressedScale, 1)
+            target = CATransform3DTranslate(target, -shift.x, -shift.y, 0)
+        }
+        guard length > 0 else {
+            layer.removeAnimation(forKey: "dsScale")
+            layer.transform = target
+            return
+        }
+        let animation = CABasicAnimation(keyPath: "transform")
+        animation.fromValue = layer.presentation()?.transform ?? layer.transform
+        animation.toValue = target
+        animation.duration = length
+        layer.add(animation, forKey: "dsScale")
+        layer.transform = target
+    }
+
     private func applyColors() {
-        let main = isOn ? DSColor.onAccent : DSColor.text
-        iconView.contentTintColor = main
-        titleLabel.textColor = main
-        detailLabel.textColor = main
+        iconView.contentTintColor = isOn ? DSColor.onAccent : DSColor.text
         opensSettingsGlyph.contentTintColor = isOn ? DSColor.onAccent : DSColor.dimText
+        divider.layer?.backgroundColor = (isOn ? NSColor.black.withAlphaComponent(0.22) : DSColor.border).cgColor
     }
 }

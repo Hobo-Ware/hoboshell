@@ -38,7 +38,7 @@ final class TrayFlyouts {
 
     func show(_ kind: TrayItemKind) {
         DSTooltip.shared.dismiss()
-        dismiss()
+        dismiss(animated: false)
         let context = TrayFlyoutContext { [weak self] in self?.dismiss() }
         let (content, width) = makeContent(kind, context: context)
         let next = TrayFlyoutPanel(kind: kind, content: content, width: width) { [weak self] in
@@ -52,10 +52,15 @@ final class TrayFlyouts {
         }
     }
 
-    func dismiss() {
+    func dismiss(animated: Bool = true) {
         stopWatching()
-        panel?.orderOut(nil)
+        guard let closing = panel else { return }
         panel = nil
+        if animated {
+            closing.sink()
+        } else {
+            closing.orderOut(nil)
+        }
     }
 
     private func makeContent(_ kind: TrayItemKind, context: TrayFlyoutContext) -> (NSView, CGFloat) {

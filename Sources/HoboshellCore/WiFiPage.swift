@@ -41,12 +41,21 @@ public struct WiFiNetworksPage: Equatable {
         case listed
     }
 
+    public enum Heading: Equatable {
+        case otherNetworks
+        case networksNearby
+
+        public var title: String {
+            self == .otherNetworks ? "Other networks" : "Networks nearby"
+        }
+    }
+
     public let current: WiFiCurrentNetwork?
     public let others: [WiFiNetwork]
     public let progress: Progress
 
-    public var othersTitle: String {
-        current?.name == nil ? "Networks nearby" : "Other networks"
+    public var heading: Heading {
+        current?.name == nil ? .networksNearby : .otherNetworks
     }
 }
 
