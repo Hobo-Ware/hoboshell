@@ -1,4 +1,19 @@
 import AppKit
+import HoboshellCore
+
+enum DSTrayTone {
+    static let good = NSColor(srgbRed: 0.27, green: 0.77, blue: 0.44, alpha: 1)
+    static let warning = NSColor(srgbRed: 0.95, green: 0.65, blue: 0.23, alpha: 1)
+
+    static func color(_ tone: TrayTone) -> NSColor {
+        switch tone {
+        case .normal: return DSColor.text
+        case .good: return good
+        case .warning: return warning
+        case .critical: return DSColor.danger
+        }
+    }
+}
 
 final class DSTrayIcon: DSControl {
     private let height: DSControlHeight

@@ -9,6 +9,14 @@ final class TrayWiFi: NSObject, CWEventDelegate {
         var isPoweredOn = false
         var ssid: String?
         var rssi = 0
+
+        static func == (first: State, second: State) -> Bool {
+            first.isAvailable == second.isAvailable
+                && first.isPoweredOn == second.isPoweredOn
+                && first.ssid == second.ssid
+                && (first.rssi == 0) == (second.rssi == 0)
+                && WiFiSignal.bars(rssi: first.rssi) == WiFiSignal.bars(rssi: second.rssi)
+        }
     }
 
     static let shared = TrayWiFi()
@@ -24,11 +32,10 @@ final class TrayWiFi: NSObject, CWEventDelegate {
     private let queue = DispatchQueue(label: "dev.hoboware.hoboshell.wifi", qos: .userInitiated)
     private var isStarted = false
 
-    var isConnected: Bool {
-        guard state.isPoweredOn else { return false }
-        if state.ssid != nil { return true }
+    var connection: WiFiConnection {
         let summary = TrayNetwork.shared.summary
-        return summary.isOnline && summary.link == .wifi
+        let hasLink = state.rssi != 0 || (summary.isOnline && summary.link == .wifi)
+        return WiFiConnection.resolve(isPoweredOn: state.isPoweredOn, ssid: state.ssid, hasLink: hasLink)
     }
 
     func start() {
@@ -36,7 +43,7 @@ final class TrayWiFi: NSObject, CWEventDelegate {
         isStarted = true
         let client = CWWiFiClient.shared()
         client.delegate = self
-        for event in [CWEventType.powerDidChange, .ssidDidChange, .linkDidChange, .scanCacheUpdated] {
+        for event in [CWEventType.powerDidChange, .ssidDidChange, .linkDidChange, .linkQualityDidChange, .scanCacheUpdated] {
             do {
                 try client.startMonitoringEvent(with: event)
             } catch {
@@ -59,6 +66,13 @@ final class TrayWiFi: NSObject, CWEventDelegate {
                     self?.announce()
                 }
             }
+        }
+    }
+
+    func disconnect() {
+        queue.async { [weak self] in
+            CWWiFiClient.shared().interface()?.disassociate()
+            self?.refreshState()
         }
     }
 
@@ -92,6 +106,10 @@ final class TrayWiFi: NSObject, CWEventDelegate {
     }
 
     func linkDidChangeForWiFiInterface(withName interfaceName: String) {
+        refreshState()
+    }
+
+    func linkQualityDidChangeForWiFiInterface(withName interfaceName: String, rssi: Int, transmitRate: Double) {
         refreshState()
     }
 

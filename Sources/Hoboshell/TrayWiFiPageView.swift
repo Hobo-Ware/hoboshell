@@ -2,21 +2,29 @@ import AppKit
 import HoboshellCore
 
 final class TrayWiFiPageView: NSView {
+    private static let rowInsets = NSEdgeInsets(top: 0, left: DSSpacing.s, bottom: 0, right: DSSpacing.s)
+    private static let hiddenNamesText = "macOS hides network names until you allow Location."
+
     var onBack: (() -> Void)?
 
     private let context: TrayFlyoutContext
     private let powerSwitch = DSSwitch()
     private let statusLabel = DSLabel("", color: DSColor.dimText)
-    private let permissionLabel = DSLabel("Network names are hidden.", color: DSColor.dimText)
     private let allowButton = DSButton(title: "Allow network names", height: .regular)
-    private let permissionRow = NSStackView()
+    private let refreshButton = DSButton(symbol: "arrow.clockwise", tip: "Look for networks again", height: .regular)
+    private let spinner = NSProgressIndicator()
+    private let lookingLabel = DSLabel("Looking for networks...", color: DSColor.dimText)
+    private let emptyLabel = DSLabel("", color: DSColor.dimText)
     private lazy var statusRow = Self.inset(statusLabel)
+    private lazy var permissionRow = Self.inset(allowButton)
+    private lazy var lookingStack = NSStackView(views: [spinner, lookingLabel])
+    private lazy var lookingRow = Self.inset(lookingStack)
     private lazy var emptyRow = Self.inset(emptyLabel)
     private let currentRow = DSNetworkRow(isCurrent: true)
-    private let othersHeader = DSSectionHeader("Other networks")
+    private let othersHeader = DSSectionHeader(WiFiNetworksPage.Heading.otherNetworks.title)
+    private let nearbyHeader = DSSectionHeader(WiFiNetworksPage.Heading.networksNearby.title)
     private let rowsStack = NSStackView()
     private lazy var rows = KeyedStack<DSNetworkRow>(stack: rowsStack)
-    private let emptyLabel = DSLabel("", color: DSColor.dimText)
     private var observers: [NSObjectProtocol] = []
 
     init(context: TrayFlyoutContext) {
@@ -39,27 +47,41 @@ final class TrayWiFiPageView: NSView {
         header.edgeInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: DSSpacing.s)
 
         currentRow.makeStatic()
-        permissionLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        permissionLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        currentRow.onDisconnect = {
+            TrayWiFi.shared.disconnect()
+        }
+        statusLabel.lineBreakMode = .byWordWrapping
+        statusLabel.maximumNumberOfLines = 0
+        statusLabel.preferredMaxLayoutWidth = TrayQuickSettingsView.contentWidth - DSSpacing.s * 2
         allowButton.onPress = { [weak self] in
             if TrayLocationAccess.shared.allow() {
                 self?.context.dismiss()
             }
         }
-        permissionRow.addArrangedSubview(permissionLabel)
-        permissionRow.addArrangedSubview(allowButton)
-        permissionRow.orientation = .horizontal
-        permissionRow.alignment = .centerY
-        permissionRow.spacing = DSSpacing.s
-        permissionRow.edgeInsets = Self.rowInsets
+        refreshButton.onPress = {
+            TrayWiFi.shared.scan()
+        }
+        spinner.style = .spinning
+        spinner.controlSize = .small
+        spinner.isIndeterminate = true
+        spinner.translatesAutoresizingMaskIntoConstraints = false
+        lookingStack.spacing = DSSpacing.s
+        lookingStack.alignment = .centerY
 
         rowsStack.orientation = .vertical
         rowsStack.alignment = .leading
         rowsStack.spacing = DSSpacing.xxs
 
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        let settings = TraySettings.button(title: "Wi-Fi settings", pane: TraySettings.network, context: context)
+        let footer = NSStackView(views: [settings, spacer, refreshButton])
+        footer.orientation = .horizontal
+        footer.alignment = .centerY
+        footer.spacing = DSSpacing.s
+
         let all = TrayFlyoutStack.make([
-            header, statusRow, permissionRow, currentRow, othersHeader, rowsStack, emptyRow, DSDivider(),
-            TraySettings.button(title: "Wi-Fi settings", pane: TraySettings.network, context: context),
+            header, statusRow, permissionRow, currentRow, othersHeader, nearbyHeader, rowsStack, lookingRow, emptyRow, DSDivider(), footer,
         ], spacing: DSSpacing.xs)
         all.translatesAutoresizingMaskIntoConstraints = false
         addSubview(all)
@@ -91,25 +113,67 @@ final class TrayWiFiPageView: NSView {
     func reload() {
         let wifi = TrayWiFi.shared
         let state = wifi.state
-        let showsNames = state.isPoweredOn && TrayLocationAccess.shared.isGranted
         powerSwitch.isOn = state.isPoweredOn
         powerSwitch.isEnabled = state.isAvailable
+        refreshButton.isEnabled = state.isPoweredOn && !wifi.isScanning
 
-        let status = Self.statusText(for: state, isConnected: wifi.isConnected, showsNames: showsNames)
+        let page = WiFiPage.make(
+            isAvailable: state.isAvailable,
+            connection: wifi.connection,
+            namesAllowed: TrayLocationAccess.shared.isGranted,
+            isScanning: wifi.isScanning,
+            rssi: state.rssi,
+            scanned: wifi.scanned
+        )
+        show(page)
+        context.refit()
+    }
+
+    private func show(_ page: WiFiPage) {
+        var status: String?
+        var needsPermission = false
+        var networks: WiFiNetworksPage?
+        switch page {
+        case .unavailable:
+            status = "This Mac has no Wi-Fi."
+        case .off:
+            status = "Wi-Fi is off. Turn it on to see networks."
+        case .namesHidden(let isConnected):
+            status = isConnected ? "Connected. \(Self.hiddenNamesText)" : Self.hiddenNamesText
+            needsPermission = true
+        case .networks(let listed):
+            networks = listed
+        }
         statusLabel.stringValue = status ?? ""
         statusRow.isHidden = status == nil
-        permissionRow.isHidden = !(state.isPoweredOn && !showsNames)
-
-        let current = showsNames ? state.ssid : nil
-        currentRow.isHidden = current == nil
-        if let current {
-            let isSecured = wifi.scanned.first { $0.name == current }?.isSecured ?? false
-            currentRow.update(name: current, bars: WiFiSignal.bars(rssi: state.rssi), isSecured: isSecured, isCurrent: true)
+        permissionRow.isHidden = !needsPermission
+        showCurrent(networks?.current)
+        showOthers(networks)
+        let isScanning = networks?.progress == .scanning
+        lookingRow.isHidden = !isScanning
+        spinner.isHidden = DSMotion.isReduced
+        if isScanning, !DSMotion.isReduced {
+            spinner.startAnimation(nil)
+        } else {
+            spinner.stopAnimation(nil)
         }
+        emptyLabel.stringValue = networks?.current == nil ? "No networks found." : "No other networks found."
+        emptyRow.isHidden = networks?.progress != .nothingFound
+    }
 
-        let others = showsNames ? WiFiNetworks.others(from: wifi.scanned, excluding: state.ssid) : []
+    private func showCurrent(_ current: WiFiCurrentNetwork?) {
+        currentRow.isHidden = current == nil
+        guard let current else { return }
+        currentRow.update(
+            name: current.name, bars: current.bars, isSecured: current.isSecured ?? false, isCurrent: true, status: current.statusText
+        )
+    }
+
+    private func showOthers(_ page: WiFiNetworksPage?) {
+        let others = page?.others ?? []
         let byName = Dictionary(others.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
-        othersHeader.isHidden = !showsNames
+        othersHeader.isHidden = others.isEmpty || page?.heading != .otherNetworks
+        nearbyHeader.isHidden = others.isEmpty || page?.heading != .networksNearby
         rowsStack.isHidden = others.isEmpty
         var newRowWidths: [NSLayoutConstraint] = []
         rows.apply(
@@ -130,23 +194,11 @@ final class TrayWiFiPageView: NSView {
             }
         )
         NSLayoutConstraint.activate(newRowWidths)
-        emptyLabel.stringValue = wifi.isScanning ? "Scanning for networks..." : "No other networks found."
-        emptyRow.isHidden = !showsNames || !others.isEmpty
-        context.refit()
     }
 
-    private static let rowInsets = NSEdgeInsets(top: 0, left: DSSpacing.s, bottom: 0, right: DSSpacing.s)
-
-    private static func inset(_ label: DSLabel) -> NSStackView {
-        let row = NSStackView(views: [label])
+    private static func inset(_ view: NSView) -> NSStackView {
+        let row = NSStackView(views: [view])
         row.edgeInsets = rowInsets
         return row
-    }
-
-    private static func statusText(for state: TrayWiFi.State, isConnected: Bool, showsNames: Bool) -> String? {
-        if !state.isAvailable { return "This Mac has no Wi-Fi." }
-        if !state.isPoweredOn { return "Wi-Fi is off." }
-        if !showsNames { return QuickSettingsText.wifiLabel(isPoweredOn: true, isConnected: isConnected, name: nil) }
-        return state.ssid == nil ? QuickSettingsText.wifiLabel(isPoweredOn: true, isConnected: isConnected, name: nil) : nil
     }
 }

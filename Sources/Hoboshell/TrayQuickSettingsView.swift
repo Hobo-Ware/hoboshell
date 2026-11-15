@@ -10,19 +10,18 @@ final class TrayQuickSettingsView: NSView {
     private let wifiPage: TrayWiFiPageView
     private let mainPage = NSStackView()
 
-    private let wifiTile = DSToggleTile(symbol: "wifi", title: "Wi-Fi", accessory: .arrow(tip: "Wi-Fi networks"))
-    private let bluetoothTile = DSToggleTile(symbol: "dot.radiowaves.left.and.right", title: "Bluetooth", accessory: .opensSettings)
-    private let lowPowerTile = DSToggleTile(symbol: "battery.25", title: "Low Power", accessory: .opensSettings)
-    private let darkTile = DSToggleTile(symbol: "circle.lefthalf.filled", title: "Dark mode", accessory: .opensSettings)
-    private let focusTile = DSToggleTile(symbol: "moon.fill", title: "Focus", accessory: .opensSettings)
-    private let keyboardTile = DSToggleTile(symbol: "keyboard", title: "Keyboard")
+    private let wifiTile = TrayQuickTile(symbol: "wifi", title: "Wi-Fi", accessory: .arrow(tip: "Wi-Fi networks"))
+    private let bluetoothTile = TrayQuickTile(symbol: "dot.radiowaves.left.and.right", title: "Bluetooth", accessory: .opensSettings)
+    private let lowPowerTile = TrayQuickTile(symbol: "leaf", title: "Low Power", accessory: .opensSettings)
+    private let darkTile = TrayQuickTile(symbol: "circle.lefthalf.filled", title: "Dark mode", accessory: .opensSettings)
+    private let focusTile = TrayQuickTile(symbol: "moon.fill", title: "Focus", accessory: .opensSettings)
+    private let keyboardTile = TrayQuickTile(symbol: "keyboard", title: "Keyboard")
 
     private let errorLabel = DSLabel("")
     private lazy var errorRow = makeErrorRow()
 
     private let muteButton = DSButton(symbol: "speaker.fill", tip: "Mute", height: .regular)
     private let slider = DSSlider()
-    private let percent = DSLabel("", monospacedDigits: true)
     private let outputsButton = DSButton(symbol: "chevron.down", tip: "Sound outputs", height: .regular)
     private let devicesStack = NSStackView()
     private lazy var devices = KeyedStack<DSListRow>(stack: devicesStack)
@@ -31,7 +30,7 @@ final class TrayQuickSettingsView: NSView {
 
     private let batteryIcon = DSIconView(side: DSIconSize.inline)
     private let batteryLabel = DSLabel("", monospacedDigits: true)
-    private lazy var batteryStack = NSStackView(views: [batteryIcon, batteryLabel])
+    private lazy var batteryButton = DSButton(views: [batteryIcon, batteryLabel], height: .row, tip: "Battery")
     private let addressLabel = DSLabel("", color: DSColor.dimText, monospacedDigits: true)
 
     private var observers: [(center: NotificationCenter, token: NSObjectProtocol)] = []
@@ -126,21 +125,18 @@ final class TrayQuickSettingsView: NSView {
         outputsButton.onPress = { [weak self] in
             self?.toggleDevices()
         }
-        percent.alignment = .right
-        percent.translatesAutoresizingMaskIntoConstraints = false
-        percent.widthAnchor.constraint(equalToConstant: DSSpacing.xl + DSSpacing.l).isActive = true
         devicesStack.orientation = .vertical
         devicesStack.alignment = .leading
         devicesStack.spacing = DSSpacing.xxs
         devicesSection.isHidden = true
 
-        let volume = NSStackView(views: [muteButton, slider, percent, outputsButton])
+        let volume = NSStackView(views: [muteButton, slider, outputsButton])
         volume.orientation = .horizontal
         volume.spacing = DSSpacing.s
         volume.alignment = .centerY
 
-        let tileRows = [[wifiTile, bluetoothTile], [lowPowerTile, darkTile], [focusTile, keyboardTile]].map { pair -> NSStackView in
-            let row = NSStackView(views: pair)
+        let tileRows = [[wifiTile, bluetoothTile, lowPowerTile], [darkTile, focusTile, keyboardTile]].map { group -> NSStackView in
+            let row = NSStackView(views: group)
             row.orientation = .horizontal
             row.distribution = .fillEqually
             row.spacing = DSSpacing.s
@@ -151,14 +147,13 @@ final class TrayQuickSettingsView: NSView {
         gear.onPress = { [weak self] in
             self?.openSettings(TraySettings.network)
         }
-        batteryStack.orientation = .horizontal
-        batteryStack.spacing = DSSpacing.s
-        batteryStack.alignment = .centerY
-        batteryStack.edgeInsets = NSEdgeInsets(top: 0, left: DSSpacing.s, bottom: 0, right: 0)
+        batteryButton.onPress = {
+            TrayFlyouts.shared.show(.battery)
+        }
         addressLabel.alignment = .center
         addressLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
         addressLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        let footer = NSStackView(views: [batteryStack, addressLabel, gear])
+        let footer = NSStackView(views: [batteryButton, addressLabel, gear])
         footer.orientation = .horizontal
         footer.spacing = DSSpacing.s
         footer.alignment = .centerY
@@ -231,15 +226,17 @@ final class TrayQuickSettingsView: NSView {
         reloadVolume()
         reloadBattery()
         reloadAddress()
-        bluetoothTile.update(symbol: "dot.radiowaves.left.and.right", title: "Bluetooth", detail: "")
-        focusTile.update(symbol: "moon.fill", title: "Focus", detail: "")
+        bluetoothTile.update(symbol: "dot.radiowaves.left.and.right", title: "Bluetooth", label: "Bluetooth", detail: "")
+        focusTile.update(symbol: "moon.fill", title: "Focus", label: "Focus", detail: "")
     }
 
     private func reloadWiFi() {
         let wifi = TrayWiFi.shared
         let state = wifi.state
-        let detail = QuickSettingsText.wifiLabel(isPoweredOn: state.isPoweredOn, isConnected: wifi.isConnected, name: state.ssid)
-        wifiTile.update(symbol: state.isPoweredOn ? "wifi" : "wifi.slash", title: "Wi-Fi", detail: detail)
+        let connection = wifi.connection
+        let detail = QuickSettingsText.wifiLabel(isPoweredOn: state.isPoweredOn, isConnected: connection.isConnected, name: connection.name)
+        let label = QuickSettingsText.wifiTileLabel(isPoweredOn: state.isPoweredOn, isConnected: connection.isConnected, name: connection.name)
+        wifiTile.update(symbol: state.isPoweredOn ? "wifi" : "wifi.slash", title: "Wi-Fi", label: label, detail: detail)
         wifiTile.isOn = state.isPoweredOn
         wifiTile.isEnabled = state.isAvailable
         let error = wifi.errorText
@@ -249,19 +246,21 @@ final class TrayQuickSettingsView: NSView {
     }
 
     private func reloadLowPower() {
+        reloadBattery()
         let isOn = ProcessInfo.processInfo.isLowPowerModeEnabled
-        lowPowerTile.update(symbol: "battery.25", title: "Low Power", detail: QuickSettingsText.switchLabel(isOn: isOn))
+        lowPowerTile.update(symbol: "leaf", title: "Low Power", label: "Low Power", detail: QuickSettingsText.switchLabel(isOn: isOn))
         lowPowerTile.isOn = isOn
     }
 
     private func reloadAppearance() {
         let isDark = UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark"
-        darkTile.update(symbol: "circle.lefthalf.filled", title: "Dark mode", detail: QuickSettingsText.appearanceLabel(isDark: isDark))
+        darkTile.update(symbol: "circle.lefthalf.filled", title: "Dark mode", label: "Dark mode", detail: QuickSettingsText.appearanceLabel(isDark: isDark))
         darkTile.isOn = isDark
     }
 
     private func reloadKeyboard() {
-        keyboardTile.update(symbol: "keyboard", title: "Keyboard", detail: TrayInputSource.current()?.shortName ?? "")
+        let layout = TrayInputSource.current()?.shortName ?? ""
+        keyboardTile.update(symbol: "keyboard", title: "Keyboard", label: layout.isEmpty ? "Keyboard" : layout, detail: layout)
     }
 
     private func reloadVolume() {
@@ -269,7 +268,7 @@ final class TrayQuickSettingsView: NSView {
         let level = state?.level ?? 0
         slider.doubleValue = Double(level)
         slider.isEnabled = state?.canSetVolume ?? false
-        percent.stringValue = TrayVolume.percentText(level)
+        slider.toolTip = TrayVolume.percentText(level)
         muteButton.image = DSIconSize.symbol(TrayVolume.symbol(level: level, isMuted: state?.isMuted ?? false), description: "Mute")
         muteButton.isSelected = state?.isMuted ?? false
         outputsButton.image = DSIconSize.symbol(showsDevices ? "chevron.up" : "chevron.down", description: "Sound outputs")
@@ -304,9 +303,11 @@ final class TrayQuickSettingsView: NSView {
 
     private func reloadBattery() {
         let battery = TrayBatteryReader.read()?.status
-        batteryStack.isHidden = battery == nil
+        batteryButton.isHidden = battery == nil
         guard let battery else { return }
-        batteryIcon.image = DSIconSize.symbol(battery.symbolName, description: "Battery")
+        let icon = BatteryIcon(status: battery, isLowPowerMode: ProcessInfo.processInfo.isLowPowerModeEnabled)
+        batteryIcon.image = DSIconSize.symbol(icon.symbolName, description: "Battery")
+        batteryIcon.contentTintColor = DSTrayTone.color(icon.tone)
         batteryLabel.stringValue = battery.label
     }
 

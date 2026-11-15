@@ -28,7 +28,7 @@ import Testing
     @Test func aConnectedNetworkWithoutAKnownNameStillGetsACurrentRow() {
         let result = networks(page(connection: .connected(name: nil), scanned: [scan("Home", -40), scan("Cafe", -60)]))
         #expect(result?.current == WiFiCurrentNetwork(name: nil, bars: 3, isSecured: nil))
-        #expect(result?.othersTitle == "Networks nearby")
+        #expect(result?.heading == .networksNearby)
         #expect(result?.others.map(\.name) == ["Home", "Cafe"])
     }
 
@@ -36,7 +36,7 @@ import Testing
         let result = networks(page(connection: .connected(name: "Home"), scanned: [scan("Home", -40), scan("Cafe", -60)]))
         #expect(result?.current == WiFiCurrentNetwork(name: "Home", bars: 3, isSecured: true))
         #expect(result?.others.map(\.name) == ["Cafe"])
-        #expect(result?.othersTitle == "Other networks")
+        #expect(result?.heading == .otherNetworks)
     }
 
     @Test func theCurrentRowSaysWhetherTheNetworkIsSecured() {
@@ -55,7 +55,7 @@ import Testing
         let result = networks(page(connection: .notConnected, scanned: [scan("Home", -40)]))
         #expect(result?.current == nil)
         #expect(result?.others.map(\.name) == ["Home"])
-        #expect(result?.othersTitle == "Networks nearby")
+        #expect(result?.heading == .networksNearby)
     }
 
     @Test func scanningWithNothingListedShowsTheLookingRow() {
@@ -93,6 +93,11 @@ import Testing
         #expect(WiFiConnection.resolve(isPoweredOn: true, ssid: nil, hasLink: false) == .notConnected)
         #expect(WiFiConnection.resolve(isPoweredOn: true, ssid: "Home", hasLink: false) == .connected(name: "Home"))
         #expect(WiFiConnection.resolve(isPoweredOn: true, ssid: nil, hasLink: true) == .connected(name: nil))
+    }
+
+    @Test func headingsReadAsTheyAreShown() {
+        #expect(WiFiNetworksPage.Heading.otherNetworks.title == "Other networks")
+        #expect(WiFiNetworksPage.Heading.networksNearby.title == "Networks nearby")
     }
 
     @Test func anEmptyNameCountsAsUnknown() {
