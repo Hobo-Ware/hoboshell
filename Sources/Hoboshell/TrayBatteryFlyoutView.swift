@@ -9,14 +9,13 @@ final class TrayBatteryFlyoutView: NSView {
             rows.append(DSLabel(battery.status.label, style: .title, weight: .semibold))
             rows.append(DSLabel(battery.stateText))
             if let time = battery.timeText {
-                rows.append(DSLabel(time, style: .caption, color: DSColor.dimText))
+                rows.append(DSLabel(time, monospacedDigits: true))
             }
         } else {
             rows.append(DSLabel("This Mac has no battery."))
         }
         let lowPower = DSLabel(
             BatteryDetails.lowPowerModeText(isOn: ProcessInfo.processInfo.isLowPowerModeEnabled),
-            style: .caption,
             color: DSColor.dimText
         )
         rows.append(contentsOf: [lowPower, DSDivider(), TraySettings.button(title: "Battery settings", pane: TraySettings.battery, context: context)])

@@ -25,7 +25,7 @@ enum DSPanelStyle {
 
         let card = kind == .flyout
             ? DSCard(radius: DSRadius.card)
-            : DSCard(radius: DSRadius.none, isBordered: false)
+            : DSCard(radius: DSRadius.none, isBordered: false, isTinted: false)
         if kind == .opaqueBar {
             let fill = NSView()
             fill.wantsLayer = true

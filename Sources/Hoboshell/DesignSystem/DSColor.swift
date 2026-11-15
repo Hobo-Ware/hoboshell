@@ -3,12 +3,12 @@ import HoboshellCore
 
 enum DSColor {
     static let surface = NSColor(white: 0.14, alpha: 1)
-    static let raisedSurface = NSColor(white: 0.19, alpha: 1)
+    static let raisedSurface = color(ShellPalette.raisedSurface)
     static let field = NSColor(white: 0.10, alpha: 1)
     static let border = NSColor.white.withAlphaComponent(0.16)
-    static let text = NSColor(white: 0.96, alpha: 1)
-    static let dimText = NSColor(white: 0.62, alpha: 1)
-    static let accent = NSColor(srgbRed: 0.27, green: 0.55, blue: 0.96, alpha: 1)
+    static let text = color(ShellPalette.text)
+    static let dimText = color(ShellPalette.dimText)
+    static let accent = color(ShellPalette.accent)
     static let danger = NSColor(srgbRed: 0.95, green: 0.36, blue: 0.34, alpha: 1)
     static let faint = NSColor.white.withAlphaComponent(0.06)
     static let hover = NSColor.white.withAlphaComponent(0.12)
@@ -18,7 +18,12 @@ enum DSColor {
     static let accentTint = accent.withAlphaComponent(0.22)
     static let onAccent = NSColor.white
     static let focusRing = accent
-    static let disabledAlpha: CGFloat = 0.4
+    static let disabledAlpha = CGFloat(ShellPalette.disabledAlpha)
+    static let flyoutTint = raisedSurface.withAlphaComponent(CGFloat(ShellPalette.flyoutTintAlpha))
+
+    private static func color(_ rgb: RGB) -> NSColor {
+        NSColor(srgbRed: rgb.red, green: rgb.green, blue: rgb.blue, alpha: 1)
+    }
 
     static func desktop(for variant: ShellVariant) -> NSColor {
         switch variant {
