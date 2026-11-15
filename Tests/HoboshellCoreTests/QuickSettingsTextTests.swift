@@ -19,6 +19,15 @@ import Testing
         #expect(QuickSettingsText.wifiLabel(isPoweredOn: true, isConnected: true, name: "") == "Connected")
     }
 
+    @Test func theWifiTileKeepsItsTitleWhileWifiIsOff() {
+        #expect(QuickSettingsText.wifiTileLabel(isPoweredOn: false, isConnected: false, name: nil) == "Wi-Fi")
+    }
+
+    @Test func theWifiTileShowsTheNetworkOnceConnected() {
+        #expect(QuickSettingsText.wifiTileLabel(isPoweredOn: true, isConnected: true, name: "Home") == "Home")
+        #expect(QuickSettingsText.wifiTileLabel(isPoweredOn: true, isConnected: false, name: nil) == "Not connected")
+    }
+
     @Test func switchAndAppearanceLabels() {
         #expect(QuickSettingsText.switchLabel(isOn: true) == "On")
         #expect(QuickSettingsText.switchLabel(isOn: false) == "Off")
