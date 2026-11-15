@@ -16,6 +16,13 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
     private let commandTabItem = DSMenuItem("Use Hoboshell for Command+Tab") {
         SwitcherSettings.setTakesCommandTab(!SwitcherSettings.takesCommandTab)
     }
+    private let versionItem = DSMenuItem(AppUpdater.shared.versionTitle, isEnabled: false) {}
+    private let checkForUpdatesItem = DSMenuItem("Check for updates...") {
+        AppUpdater.shared.checkForUpdates()
+    }
+    private let automaticUpdatesItem = DSMenuItem("Check for updates automatically") {
+        AppUpdater.shared.checksAutomatically.toggle()
+    }
     private var groupingItems: [(TaskbarGrouping, DSMenuItem)] = []
     private var groupingChoice: GroupingChoice?
 
@@ -40,6 +47,10 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
         addItem(replaceDockItem)
         delegate = self
         addItem(DSMenu.separator())
+        addItem(versionItem)
+        addItem(checkForUpdatesItem)
+        addItem(automaticUpdatesItem)
+        addItem(DSMenu.separator())
         addItem(DSMenuItem("Quit Hoboshell") {
             NSApp.terminate(nil)
         })
@@ -54,6 +65,9 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
         replaceDockItem.state = SystemChrome.isWanted ? .on : .off
         keepAboveBarItem.state = WindowNudger.isEnabled ? .on : .off
         commandTabItem.state = SwitcherSettings.takesCommandTab ? .on : .off
+        checkForUpdatesItem.isEnabled = AppUpdater.shared.canCheckForUpdates
+        automaticUpdatesItem.isEnabled = AppUpdater.shared.isRunning
+        automaticUpdatesItem.state = AppUpdater.shared.checksAutomatically ? .on : .off
         for (pack, item) in iconPackItems {
             item.state = pack == IconPack.current ? .on : .off
         }

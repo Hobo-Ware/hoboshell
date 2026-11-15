@@ -4,6 +4,11 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+### Added
+- Hoboshell now checks for new versions once a day and offers to install them.
+  The taskbar's right-click menu shows the version, has **Check for
+  updates...** and a tick to turn the daily check off.
+
 ## 0.1.1
 
 ### Fixed

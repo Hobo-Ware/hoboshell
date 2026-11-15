@@ -33,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         Accessibility.requestTrust()
         MainMenu.install()
+        AppUpdater.shared.start()
 
         startMenu = StartMenuPanel()
         switcher = SwitcherController(engine: engine)
