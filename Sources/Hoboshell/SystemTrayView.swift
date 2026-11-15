@@ -110,7 +110,7 @@ final class SystemTrayView: NSStackView {
     }
 
     private func showNetwork() {
-        networkIcon.image = DSIconSize.symbol(TrayNetwork.shared.summary.symbolName, description: "Network")
+        networkIcon.image = DSIconSize.symbol("network", description: "Network")
     }
 
     private func showVolume() {
