@@ -6,20 +6,17 @@ import Testing
         let summary = NetworkSummary(isOnline: true, link: .wifi)
         #expect(summary.statusText == "Connected")
         #expect(summary.kindText == "Wi-Fi")
-        #expect(summary.symbolName == "wifi")
     }
 
     @Test func anOnlineWiredLinkReadsWired() {
         let summary = NetworkSummary(isOnline: true, link: .wired)
         #expect(summary.kindText == "Wired")
-        #expect(summary.symbolName == "network")
     }
 
     @Test func offlineHidesTheKindAndCrossesTheSymbol() {
         let summary = NetworkSummary(isOnline: false, link: .wifi)
         #expect(summary.statusText == "Offline")
         #expect(summary.kindText == nil)
-        #expect(summary.symbolName == "wifi.slash")
     }
 
     @Test func thePreferredInterfaceWinsTheAddress() {

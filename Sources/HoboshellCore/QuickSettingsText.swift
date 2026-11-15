@@ -6,6 +6,11 @@ public enum QuickSettingsText {
         return name
     }
 
+    public static func wifiTileLabel(isPoweredOn: Bool, isConnected: Bool, name: String?) -> String {
+        guard isPoweredOn else { return "Wi-Fi" }
+        return wifiLabel(isPoweredOn: isPoweredOn, isConnected: isConnected, name: name)
+    }
+
     public static func switchLabel(isOn: Bool) -> String {
         isOn ? "On" : "Off"
     }

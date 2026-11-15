@@ -25,11 +25,6 @@ public struct NetworkSummary: Equatable {
         case .other: return "Other connection"
         }
     }
-
-    public var symbolName: String {
-        guard isOnline else { return "wifi.slash" }
-        return link == .wifi ? "wifi" : "network"
-    }
 }
 
 public enum NetworkAddress {
