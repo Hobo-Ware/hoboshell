@@ -268,7 +268,6 @@ final class TrayQuickSettingsView: NSView {
         let level = state?.level ?? 0
         slider.doubleValue = Double(level)
         slider.isEnabled = state?.canSetVolume ?? false
-        slider.toolTip = TrayVolume.percentText(level)
         muteButton.image = DSIconSize.symbol(TrayVolume.symbol(level: level, isMuted: state?.isMuted ?? false), description: "Mute")
         muteButton.isSelected = state?.isMuted ?? false
         outputsButton.image = DSIconSize.symbol(showsDevices ? "chevron.up" : "chevron.down", description: "Sound outputs")
