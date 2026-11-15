@@ -25,6 +25,15 @@ enum DSIconSize {
         )
     }
 
+    static func firstSymbol(_ names: [String], variableValue: Double? = nil, description: String? = nil) -> NSImage? {
+        for name in names {
+            let image = variableValue.flatMap { NSImage(systemSymbolName: name, variableValue: $0, accessibilityDescription: description) }
+                ?? NSImage(systemSymbolName: name, accessibilityDescription: description)
+            if let image { return image }
+        }
+        return nil
+    }
+
     static func symbol(
         _ name: String,
         description: String? = nil,
