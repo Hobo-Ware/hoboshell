@@ -57,7 +57,17 @@ Not yet confirmed on screen by anyone: the switcher's look and the Command+Tab t
 4. **Windows phase**: drag-to-edge snapping with an outline, quarters, snap assist, window shortcuts.
 5. **Explorer parity**: address bar menus and auto-complete, deep search, pinning and a folder tree, column choice, copy progress and a clash dialog, undo, properties, tabs, archives.
 6. **Top bar with side dock look**: its own theme, dock pins and cards, app grid, overview, header-bar explorer.
-7. **Release**: auto-update, a settings window, the project card on the Hoboware site.
+7. **Release**: a settings window, the project card on the Hoboware site.
+
+## How to cut a release
+
+1. Set `CFBundleShortVersionString` and `CFBundleVersion` in `Support/Info.plist` to the new version. Both must match.
+2. Rename `Unreleased` in `CHANGELOG.md` to the version and add a fresh empty `Unreleased` above it.
+3. Run `./scripts/release.sh VERSION`. It prints the paths of `dist/Hoboshell-VERSION.zip` and `dist/appcast.xml`.
+4. Create the GitHub release `vVERSION` and upload both files to it. The feed is the release asset `appcast.xml` of the latest release.
+5. Delete `dist/`.
+
+The private update signing key lives in the keychain of the Mac that cuts releases. To release from another Mac, export it with Sparkle's `generate_keys -x FILE` on the old one, import it with `generate_keys -f FILE` on the new one, and delete the file. `HOBOSHELL_ED_KEY_FILE=FILE ./scripts/release.sh VERSION` signs with a key file instead of the keychain. Sparkle's tools sit under `.build/artifacts/sparkle/Sparkle/bin` after `swift build`.
 
 ## Folder styles
 

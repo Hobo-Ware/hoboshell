@@ -110,6 +110,22 @@ With the option off, "Keep windows above the taskbar" (on by default) shrinks
 any window that ends up with its bottom edge under the bottom taskbar once you
 stop moving it.
 
+## Updates
+
+A released Hoboshell checks for a new version once a day and tells you when
+one exists. It installs the update only after you agree. You can also pick
+**Check for updates...** from the taskbar's right-click menu, or untick
+**Check for updates automatically** there.
+
+The list of versions is a file attached to each GitHub release
+(`appcast.xml`), so nothing else is hosted. Every update is checked against a
+signature before it is installed. Hoboshell is not yet signed with a paid
+developer certificate, so macOS asks for the Accessibility permission again
+after an update.
+
+Updates come from [Sparkle](https://sparkle-project.org), which is MIT
+licensed. A copy you start with `swift run` never checks for updates.
+
 ## Limits you should know about
 
 macOS does not let another app replace Finder or the Dock, so Hoboshell is an
