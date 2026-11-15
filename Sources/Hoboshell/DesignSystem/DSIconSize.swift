@@ -1,4 +1,5 @@
 import AppKit
+import HoboshellCore
 
 enum DSIconSize {
     static let inline: CGFloat = 16
@@ -14,6 +15,14 @@ enum DSIconSize {
         let resized = image?.copy() as? NSImage
         resized?.size = NSSize(width: side, height: side)
         return resized
+    }
+
+    static func wifiSymbol(bars: Int, description: String? = nil) -> NSImage? {
+        NSImage(
+            systemSymbolName: "wifi",
+            variableValue: Double(bars) / Double(WiFiSignal.maxBars),
+            accessibilityDescription: description
+        )
     }
 
     static func symbol(

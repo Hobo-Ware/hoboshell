@@ -24,6 +24,8 @@
     <string>Hoboshell's file explorer shows your Documents folder.</string>
     <key>NSDownloadsFolderUsageDescription</key>
     <string>Hoboshell's file explorer shows your Downloads folder.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Hoboshell uses your location only so macOS allows it to show Wi-Fi network names.</string>
     <key>NSRemovableVolumesUsageDescription</key>
     <string>Hoboshell's file explorer shows your external drives.</string>
 </dict>

@@ -34,3 +34,22 @@ import Testing
         #expect(ShowTarget.parse(arguments: ["--show=switcher=all"]).isEmpty)
     }
 }
+
+@Suite struct TrayShowTargetTests {
+    @Test func trayNetworkOpensTheQuickSettingsPanel() {
+        #expect(ShowTarget.parse(arguments: ["--show", "tray=network"]) == [.tray(.network)])
+    }
+
+    @Test func trayWifiOpensTheWifiPage() {
+        #expect(ShowTarget.parse(arguments: ["--show=tray=wifi"]) == [.tray(.wifi)])
+    }
+
+    @Test func theWifiPageAnchorsToTheNetworkItem() {
+        #expect(TrayItemKind.wifi.anchorKind == .network)
+        #expect(TrayItemKind.volume.anchorKind == .volume)
+    }
+
+    @Test func anUnknownTrayItemIsIgnored() {
+        #expect(ShowTarget.parse(arguments: ["--show", "tray=bluetooth"]).isEmpty)
+    }
+}

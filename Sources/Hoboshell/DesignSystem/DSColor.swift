@@ -16,7 +16,10 @@ enum DSColor {
     static let selected = NSColor.white.withAlphaComponent(0.28)
     static let runMark = NSColor.white.withAlphaComponent(0.6)
     static let accentTint = accent.withAlphaComponent(0.22)
-    static let onAccent = NSColor.white
+    static let onAccent = color(ShellPalette.onAccent)
+    static let accentFill = color(ShellPalette.accentFill)
+    static let accentFillHover = color(ShellPalette.accentFillHover)
+    static let accentFillPressed = color(ShellPalette.accentFillPressed)
     static let focusRing = accent
     static let disabledAlpha = CGFloat(ShellPalette.disabledAlpha)
     static let flyoutTint = raisedSurface.withAlphaComponent(CGFloat(ShellPalette.flyoutTintAlpha))

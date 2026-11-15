@@ -6,11 +6,12 @@ enum GalleryContent {
     private static let rowWidth: CGFloat = 150
     private static let taskbarButtonWidth: CGFloat = 120
     private static let toolbarWidth: CGFloat = 640
+    private static let tileWidth: CGFloat = 176
     private static let cardSize = NSSize(width: 240, height: 96)
 
     static func page() -> NSView {
         let sections = [
-            colors(), scales(), text(), buttons(), toggles(), fields(), menus(), rows(), grid(), startMenu(), switcher(), chrome(), taskbar(), tray(), dialogs(),
+            colors(), scales(), text(), buttons(), toggles(), fields(), menus(), rows(), grid(), startMenu(), switcher(), chrome(), taskbar(), tray(), quickSettings(), dialogs(),
         ]
         let stack = NSStackView(views: [DSLabel("Hoboshell design system", style: .title, weight: .semibold)] + sections)
         stack.orientation = .vertical
@@ -312,6 +313,28 @@ enum GalleryContent {
                 ("week number", DSCalendarCell("46", style: .weekNumber)), ("weekday", DSCalendarCell("M", style: .weekday)),
             ]),
             GalleryRow.make("DSSlider", [("level", sized(slider)), ("disabled", sized(disabled))]),
+        ])
+    }
+
+    private static func quickSettings() -> NSView {
+        func tile(on: Bool = false, accessory: DSToggleTile.Accessory) -> DSToggleTile {
+            let tile = DSToggleTile(symbol: "wifi", title: "Wi-Fi", detail: "Home", accessory: accessory)
+            tile.isOn = on
+            _ = sized(tile, width: tileWidth)
+            return tile
+        }
+        let arrow = DSToggleTile.Accessory.arrow(tip: "Wi-Fi networks")
+        let switches: [(String, NSView)] = [("off", DSSwitch()), ("on", { let on = DSSwitch(); on.isOn = true; return on }())]
+        let networks: [(String, NSView)] = [
+            ("secured", sized(DSNetworkRow(name: "Cafe", bars: 2, isSecured: true), width: fieldWidth)),
+            ("open, weak", sized(DSNetworkRow(name: "Guest", bars: 0), width: fieldWidth)),
+            ("current", sized(DSNetworkRow(name: "Home", bars: 3, isSecured: true, isCurrent: true), width: fieldWidth)),
+        ]
+        return GalleryRow.section("Quick settings: DSToggleTile, DSSwitch, DSNetworkRow", [
+            GalleryRow.states("tile with arrow", { tile(accessory: arrow) }),
+            GalleryRow.make("tile on", [("on", tile(on: true, accessory: arrow)), ("opens settings", tile(accessory: .opensSettings))]),
+            GalleryRow.make("DSSwitch", switches),
+            GalleryRow.make("DSNetworkRow", networks),
         ])
     }
 

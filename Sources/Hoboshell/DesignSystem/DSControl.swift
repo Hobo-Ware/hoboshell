@@ -28,6 +28,7 @@ class DSControl: NSView {
     var handlesClicks = true
     var tracksHover = true
     var showsTip = true
+    var selectedStateFills: (hover: NSColor, pressed: NSColor)?
 
     var tipText: String? {
         didSet {
@@ -242,6 +243,10 @@ class DSControl: NSView {
     }
 
     private var fill: NSColor? {
+        if isSelected, let fills = selectedStateFills {
+            if isPressed { return fills.pressed }
+            if isHovered { return fills.hover }
+        }
         if isPressed { return DSColor.pressed }
         if isSelected { return selectedFill }
         if isHovered { return DSColor.hover }

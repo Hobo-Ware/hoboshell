@@ -45,4 +45,10 @@ import Testing
         let overBlack = ShellPalette.flyoutSurface(over: .black)
         #expect(overWhite.red - overBlack.red < 0.07)
     }
+
+    @Test func lightTextOnTheOnStateFillReadsAtFourPointFiveToOne() {
+        for fill in [ShellPalette.accentFill, ShellPalette.accentFillHover, ShellPalette.accentFillPressed] {
+            #expect(Contrast.ratio(ShellPalette.onAccent, fill) >= 4.5)
+        }
+    }
 }
