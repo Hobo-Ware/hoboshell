@@ -75,6 +75,7 @@ final class WindowSwitcherPanel: NSPanel {
         self.holding = holding
         screenInUse = screen
         isShowing = true
+        DSTooltip.shared.dismiss()
         reconcile()
         orderFrontRegardless()
         refreshPictures()

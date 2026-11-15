@@ -179,6 +179,7 @@ final class TaskbarPanel: NSPanel, ShellChrome {
             TaskbarItemView.Look(
                 title: title,
                 tip: title,
+                showsTip: spec.windowIDs.isEmpty,
                 icon: spec.isRunning ? AppIcons.shared.image(forPath: path) : installed?.icon,
                 isActive: spec.isActive,
                 runState: runState(of: spec),

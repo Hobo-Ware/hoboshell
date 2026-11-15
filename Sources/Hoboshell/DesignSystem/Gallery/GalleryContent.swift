@@ -258,10 +258,11 @@ enum GalleryContent {
             ("neutral", DSBadge("3", tone: .neutral)), ("accent", DSBadge("New", tone: .accent)),
             ("danger", DSBadge("Failed", tone: .danger)),
         ]
-        return GalleryRow.section("DSToolbar, DSCard, DSBadge", [
+        return GalleryRow.section("DSToolbar, DSCard, DSBadge, DSTooltip", [
             GalleryRow.make("DSToolbar", [("40 high, 8 edge, 4 gap", toolbar)]),
             GalleryRow.make("DSCard", [("radius 8, border, shadow", card)]),
             GalleryRow.make("DSBadge", badges),
+            GalleryRow.make("DSTooltip", [("caption on raised surface", DSTooltipBubble(text: "Running in the background"))]),
         ])
     }
 

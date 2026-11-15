@@ -5,6 +5,10 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Fixed
+- Hovering a tray app icon, a taskbar button, the clock or any other icon-only
+  button now shows its name after half a second. macOS only draws its own
+  tooltips for the active app, and Hoboshell never is, so the shell now draws
+  them itself. Moving to the next button shows its tooltip at once.
 - With the Mac Dock replaced, the real Dock no longer shows in the overview
   of all windows. A plain strip keeps it covered there.
 
