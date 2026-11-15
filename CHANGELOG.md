@@ -18,6 +18,15 @@ Record of work, newest first. Each entry says what a user would notice.
   of all windows. A plain strip keeps it covered there.
 
 ### Added
+- The network item opens a quick settings panel: tiles for Wi-Fi, Bluetooth,
+  Low Power, Dark mode, Focus and the keyboard layout, a volume slider with a
+  list of sound outputs, and a footer with the battery, your IP address and a
+  gear for network settings. The Wi-Fi tile turns Wi-Fi on and off; its arrow
+  opens a Wi-Fi page with the current network and the other networks nearby,
+  strongest first. The Keyboard tile switches to the next input source. The
+  other tiles open the matching page of System Settings, because macOS has no
+  way to flip them from another app. Network names need the Location
+  permission, which is asked for only when you open the Wi-Fi page.
 - A drives item in the tray whenever an external or removable drive is
   connected. Click it to open a drive in the explorer or to eject it.
 

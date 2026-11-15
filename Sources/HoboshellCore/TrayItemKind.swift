@@ -4,4 +4,9 @@ public enum TrayItemKind: String, CaseIterable, Equatable {
     case calendar
     case battery
     case network
+    case wifi
+
+    public var anchorKind: TrayItemKind {
+        self == .wifi ? .network : self
+    }
 }

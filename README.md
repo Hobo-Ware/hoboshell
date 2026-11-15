@@ -74,6 +74,7 @@ or press Ctrl+C in the terminal.
 | --- | --- |
 | Screen Recording (optional) | To draw the live picture on the card that appears when you rest the pointer on a taskbar button. Without it the card shows the app icon. |
 | Accessibility | To list other apps' windows on the taskbar, switch between them, and move them when you snap. Without it the taskbar shows one button per app. |
+| Location (optional, asked when you open the Wi-Fi page) | So macOS lets Hoboshell read nearby Wi-Fi network names. Hoboshell never reads where you are. Without it the Wi-Fi page shows "Connected" or "Not connected" and no network list. |
 | Desktop, Documents, Downloads folders | To show their files on the desktop and in the file explorer. |
 
 When you start it from a terminal, the Accessibility switch appears under your

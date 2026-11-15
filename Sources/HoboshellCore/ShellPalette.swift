@@ -48,6 +48,10 @@ public enum ShellPalette {
     public static let text = RGB(white: 0.96)
     public static let dimText = RGB(white: 0.70)
     public static let accent = RGB(red: 0.27, green: 0.55, blue: 0.96)
+    public static let accentFill = RGB(red: 0.16, green: 0.42, blue: 0.85)
+    public static let onAccent = RGB.white
+    public static let accentFillHover = accentFill.blended(over: .black, alpha: 0.9)
+    public static let accentFillPressed = accentFill.blended(over: .black, alpha: 0.8)
     public static let flyoutTintAlpha = 0.94
     public static let disabledAlpha = 0.5
     public static let backdrops = [RGB.white, RGB.black]
