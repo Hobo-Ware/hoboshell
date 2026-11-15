@@ -42,6 +42,7 @@ final class DSToggleTile: DSControl {
         selectedFill = DSColor.accentFill
         selectedStateFills = (DSColor.accentFillHover, DSColor.accentFillPressed)
         setAccessibilityRole(.button)
+        heightAnchor.constraint(equalToConstant: Self.height).isActive = true
 
         iconView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(iconView)
@@ -61,6 +62,8 @@ final class DSToggleTile: DSControl {
         case .arrow(let tip):
             let button = DSButton(symbol: "chevron.right", tip: tip, height: .row)
             button.cornerRadius = DSRadius.card
+            button.iconSide = DSIconSize.chevron
+            button.setContentHuggingPriority(.defaultLow, for: .vertical)
             button.onPress = { [weak self] in
                 self?.onArrow?()
             }
