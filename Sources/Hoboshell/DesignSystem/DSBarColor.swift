@@ -3,7 +3,7 @@ import HoboshellCore
 
 enum DSBarColor {
     static let glass = color(ShellPalette.barGlass, alpha: ShellPalette.barGlassAlpha)
-    static let solid = color(ShellPalette.barGlass)
+    static let solid = color(ShellPalette.barGlass, alpha: SolidSurfaceLook.alpha)
     static let hairline = NSColor.white.withAlphaComponent(CGFloat(ShellPalette.barHairlineAlpha))
     static let runLine = color(ShellPalette.barRunLine)
     static let plateHover = NSColor.white.withAlphaComponent(CGFloat(ShellPalette.barPlateHoverAlpha))
