@@ -6,6 +6,9 @@ enum DSMotion {
         case hoverOut
         case presence
         case menu
+        case press
+        case grow
+        case rise
     }
 
     static var isReduced: Bool {
@@ -19,6 +22,9 @@ enum DSMotion {
         case .hoverOut: return 0.08
         case .presence: return 0.12
         case .menu: return 0.18
+        case .press: return 0.09
+        case .grow: return 0.18
+        case .rise: return 0.2
         }
     }
 
