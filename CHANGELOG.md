@@ -4,6 +4,25 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+## 0.2.1
+
+### Fixed
+- With "Replace the Mac Dock and desktop icons" on, an app that parks its
+  hidden window at the bottom edge of the screen could be hidden but not shown
+  again. The taskbar and the cover over the Dock no longer block it.
+- Hoboshell asks for Accessibility at most once each time it starts.
+- Hovering a taskbar button no longer shows a tooltip on top of the preview
+  card, and the volume slider no longer shows a second, system tooltip.
+
+### Changed
+- Releases are signed with one stable certificate, so macOS keeps the
+  Accessibility permission across updates. Allow it once more after this
+  update.
+
+### Known limits
+- While the overview opens, macOS draws the real Dock above everything for a
+  moment. Once the overview is open the Dock is covered again.
+
 ## 0.2.0
 
 ### Changed
