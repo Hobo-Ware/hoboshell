@@ -7,6 +7,11 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
         let choose: (TaskbarGrouping) -> Void
     }
 
+    struct AlignmentChoice {
+        let current: () -> TaskbarAlignment
+        let choose: (TaskbarAlignment) -> Void
+    }
+
     private let replaceDockItem = DSMenuItem("Replace the Mac Dock and desktop icons") {
         SystemChrome.setWanted(!SystemChrome.isWanted)
     }
@@ -25,21 +30,35 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
     }
     private var groupingItems: [(TaskbarGrouping, DSMenuItem)] = []
     private var groupingChoice: GroupingChoice?
+    private var alignmentItems: [(TaskbarAlignment, DSMenuItem)] = []
+    private var alignmentChoice: AlignmentChoice?
 
     private let iconPackItems: [(IconPack, NSMenuItem)] = IconPack.allCases.map { pack in
         (pack, DSMenuItem(pack.title) { IconPack.current = pack })
     }
 
-    init(switchTitle: String, grouping: GroupingChoice? = nil, onSwitchVariant: @escaping () -> Void) {
+    init(
+        switchTitle: String,
+        grouping: GroupingChoice? = nil,
+        alignment: AlignmentChoice? = nil,
+        onSwitchVariant: @escaping () -> Void
+    ) {
         super.init(title: "")
         DSMenu.style(self)
         groupingChoice = grouping
+        alignmentChoice = alignment
         addItem(DSMenuItem(switchTitle, handler: onSwitchVariant))
         if let grouping {
             groupingItems = TaskbarGrouping.allCases.map { mode in
                 (mode, DSMenuItem(mode.displayName) { grouping.choose(mode) })
             }
             addItem(DSMenu.submenu("Group windows", groupingItems.map(\.1)))
+        }
+        if let alignment {
+            alignmentItems = TaskbarAlignment.allCases.map { mode in
+                (mode, DSMenuItem(mode.displayName) { alignment.choose(mode) })
+            }
+            addItem(DSMenu.submenu("Taskbar alignment", alignmentItems.map(\.1)))
         }
         addItem(DSMenu.submenu("Folder style", iconPackItems.map(\.1)))
         addItem(commandTabItem)
@@ -70,6 +89,11 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
         automaticUpdatesItem.state = AppUpdater.shared.checksAutomatically ? .on : .off
         for (pack, item) in iconPackItems {
             item.state = pack == IconPack.current ? .on : .off
+        }
+        if let current = alignmentChoice?.current() {
+            for (mode, item) in alignmentItems {
+                item.state = mode == current ? .on : .off
+            }
         }
         guard let current = groupingChoice?.current() else { return }
         for (mode, item) in groupingItems {

@@ -242,7 +242,7 @@ class DSControl: NSView {
         onHoverChange?(value)
     }
 
-    private var fill: NSColor? {
+    var fill: NSColor? {
         if isSelected, let fills = selectedStateFills {
             if isPressed { return fills.pressed }
             if isHovered { return fills.hover }
@@ -253,7 +253,7 @@ class DSControl: NSView {
         return restingFill
     }
 
-    private func refresh() {
+    func refresh() {
         guard let layer else { return }
         alphaValue = isEnabled ? 1 : DSColor.disabledAlpha
         layer.borderWidth = isFocused ? Self.focusRingWidth : 0
