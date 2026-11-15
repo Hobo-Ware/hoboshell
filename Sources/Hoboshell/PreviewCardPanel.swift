@@ -61,6 +61,7 @@ final class PreviewCardPanel: NSPanel {
 
     private func present(_ items: [TaskbarItem], owner: String, anchor: NSRect, screen: NSRect) {
         guard !items.isEmpty, let background = contentView else { return }
+        DSTooltip.shared.dismiss()
         ownerID = owner
         presentation += 1
         let shown = presentation

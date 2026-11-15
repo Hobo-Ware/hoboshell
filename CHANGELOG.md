@@ -5,10 +5,28 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Fixed
+- Popups are readable over any page, a white one included. Every flyout, the
+  Start menu, the window previews and the window switcher now sit on a dark
+  surface with a blur behind it, and dim text and the disabled look are
+  brighter. Values such as the IP address, battery time and volume percent are
+  in the normal text size.
+- Hovering a tray app icon, a taskbar button, the clock or any other icon-only
+  button now shows its name after half a second. macOS only draws its own
+  tooltips for the active app, and Hoboshell never is, so the shell now draws
+  them itself. Moving to the next button shows its tooltip at once.
 - With the Mac Dock replaced, the real Dock no longer shows in the overview
   of all windows. A plain strip keeps it covered there.
 
 ### Added
+- The network item opens a quick settings panel: tiles for Wi-Fi, Bluetooth,
+  Low Power, Dark mode, Focus and the keyboard layout, a volume slider with a
+  list of sound outputs, and a footer with the battery, your IP address and a
+  gear for network settings. The Wi-Fi tile turns Wi-Fi on and off; its arrow
+  opens a Wi-Fi page with the current network and the other networks nearby,
+  strongest first. The Keyboard tile switches to the next input source. The
+  other tiles open the matching page of System Settings, because macOS has no
+  way to flip them from another app. Network names need the Location
+  permission, which is asked for only when you open the Wi-Fi page.
 - A drives item in the tray whenever an external or removable drive is
   connected. Click it to open a drive in the explorer or to eject it.
 

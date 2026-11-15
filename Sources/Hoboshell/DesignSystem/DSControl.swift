@@ -27,6 +27,24 @@ class DSControl: NSView {
     var onHoverChange: ((Bool) -> Void)?
     var handlesClicks = true
     var tracksHover = true
+    var showsTip = true
+    var selectedStateFills: (hover: NSColor, pressed: NSColor)?
+
+    var tipText: String? {
+        didSet {
+            guard oldValue != tipText else { return }
+            DSTooltip.shared.tipChanged(for: self)
+        }
+    }
+
+    override var toolTip: String? {
+        get { tipText }
+        set { tipText = newValue }
+    }
+
+    var hasTip: Bool {
+        showsTip && tipText?.isEmpty == false
+    }
 
     var restingFill: NSColor? {
         didSet { refresh() }
@@ -123,6 +141,9 @@ class DSControl: NSView {
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        if window == nil {
+            DSTooltip.shared.pointerExited(self)
+        }
         hoverSync.follow(scrollingOf: self) { [weak self] in
             guard let self, self.tracksHover, self.isEnabled, !self.isPreviewing else { return }
             self.setHovered(DSHoverSync.isPointerInside(self))
@@ -139,7 +160,23 @@ class DSControl: NSView {
         setHovered(false)
     }
 
+    override func viewDidHide() {
+        super.viewDidHide()
+        DSTooltip.shared.pointerExited(self)
+    }
+
+    override func scrollWheel(with event: NSEvent) {
+        DSTooltip.shared.dismiss()
+        super.scrollWheel(with: event)
+    }
+
+    override func rightMouseDown(with event: NSEvent) {
+        DSTooltip.shared.dismiss()
+        super.rightMouseDown(with: event)
+    }
+
     override func mouseDown(with event: NSEvent) {
+        DSTooltip.shared.dismiss()
         guard handlesClicks, isEnabled, !isPreviewing else {
             super.mouseDown(with: event)
             return
@@ -197,10 +234,19 @@ class DSControl: NSView {
     private func setHovered(_ value: Bool) {
         guard isHovered != value else { return }
         isHovered = value
+        if value {
+            DSTooltip.shared.pointerEntered(self)
+        } else {
+            DSTooltip.shared.pointerExited(self)
+        }
         onHoverChange?(value)
     }
 
     private var fill: NSColor? {
+        if isSelected, let fills = selectedStateFills {
+            if isPressed { return fills.pressed }
+            if isHovered { return fills.hover }
+        }
         if isPressed { return DSColor.pressed }
         if isSelected { return selectedFill }
         if isHovered { return DSColor.hover }

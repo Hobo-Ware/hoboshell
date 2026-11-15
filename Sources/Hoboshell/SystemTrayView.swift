@@ -11,10 +11,12 @@ final class SystemTrayView: NSStackView {
     private let clock = DSLabel(style: .caption, monospacedDigits: true)
     private let timeFormatter = DateFormatter()
     private let dateFormatter = DateFormatter()
+    private let longDateFormatter = DateFormatter()
     private let clockOnOneLine: Bool
     private var refreshTimer: Timer?
     private var trayItems: [DSButton] = []
     private var batteryItem: DSButton?
+    private var clockItem: DSButton?
     private var volumeItem: DSButton?
     private var volumeObserver: NSObjectProtocol?
     private var networkObserver: NSObjectProtocol?
@@ -34,6 +36,8 @@ final class SystemTrayView: NSStackView {
         timeFormatter.timeStyle = .short
         dateFormatter.locale = .autoupdatingCurrent
         dateFormatter.dateStyle = .short
+        longDateFormatter.locale = .autoupdatingCurrent
+        longDateFormatter.dateStyle = .full
 
         clock.alignment = .right
         clock.maximumNumberOfLines = clockOnOneLine ? 1 : 2
@@ -55,6 +59,7 @@ final class SystemTrayView: NSStackView {
             TrayFlyouts.shared.toggle(.calendar)
         }
         self.batteryItem = batteryItem
+        self.clockItem = clockItem
         trayItems = [networkItem, volumeItem, batteryItem, clockItem]
         self.volumeItem = volumeItem
         TrayFlyouts.shared.register(.network) { [weak networkItem] in networkItem }
@@ -120,12 +125,14 @@ final class SystemTrayView: NSStackView {
         let now = Date()
         let separator = clockOnOneLine ? "  " : "\n"
         clock.stringValue = timeFormatter.string(from: now) + separator + dateFormatter.string(from: now)
+        clockItem?.toolTip = longDateFormatter.string(from: now)
 
         let battery = TrayBatteryReader.read()?.status
         batteryItem?.isHidden = battery == nil
         if let battery {
             batteryIcon.image = DSIconSize.symbol(battery.symbolName, description: "Battery")
             batteryLabel.stringValue = battery.label
+            batteryItem?.toolTip = "Battery \(battery.label)"
         }
         trayItems.forEach { $0.invalidateIntrinsicContentSize() }
     }

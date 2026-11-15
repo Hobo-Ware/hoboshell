@@ -8,7 +8,6 @@ final class TrayFlyouts {
     private static let appsWidth: CGFloat = 280
     private static let volumeWidth: CGFloat = 280
     private static let batteryWidth: CGFloat = 240
-    private static let networkWidth: CGFloat = 240
 
     var staysOpenForCapture = false
 
@@ -38,6 +37,7 @@ final class TrayFlyouts {
     }
 
     func show(_ kind: TrayItemKind) {
+        DSTooltip.shared.dismiss()
         dismiss()
         let context = TrayFlyoutContext { [weak self] in self?.dismiss() }
         let (content, width) = makeContent(kind, context: context)
@@ -63,13 +63,15 @@ final class TrayFlyouts {
         case .apps: return (TrayAppsFlyoutView(context: context), Self.appsWidth)
         case .volume: return (TrayVolumeFlyoutView(context: context), Self.volumeWidth)
         case .battery: return (TrayBatteryFlyoutView(context: context), Self.batteryWidth)
-        case .network: return (TrayNetworkFlyoutView(context: context), Self.networkWidth)
+        case .network, .wifi:
+            let view = TrayQuickSettingsView(context: context, opensWiFiPage: kind == .wifi, requestsLocation: !staysOpenForCapture)
+            return (view, TrayQuickSettingsView.contentWidth)
         case .calendar: return (TrayCalendarFlyoutView(context: context), TrayCalendarFlyoutView.contentWidth)
         }
     }
 
     private func anchorFrame(for kind: TrayItemKind) -> (frame: NSRect, screen: NSRect)? {
-        guard let view = anchors[kind]?(), let window = view.window else { return nil }
+        guard let view = anchors[kind.anchorKind]?(), let window = view.window else { return nil }
         window.contentView?.layoutSubtreeIfNeeded()
         let frame = window.convertToScreen(view.convert(view.bounds, to: nil))
         guard let screen = window.screen?.frame ?? NSScreen.main?.frame else { return nil }
@@ -77,7 +79,7 @@ final class TrayFlyouts {
     }
 
     private func isOnAnchor(_ event: NSEvent) -> Bool {
-        guard let kind = panel?.kind, let anchor = anchors[kind]?(),
+        guard let kind = panel?.kind, let anchor = anchors[kind.anchorKind]?(),
               let hit = event.window?.contentView?.superview?.hitTest(event.locationInWindow) else { return false }
         return hit.isDescendant(of: anchor)
     }
