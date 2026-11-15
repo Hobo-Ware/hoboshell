@@ -90,3 +90,21 @@ import Testing
         #expect(timeline.phase == .showing(1))
     }
 }
+
+@Suite struct TooltipSuppressionTests {
+    @Test func enteringAControlWhileSuppressedStartsNothing() {
+        var timeline = TooltipTimeline<Int>()
+        timeline.isSuppressed = true
+        #expect(timeline.apply(.entered(1)) == [])
+        #expect(timeline.phase == .idle)
+    }
+
+    @Test func suppressingWhileShowingHidesAndGoesIdle() {
+        var timeline = TooltipTimeline<Int>()
+        _ = timeline.apply(.entered(1))
+        _ = timeline.apply(.timerFired)
+        timeline.isSuppressed = true
+        #expect(timeline.apply(.dismissed) == [.hide])
+        #expect(timeline.phase == .idle)
+    }
+}

@@ -12,6 +12,14 @@ final class DSTooltip {
     private var timer: Timer?
     private let panel = DSTooltipPanel()
 
+    var isSuppressed: Bool {
+        get { timeline.isSuppressed }
+        set {
+            timeline.isSuppressed = newValue
+            if newValue { dismiss() }
+        }
+    }
+
     func pointerEntered(_ control: DSControl) {
         guard control.hasTip else { return }
         current = control

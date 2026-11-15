@@ -29,10 +29,12 @@ public struct TooltipTimeline<Target: Equatable> {
     }
 
     public private(set) var phase = Phase.idle
+    public var isSuppressed = false
 
     public init() {}
 
     public mutating func apply(_ event: TooltipEvent<Target>) -> [TooltipAction<Target>] {
+        if isSuppressed, case .entered = event { return [] }
         switch (phase, event) {
         case (.idle, .entered(let target)):
             phase = .resting(target)
