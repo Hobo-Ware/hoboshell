@@ -55,6 +55,15 @@ public enum ShellPalette {
     public static let flyoutTintAlpha = 0.94
     public static let disabledAlpha = 0.5
     public static let backdrops = [RGB.white, RGB.black]
+    public static let barGlass = RGB(red: 24.0 / 255, green: 27.0 / 255, blue: 33.0 / 255)
+    public static let barGlassAlpha = 0.82
+    public static let barHairlineAlpha = 0.14
+    public static let barRunLine = RGB(red: 163.0 / 255, green: 172.0 / 255, blue: 186.0 / 255)
+    public static let barPlateHoverAlpha = 0.08
+    public static let barPlatePressedAlpha = 0.05
+    public static let barPlateFocusedAlpha = 0.12
+    public static let barPlateFocusedHoverAlpha = 0.16
+    public static let barPlateEdgeAlpha = 0.08
 
     public static func flyoutSurface(over backdrop: RGB) -> RGB {
         raisedSurface.blended(over: backdrop, alpha: flyoutTintAlpha)

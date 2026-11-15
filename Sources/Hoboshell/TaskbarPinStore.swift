@@ -6,6 +6,7 @@ enum TaskbarPinStore {
     static let didChange = Notification.Name("HoboshellTaskbarPinsDidChange")
 
     private static let groupingKey = "TaskbarGrouping"
+    private static let alignmentKey = "TaskbarAlignment"
 
     static func loadPins() -> TaskbarPins {
         TaskbarPins(UserDefaults.standard.stringArray(forKey: pinsKey) ?? [])
@@ -23,5 +24,13 @@ enum TaskbarPinStore {
 
     static func save(_ grouping: TaskbarGrouping) {
         UserDefaults.standard.set(grouping.rawValue, forKey: groupingKey)
+    }
+
+    static func loadAlignment() -> TaskbarAlignment {
+        TaskbarAlignment(stored: UserDefaults.standard.string(forKey: alignmentKey))
+    }
+
+    static func save(_ alignment: TaskbarAlignment) {
+        UserDefaults.standard.set(alignment.rawValue, forKey: alignmentKey)
     }
 }

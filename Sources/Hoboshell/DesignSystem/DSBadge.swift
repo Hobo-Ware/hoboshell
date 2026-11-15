@@ -1,6 +1,8 @@
 import AppKit
 
 final class DSBadge: NSView {
+    private static let compactRadius: CGFloat = 7
+
     enum Tone {
         case neutral
         case accent
@@ -26,6 +28,10 @@ final class DSBadge: NSView {
         var verticalPadding: CGFloat {
             self == .regular ? DSSpacing.xxs : 0
         }
+
+        var cornerRadius: CGFloat {
+            self == .regular ? DSRadius.control : DSBadge.compactRadius
+        }
     }
 
     var text: String {
@@ -39,7 +45,7 @@ final class DSBadge: NSView {
         label = DSLabel(text, style: .caption, weight: .semibold)
         super.init(frame: .zero)
         wantsLayer = true
-        layer?.cornerRadius = DSRadius.control
+        layer?.cornerRadius = size.cornerRadius
         layer?.backgroundColor = tone.fill.cgColor
         translatesAutoresizingMaskIntoConstraints = false
         label.translatesAutoresizingMaskIntoConstraints = false

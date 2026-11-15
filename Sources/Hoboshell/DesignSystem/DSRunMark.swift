@@ -9,14 +9,14 @@ final class DSRunMark: NSView {
     }
 
     static let height: CGFloat = 3
-    static let runningWidth: CGFloat = 12
-    static let activeWidth: CGFloat = 20
+    static let runningWidth: CGFloat = 6
+    static let activeWidth: CGFloat = 18
     static let backgroundSize: CGFloat = 4
 
     var state = State.none {
         didSet {
             guard oldValue != state else { return }
-            refresh()
+            refresh(from: oldValue)
         }
     }
 
@@ -33,7 +33,7 @@ final class DSRunMark: NSView {
         let height = heightAnchor.constraint(equalToConstant: Self.height)
         heightConstraint = height
         NSLayoutConstraint.activate([width, height])
-        refresh()
+        refresh(from: .none)
     }
 
     @available(*, unavailable)
@@ -49,12 +49,26 @@ final class DSRunMark: NSView {
         }
     }
 
-    private func refresh() {
+    private func refresh(from old: State) {
         isHidden = state == .none
         let size = Self.size(of: state)
-        widthConstraint?.constant = size.width
-        heightConstraint?.constant = size.height
+        let color = (state == .active ? DSColor.accent : DSBarColor.runLine).cgColor
+        let grows = window != nil && old != .none && state != .none
+        let length = grows ? DSMotion.duration(.grow) : 0
         layer?.cornerRadius = size.height / 2
-        layer?.backgroundColor = (state == .active ? DSColor.accent : DSColor.runMark).cgColor
+        if let layer {
+            DSMotion.fill(layer, to: color, kind: .grow)
+        }
+        guard length > 0 else {
+            widthConstraint?.constant = size.width
+            heightConstraint?.constant = size.height
+            return
+        }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = length
+            context.allowsImplicitAnimation = true
+            widthConstraint?.animator().constant = size.width
+            heightConstraint?.animator().constant = size.height
+        }
     }
 }

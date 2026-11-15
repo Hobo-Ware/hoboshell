@@ -7,12 +7,10 @@ enum TaskbarItemView {
         let tip: String
         let showsTip: Bool
         let icon: NSImage?
-        let isActive: Bool
-        let runState: DSRunMark.State
+        let facts: TaskbarButtonFacts
         let width: CGFloat
         let isLabelled: Bool
         let count: String?
-        let badge: String?
     }
 
     static func make() -> TaskbarButton {
@@ -32,18 +30,13 @@ enum TaskbarItemView {
         if button.image !== look.icon {
             button.image = look.icon
         }
-        if button.isSelected != look.isActive {
-            button.isSelected = look.isActive
-        }
-        if button.runState != look.runState {
-            button.runState = look.runState
-        }
         button.showsTip = look.showsTip
         if button.toolTip != look.tip {
             button.toolTip = look.tip
             button.setAccessibilityLabel(look.tip)
         }
         button.countText = look.count
-        button.notificationText = look.badge
+        button.notificationText = look.facts.badge
+        button.facts = look.facts
     }
 }
