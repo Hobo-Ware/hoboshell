@@ -21,7 +21,12 @@ for key in CFBundleShortVersionString CFBundleVersion; do
   fi
 done
 
-HOBOSHELL_SIGN_IDENTITY=- ./scripts/bundle.sh
+identity="${HOBOSHELL_SIGN_IDENTITY:-Hoboshell Dev}"
+if [ "$identity" != "-" ] && ! security find-identity -p codesigning | grep -q "\"$identity\""; then
+  echo "Signing identity \"$identity\" is not in the keychain. Set HOBOSHELL_SIGN_IDENTITY=- for an ad-hoc build." >&2
+  exit 1
+fi
+HOBOSHELL_SIGN_IDENTITY="$identity" ./scripts/bundle.sh
 
 if [ ! -x "$sign_update" ]; then
   echo "Sparkle's sign_update is missing at $sign_update. Run swift build first." >&2
