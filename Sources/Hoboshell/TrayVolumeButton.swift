@@ -5,6 +5,7 @@ final class TrayVolumeButton: DSButton {
     private var scroll = TrayScrollAccumulator()
 
     override func scrollWheel(with event: NSEvent) {
+        DSTooltip.shared.dismiss()
         guard event.momentumPhase.isEmpty else { return }
         let direction: CGFloat = event.isDirectionInvertedFromDevice ? -1 : 1
         let steps = scroll.add(event.scrollingDeltaY * direction, isPrecise: event.hasPreciseScrollingDeltas)

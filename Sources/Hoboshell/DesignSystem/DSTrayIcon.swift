@@ -33,8 +33,9 @@ final class DSTrayIcon: DSControl {
         if iconView.image !== icon {
             iconView.image = icon
         }
-        toolTip = tip
-        setAccessibilityLabel(badge.map { "\(tip), \($0) unread" } ?? tip)
+        let label = badge.map { "\(tip), \($0) unread" } ?? tip
+        toolTip = label
+        setAccessibilityLabel(label)
         guard let badge else {
             badgeView?.removeFromSuperview()
             badgeView = nil

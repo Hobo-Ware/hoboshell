@@ -135,6 +135,7 @@ final class StartMenuPanel: NSPanel {
     }
 
     func present(origin: (NSSize) -> NSPoint, opening: StartMenuOpening) {
+        DSTooltip.shared.dismiss()
         reset(for: opening)
         setFrameOrigin(origin(frame.size))
         if staysOpenForCapture {

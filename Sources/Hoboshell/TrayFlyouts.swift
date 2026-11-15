@@ -38,6 +38,7 @@ final class TrayFlyouts {
     }
 
     func show(_ kind: TrayItemKind) {
+        DSTooltip.shared.dismiss()
         dismiss()
         let context = TrayFlyoutContext { [weak self] in self?.dismiss() }
         let (content, width) = makeContent(kind, context: context)

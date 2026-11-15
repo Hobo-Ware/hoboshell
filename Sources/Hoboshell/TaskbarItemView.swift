@@ -5,6 +5,7 @@ enum TaskbarItemView {
     struct Look {
         let title: String
         let tip: String
+        let showsTip: Bool
         let icon: NSImage?
         let isActive: Bool
         let runState: DSRunMark.State
@@ -37,6 +38,7 @@ enum TaskbarItemView {
         if button.runState != look.runState {
             button.runState = look.runState
         }
+        button.showsTip = look.showsTip
         if button.toolTip != look.tip {
             button.toolTip = look.tip
             button.setAccessibilityLabel(look.tip)
