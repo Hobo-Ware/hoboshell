@@ -4,6 +4,8 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+## 0.1.1
+
 ### Fixed
 - Popups are readable over any page, a white one included. Every flyout, the
   Start menu, the window previews and the window switcher now sit on a dark
