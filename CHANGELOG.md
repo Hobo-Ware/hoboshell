@@ -5,6 +5,11 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Fixed
+- Popups are readable over any page, a white one included. Every flyout, the
+  Start menu, the window previews and the window switcher now sit on a dark
+  surface with a blur behind it, and dim text and the disabled look are
+  brighter. Values such as the IP address, battery time and volume percent are
+  in the normal text size.
 - Hovering a tray app icon, a taskbar button, the clock or any other icon-only
   button now shows its name after half a second. macOS only draws its own
   tooltips for the active app, and Hoboshell never is, so the shell now draws

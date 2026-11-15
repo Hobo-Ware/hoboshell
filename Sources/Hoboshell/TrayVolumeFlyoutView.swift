@@ -6,7 +6,7 @@ final class TrayVolumeFlyoutView: NSView {
     private let context: TrayFlyoutContext
     private let slider = DSSlider()
     private let muteButton = DSButton(symbol: "speaker.fill", tip: "Mute", height: .regular)
-    private let percent = DSLabel("", style: .caption, color: DSColor.dimText, monospacedDigits: true)
+    private let percent = DSLabel("", monospacedDigits: true)
     private var stack: NSStackView?
     private var layoutKey = ""
     private var observer: NSObjectProtocol?
@@ -23,7 +23,7 @@ final class TrayVolumeFlyoutView: NSView {
         }
         percent.alignment = .right
         percent.translatesAutoresizingMaskIntoConstraints = false
-        percent.widthAnchor.constraint(equalToConstant: DSControlHeight.regular.value).isActive = true
+        percent.widthAnchor.constraint(equalToConstant: DSSpacing.xl + DSSpacing.l).isActive = true
         reload()
         observer = NotificationCenter.default.addObserver(
             forName: TrayVolumeControl.didChange, object: nil, queue: .main
@@ -73,7 +73,7 @@ final class TrayVolumeFlyoutView: NSView {
         controls.alignment = .centerY
         var rows: [NSView] = [controls]
         if state?.canSetVolume == false {
-            rows.append(DSLabel("This output has no software volume.", style: .caption, color: DSColor.dimText))
+            rows.append(DSLabel("This output has no software volume.", color: DSColor.dimText))
         }
         rows.append(DSDivider())
         rows.append(DSSectionHeader("Output"))

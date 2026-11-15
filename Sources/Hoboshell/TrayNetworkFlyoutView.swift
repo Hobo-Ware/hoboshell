@@ -37,7 +37,7 @@ final class TrayNetworkFlyoutView: NSView {
             rows.append(DSLabel(kind))
         }
         if summary.isOnline, let address = TrayNetwork.shared.localAddress() {
-            rows.append(DSLabel("IP address \(address)", style: .caption, color: DSColor.dimText))
+            rows.append(DSLabel("IP address \(address)", monospacedDigits: true))
         }
         rows.append(contentsOf: [DSDivider(), TraySettings.button(title: "Network settings", pane: TraySettings.network, context: context)])
         let next = TrayFlyoutStack.make(rows, spacing: DSSpacing.xs)

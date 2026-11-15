@@ -4,7 +4,7 @@ final class DSListRow: DSControl {
     private let height: DSControlHeight
     private let iconView: DSIconView
     private let label: DSLabel
-    private let detailLabel = DSLabel(style: .caption, color: DSColor.dimText)
+    private let detailLabel = DSLabel(style: .body, color: DSColor.dimText, monospacedDigits: true)
 
     init(title: String, image: NSImage?, detail: String? = nil, height: DSControlHeight = .regular) {
         self.height = height
