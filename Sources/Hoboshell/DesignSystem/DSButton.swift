@@ -21,7 +21,7 @@ class DSButton: DSControl {
 
     private let customViews: [NSView]
     private let content = NSStackView()
-    private let iconView: DSIconView
+    let iconView: DSIconView
     private let titleLabel: DSLabel
     private var centerConstraint: NSLayoutConstraint?
     private var leadingConstraint: NSLayoutConstraint?

@@ -16,6 +16,10 @@ final class TaskbarPanel: NSPanel, ShellChrome {
     private var isTrusted = true
     private var specs: [String: TaskbarButtonSpec] = [:]
     private var grouping = TaskbarPinStore.loadGrouping()
+    private var alignment = TaskbarPinStore.loadAlignment() {
+        didSet { row?.alignment = alignment }
+    }
+    private var row: TaskbarRowView?
     private var firstIndex = 0
     private var isReordering = false
     private var hasPresented = false
@@ -25,8 +29,11 @@ final class TaskbarPanel: NSPanel, ShellChrome {
 
     init(layout: ShellLayout, switchTitle: String) {
         super.init(contentRect: layout.bar, styleMask: DSPanelStyle.styleMask, backing: .buffered, defer: false)
-        let kind: DSPanelStyle.Kind = layout.dockReservation.isOn ? .opaqueBar : .bar
-        buildContent(in: DSPanelStyle.apply(to: self, kind: kind), switchTitle: switchTitle)
+        buildContent(
+            in: DSPanelStyle.apply(to: self, kind: .bar),
+            forcesSolid: layout.dockReservation.isOn,
+            switchTitle: switchTitle
+        )
         iconObserver = NotificationCenter.default.addObserver(
             forName: AppIcons.didLoad, object: nil, queue: .main
         ) { [weak self] _ in
@@ -181,12 +188,16 @@ final class TaskbarPanel: NSPanel, ShellChrome {
                 tip: title,
                 showsTip: spec.windowIDs.isEmpty,
                 icon: spec.isRunning ? AppIcons.shared.image(forPath: path) : installed?.icon,
-                isActive: spec.isActive,
-                runState: runState(of: spec),
+                facts: TaskbarButtonFacts(
+                    isRunning: spec.isRunning,
+                    isFocused: spec.isActive,
+                    isBackground: spec.isBackground,
+                    windowCount: spec.windowIDs.count,
+                    badge: spec.badge
+                ),
                 width: labelled ? width : TaskbarLayout.iconOnlyWidth,
                 isLabelled: labelled,
-                count: spec.isGroup ? "\(spec.windowIDs.count)" : nil,
-                badge: spec.badge
+                count: spec.isGroup ? "\(spec.windowIDs.count)" : nil
             ),
             to: button
         )
@@ -196,12 +207,6 @@ final class TaskbarPanel: NSPanel, ShellChrome {
                 self?.togglePin(spec.appID)
             }
         }
-    }
-
-    private func runState(of spec: TaskbarButtonSpec) -> DSRunMark.State {
-        guard spec.isRunning else { return .none }
-        if spec.isBackground { return .background }
-        return spec.isActive ? .active : .running
     }
 
     private var screenFrame: NSRect {
@@ -253,7 +258,7 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         present()
     }
 
-    private func buildContent(in background: DSCard, switchTitle: String) {
+    private func buildContent(in background: DSCard, forcesSolid: Bool, switchTitle: String) {
         let logo = HobowareLogo.image(height: DSIconSize.startLogo, style: .official, ink: .forDarkBackground)
         let startButton = DSButton(title: logo == nil ? "⊞" : "", image: logo, height: .taskbar, tip: "Start")
         startButton.iconSide = DSIconSize.startLogo
@@ -289,19 +294,17 @@ final class TaskbarPanel: NSPanel, ShellChrome {
             self?.actions.onShowDesktop?()
         }
 
-        let root = NSStackView()
-        root.orientation = .horizontal
-        root.spacing = Self.itemSpacing
-        root.edgeInsets = NSEdgeInsets(top: 0, left: DSSpacing.s, bottom: 0, right: 0)
-        root.addView(startButton, in: .leading)
-        root.addView(filesButton, in: .leading)
-        root.addView(previousButton, in: .leading)
-        root.addView(itemStack, in: .leading)
-        root.addView(nextButton, in: .leading)
-        root.addView(SystemTrayView(clockOnOneLine: false, height: .regular), in: .trailing)
-        root.addView(showDesktopButton, in: .trailing)
+        let group = NSStackView(views: [startButton, filesButton, previousButton, itemStack, nextButton])
+        group.orientation = .horizontal
+        group.spacing = Self.itemSpacing
+        let trail = NSStackView(views: [SystemTrayView(clockOnOneLine: false, height: .regular), showDesktopButton])
+        trail.orientation = .horizontal
+        trail.spacing = Self.itemSpacing
 
-        DSPanelStyle.pin(root, to: background)
+        let row = TaskbarRowView(group: group, trail: trail, alignment: alignment)
+        self.row = row
+        DSPanelStyle.pin(DSBarSurface(forcesSolid: forcesSolid), to: background)
+        DSPanelStyle.pin(row, to: background)
         background.menu = ShellContextMenu(
             switchTitle: switchTitle,
             grouping: ShellContextMenu.GroupingChoice(
@@ -310,6 +313,13 @@ final class TaskbarPanel: NSPanel, ShellChrome {
                     self?.grouping = choice
                     TaskbarPinStore.save(choice)
                     self?.present()
+                }
+            ),
+            alignment: ShellContextMenu.AlignmentChoice(
+                current: { [weak self] in self?.alignment ?? .centred },
+                choose: { [weak self] choice in
+                    self?.alignment = choice
+                    TaskbarPinStore.save(choice)
                 }
             )
         ) { [weak self] in
