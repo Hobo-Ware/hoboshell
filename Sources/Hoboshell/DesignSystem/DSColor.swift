@@ -28,10 +28,5 @@ enum DSColor {
         NSColor(srgbRed: rgb.red, green: rgb.green, blue: rgb.blue, alpha: 1)
     }
 
-    static func desktop(for variant: ShellVariant) -> NSColor {
-        switch variant {
-        case .bottomTaskbar: return NSColor(calibratedRed: 0.0, green: 0.32, blue: 0.55, alpha: 1)
-        case .topBarWithDock: return NSColor(calibratedRed: 0.27, green: 0.12, blue: 0.30, alpha: 1)
-        }
-    }
+    static let desktop = NSColor(calibratedRed: 0.0, green: 0.32, blue: 0.55, alpha: 1)
 }

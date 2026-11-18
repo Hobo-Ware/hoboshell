@@ -32,16 +32,6 @@ APIs only. No System Integrity Protection changes, no private frameworks.
 - **Window snapping** (keyboard): send the last used window to the left half, the right
   half, or the full area above the taskbar.
 
-## Looks
-
-Hoboshell has two looks. Right-click any Hoboshell bar to switch; your choice
-is remembered.
-
-| Look | What you see | Start with |
-| --- | --- | --- |
-| Bottom taskbar (default) | One bar along the bottom with Start, window buttons and the tray | `swift run Hoboshell --variant bottom-taskbar` |
-| Top bar and side dock | A slim bar under the Mac menu bar with Activities and the tray, plus an icon dock on the left | `swift run Hoboshell --variant top-bar-dock` |
-
 ## Keyboard shortcuts
 
 | Keys | What happens |
@@ -90,9 +80,8 @@ HOBOSHELL_HIDE_SYSTEM_UI=1 swift run
 ```
 
 macOS keeps maximised and tiled windows clear of the Dock, so Hoboshell keeps
-the real Dock on the same edge as its bar (bottom for the bottom taskbar, left
-for the side dock), never hiding and never magnifying, and draws the bar
-exactly on top of it. Hoboshell measures how thick the Dock turns out and
+the real Dock on the same edge as its bar (the bottom), never hiding and never
+magnifying, and draws the bar exactly on top of it. Hoboshell measures how thick the Dock turns out and
 adjusts its icon size until it matches the bar, so the first run restarts the
 Dock a few times. It also turns off the Finder desktop icons and restarts
 Finder. Your old settings are saved first and put back when you untick the
@@ -134,8 +123,7 @@ overlay, not a replacement:
 - The Mac menu bar stays at the top of the screen.
 - Without the Dock replacement, windows you maximise yourself can slide under
   the taskbar until "Keep windows above the taskbar" nudges them up. The snap
-  shortcuts keep clear of it. The top bar of the side dock look still overlaps
-  windows: macOS only keeps them below the Mac menu bar.
+  shortcuts keep clear of it.
 - The file explorer does not appear in Cmd+Tab, because Hoboshell runs as a
   background agent. It does appear on the taskbar and in Option+Tab.
 - The system tray shows Hoboshell's own indicators. macOS does not let another

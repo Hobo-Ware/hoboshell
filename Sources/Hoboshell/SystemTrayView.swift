@@ -8,15 +8,13 @@ final class SystemTrayView: NSStackView {
     private let timeFormatter = DateFormatter()
     private let dateFormatter = DateFormatter()
     private let longDateFormatter = DateFormatter()
-    private let clockOnOneLine: Bool
     private var refreshTimer: Timer?
     private var clockItem: DSButton?
     private let appsView: TrayAppsView
     private let drivesItem: TrayDrivesItem
     private let cluster: TrayClusterButton
 
-    init(clockOnOneLine: Bool, height: DSControlHeight) {
-        self.clockOnOneLine = clockOnOneLine
+    init(height: DSControlHeight) {
         appsView = TrayAppsView(height: height)
         drivesItem = TrayDrivesItem(height: height)
         cluster = TrayClusterButton(height: height)
@@ -33,7 +31,7 @@ final class SystemTrayView: NSStackView {
         longDateFormatter.dateStyle = .full
 
         clock.alignment = .right
-        clock.maximumNumberOfLines = clockOnOneLine ? 1 : 2
+        clock.maximumNumberOfLines = 2
 
         let clockItem = DSButton(views: [clock], height: height, tip: "Calendar")
         clockItem.onPress = {
@@ -66,8 +64,7 @@ final class SystemTrayView: NSStackView {
 
     private func refresh() {
         let now = Date()
-        let separator = clockOnOneLine ? "  " : "\n"
-        clock.stringValue = timeFormatter.string(from: now) + separator + dateFormatter.string(from: now)
+        clock.stringValue = timeFormatter.string(from: now) + "\n" + dateFormatter.string(from: now)
         clockItem?.toolTip = longDateFormatter.string(from: now)
         clockItem?.invalidateIntrinsicContentSize()
     }

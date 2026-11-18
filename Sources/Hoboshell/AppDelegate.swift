@@ -5,7 +5,6 @@ import os
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private static let neverInTray = ["com.apple.finder"]
-    private static let savedVariantKey = "ShellVariant"
     private static let snapLog = Logger(subsystem: "dev.hoboware.hoboshell", category: "snap")
 
     private let engine = ShellEngine()
@@ -13,10 +12,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var dockCover: DockCoverPanel?
     private let nudger = WindowNudger()
     private let hidesSystemUI = ProcessInfo.processInfo.environment["HOBOSHELL_HIDE_SYSTEM_UI"] == "1"
-    private var variant = ShellVariant.resolve(
-        arguments: CommandLine.arguments,
-        saved: UserDefaults.standard.string(forKey: AppDelegate.savedVariantKey)
-    )
     private var dockReservation = DockReservation.off
     private var chrome: ShellChrome?
     private var desktop: DesktopWindow?
@@ -79,10 +74,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func startSelfTestIfRequested() {
         guard let arguments = SelfTestArguments.parse(CommandLine.arguments), let chrome else { return }
-        guard variant == .bottomTaskbar else {
-            print("realtime self-test could not run: start with --variant bottom-taskbar")
-            exit(2)
-        }
         let test = RealtimeSelfTest(engine: engine, chrome: chrome, reportPath: arguments.reportPath)
         selfTest = test
         test.start()
@@ -94,16 +85,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         desktop?.orderOut(nil)
         startMenu?.orderOut(nil)
 
-        let layout = ShellLayout(variant: variant, screen: screen, dockReservation: reservation(on: screen))
-        nudger.barFrame = variant == .bottomTaskbar ? layout.bar : nil
-        let desktop = DesktopWindow(screen: screen, reserved: layout.reserved, color: variant.desktopColor)
+        let layout = ShellLayout(screen: screen, dockReservation: reservation(on: screen))
+        nudger.barFrame = layout.bar
+        let desktop = DesktopWindow(screen: screen, reserved: layout.reserved, color: DSColor.desktop)
         desktop.orderFront(nil)
         self.desktop = desktop
 
-        let switchTitle = "Switch to \(variant.other.displayName)"
-        let chrome: ShellChrome = variant == .bottomTaskbar
-            ? TaskbarPanel(layout: layout, switchTitle: switchTitle)
-            : TopBarDockChrome(layout: layout, switchTitle: switchTitle)
+        let chrome: ShellChrome = TaskbarPanel(layout: layout)
         chrome.actions = ShellActions(
             onStart: { [weak self] in
                 self?.toggleStartMenu()
@@ -114,16 +102,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onShowDesktop: { [weak self] in
                 guard let self else { return }
                 self.showDesktop.toggle(apps: self.engine.tracker.taskbarApps)
-            },
-            onSwitchVariant: { [weak self] in
-                self?.switchVariant()
             }
         )
         chrome.show()
         dockCover?.orderOut(nil)
         dockCover = nil
         if case .on = reservation(on: screen) {
-            let cover = DockCoverPanel(covering: variant == .bottomTaskbar ? layout.bar : layout.dock ?? layout.bar)
+            let cover = DockCoverPanel(covering: layout.bar)
             cover.orderFrontRegardless()
             dockCover = cover
         }
@@ -139,18 +124,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         screen == NSScreen.screens.first ? dockReservation : .off
     }
 
-    private func switchVariant() {
-        variant = variant.other
-        UserDefaults.standard.set(variant.rawValue, forKey: Self.savedVariantKey)
-        dockReservation = .off
-        buildShell()
-        if SystemChrome.isActive {
-            engageDock()
-        }
-    }
-
     private func engageDock() {
-        SystemChrome.engage(variant: variant) { [weak self] reservation in
+        SystemChrome.engage { [weak self] reservation in
             self?.dockReservation = reservation
             self?.buildShell()
         }
@@ -238,7 +213,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Self.snapLog.notice("snap skipped: no app has been active yet")
             return
         }
-        let reserved = ShellLayout(variant: variant, screen: screen, dockReservation: reservation(on: screen)).reserved
+        let reserved = ShellLayout(screen: screen, dockReservation: reservation(on: screen)).reserved
         let outcome = WindowSnapper.snapFrontWindow(of: app, to: region, on: screen, reserved: reserved)
         let appName = app.localizedName ?? "unknown app"
         Self.snapLog.notice("snap region \(region.rawValue) on \(appName, privacy: .public): \(outcome.description, privacy: .public)")

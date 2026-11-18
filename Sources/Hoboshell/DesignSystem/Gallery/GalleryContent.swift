@@ -29,11 +29,10 @@ enum GalleryContent {
         let overlays: [(String, NSColor)] = [
             ("faint", DSColor.faint), ("hover", DSColor.hover), ("pressed", DSColor.pressed), ("selected", DSColor.selected), ("accentTint", DSColor.accentTint), ("runMark", DSColor.runMark),
         ]
-        let desktops: [(String, NSColor)] = ShellVariant.allCases.map { ($0.displayName, DSColor.desktop(for: $0)) }
         return GalleryRow.section("Colour roles", [
             GalleryRow.make("roles", roles.map { ($0.0, swatch($0.1)) }),
             GalleryRow.make("overlays", overlays.map { ($0.0, swatch($0.1)) }),
-            GalleryRow.make("desktop", desktops.map { ($0.0, swatch($0.1)) }),
+            GalleryRow.make("desktop", [("desktop", swatch(DSColor.desktop))]),
         ])
     }
 

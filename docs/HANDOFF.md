@@ -47,7 +47,7 @@ Merging is the owner's call. The stack merges in order, #6 first.
 
 Confirmed by measurement or by looking at captures: the design system gallery, the taskbar and tray layout, the explorer's details and icons views, the Start menu's pinned view, the icon set in place, the Dock reserving exactly the taskbar's height, the bar's window level above the Dock, and the self-test timings.
 
-Not yet confirmed on screen by anyone: the switcher's look and the Command+Tab takeover, tray popups, grouping and pin reordering on the taskbar, Start menu search and keyboard use, explorer rename and sorting after the polish, the desktop-switch fix (bar staying put, buttons changing once), preview pictures for every app, the top bar with side dock look as a whole.
+Not yet confirmed on screen by anyone: the switcher's look and the Command+Tab takeover, tray popups, grouping and pin reordering on the taskbar, Start menu search and keyboard use, explorer rename and sorting after the polish, the desktop-switch fix (bar staying put, buttons changing once), preview pictures for every app.
 
 ## Next, in order
 
@@ -56,8 +56,7 @@ Not yet confirmed on screen by anyone: the switcher's look and the Command+Tab t
 3. **Default file manager switch**: an option that makes "show in folder" from other apps open the Hoboshell explorer, saved and restored like the Dock settings.
 4. **Windows phase**: drag-to-edge snapping with an outline, quarters, snap assist, window shortcuts.
 5. **Explorer parity**: address bar menus and auto-complete, deep search, pinning and a folder tree, column choice, copy progress and a clash dialog, undo, properties, tabs, archives.
-6. **Top bar with side dock look**: its own theme, dock pins and cards, app grid, overview, header-bar explorer.
-7. **Release**: a settings window, the project card on the Hoboware site.
+6. **Release**: a settings window, the project card on the Hoboware site.
 
 ## How to cut a release
 
@@ -79,5 +78,4 @@ Folders and places come in five styles, picked from the bar's right-click menu u
 - Icons view rows are tall when names fit on one line; the details view shows no thumbnails.
 - Right after launch, an app whose windows are all on a desktop not yet visited can show as running in the background.
 - Unread badges are read once a second; macOS offers no change notification for them.
-- The top bar itself still overlaps windows in the top bar look; only the side dock reserves space.
 - If the saved "original" Dock settings look wrong after turning the Dock option off, set the Dock as wanted in System Settings; the next time the option is turned on it saves the current values.

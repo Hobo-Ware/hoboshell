@@ -27,12 +27,11 @@ final class TaskbarPanel: NSPanel, ShellChrome {
     private let previewCard = PreviewCardPanel()
     private var iconObserver: NSObjectProtocol?
 
-    init(layout: ShellLayout, switchTitle: String) {
+    init(layout: ShellLayout) {
         super.init(contentRect: layout.bar, styleMask: DSPanelStyle.styleMask, backing: .buffered, defer: false)
         buildContent(
             in: DSPanelStyle.apply(to: self, kind: .bar),
-            forcesSolid: layout.dockReservation.isOn,
-            switchTitle: switchTitle
+            forcesSolid: layout.dockReservation.isOn
         )
         iconObserver = NotificationCenter.default.addObserver(
             forName: AppIcons.didLoad, object: nil, queue: .main
@@ -261,7 +260,7 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         present()
     }
 
-    private func buildContent(in background: DSCard, forcesSolid: Bool, switchTitle: String) {
+    private func buildContent(in background: DSCard, forcesSolid: Bool) {
         let logo = HobowareLogo.image(height: DSIconSize.startLogo, style: .official, ink: .forDarkBackground)
         let startButton = DSButton(title: logo == nil ? "⊞" : "", image: logo, height: .taskbar, tip: "Start")
         startButton.iconSide = DSIconSize.startLogo
@@ -300,7 +299,7 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         let group = NSStackView(views: [startButton, filesButton, previousButton, itemStack, nextButton])
         group.orientation = .horizontal
         group.spacing = Self.itemSpacing
-        let trail = NSStackView(views: [SystemTrayView(clockOnOneLine: false, height: .regular), showDesktopButton])
+        let trail = NSStackView(views: [SystemTrayView(height: .regular), showDesktopButton])
         trail.orientation = .horizontal
         trail.spacing = Self.itemSpacing
 
@@ -309,7 +308,6 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         DSPanelStyle.pin(DSBarSurface(forcesSolid: forcesSolid), to: background)
         DSPanelStyle.pin(row, to: background)
         background.menu = ShellContextMenu(
-            switchTitle: switchTitle,
             grouping: ShellContextMenu.GroupingChoice(
                 current: { [weak self] in self?.grouping ?? .whenFull },
                 choose: { [weak self] choice in
@@ -325,8 +323,6 @@ final class TaskbarPanel: NSPanel, ShellChrome {
                     TaskbarPinStore.save(choice)
                 }
             )
-        ) { [weak self] in
-            self?.actions.onSwitchVariant?()
-        }
+        )
     }
 }

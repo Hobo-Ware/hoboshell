@@ -22,9 +22,9 @@ enum SystemChrome {
         NotificationCenter.default.post(name: wantedDidChange, object: nil)
     }
 
-    static func engage(variant: ShellVariant, completion: @escaping (DockReservation) -> Void) {
+    static func engage(completion: @escaping (DockReservation) -> Void) {
         generation += 1
-        let edge = variant.dockEdge
+        let edge = DockEdge.bottom
         let target = DockCalibration.targetThickness(for: edge)
         let tileSize = UserDefaults.standard.object(forKey: DockCalibration.storageKey(for: edge)) as? Int
             ?? DockCalibration.startingTileSize(target: target)
