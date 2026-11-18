@@ -8,6 +8,11 @@ Record of work, newest first. Each entry says what a user would notice.
 - Centred taskbar buttons no longer drift right of centre when a button
   grows to show its window title.
 
+### Changed
+- Starting with `--perf-log` now also records how long file explorer actions
+  (paste, drop, trash, new folder, folder reload) and the Start menu (opening,
+  search results) take.
+
 ## 0.2.1
 
 ### Fixed

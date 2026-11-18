@@ -21,4 +21,10 @@ enum PerfLog {
         let milliseconds = ShellClock.milliseconds(since: event.observedAt)
         latency.notice("\(label, privacy: .public) -> shown \(milliseconds, format: .fixed(precision: 1)) ms")
     }
+
+    static func took(_ label: String, since start: UInt64) {
+        guard isEnabled else { return }
+        let milliseconds = ShellClock.milliseconds(since: start)
+        latency.notice("\(label, privacy: .public) took \(milliseconds, format: .fixed(precision: 1)) ms")
+    }
 }
