@@ -39,7 +39,6 @@ final class DesktopGridView: NSView {
 
     private let folder: URL
     private let insets: NSEdgeInsets
-    private var iconPackObserver: NSObjectProtocol?
     private var reloadCount = 0
 
     init(frame: NSRect, folder: URL, insets: NSEdgeInsets) {
@@ -48,11 +47,6 @@ final class DesktopGridView: NSView {
         super.init(frame: frame)
         autoresizingMask = [.width, .height]
         reload()
-        iconPackObserver = NotificationCenter.default.addObserver(
-            forName: IconPack.didChange, object: nil, queue: .main
-        ) { [weak self] _ in
-            self?.reload()
-        }
     }
 
     @available(*, unavailable)
