@@ -16,6 +16,10 @@ final class ExplorerController: NSObject {
     var reloadWaitsForRename = false
     var isReloading = false
     var statusError: String?
+    var reads = ExplorerReadTracker()
+    var navigationRequests = NavigationRequests()
+    var onFirstRead: (() -> Void)?
+    var reloadCompletions: [() -> Void] = []
 
     let sidebar = ExplorerSidebarView()
     private var iconPackObserver: NSObjectProtocol?
@@ -24,6 +28,7 @@ final class ExplorerController: NSObject {
     let statusLabel = DSLabel(style: .caption, color: DSColor.dimText)
     let watcher = ExplorerFolderWatcher()
     let clipboard = ExplorerClipboard.shared
+    let ioQueue = DispatchQueue(label: "dev.hoboware.hoboshell.explorer-io", qos: .utility)
 
     lazy var toolbar = ExplorerToolbar(target: self)
     lazy var commandBar = ExplorerCommandBar(target: self)
@@ -75,12 +80,8 @@ final class ExplorerController: NSObject {
         }
         statusLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         applyMode()
-        do {
-            allEntries = try FileEntry.contents(of: history.current, showHidden: showsHidden, sort: sort)
-        } catch {
-            report(error)
-        }
         presentFolder(selecting: [])
+        reload(selecting: [])
     }
 
     func stop() {

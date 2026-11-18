@@ -18,9 +18,12 @@ final class ExplorerWindow: NSWindow, NSWindowDelegate {
         } else {
             window.center()
         }
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
-        window.controller.focusItems()
+        window.controller.onFirstRead = { [weak window] in
+            guard let window else { return }
+            NSApp.activate(ignoringOtherApps: true)
+            window.makeKeyAndOrderFront(nil)
+            window.controller.focusItems()
+        }
     }
 
     private init(folder: URL) {
