@@ -35,6 +35,11 @@ Record of work, newest first. Each entry says what a user would notice.
   the sidebar, and dropping files on it moves them to the Trash. Without Full
   Disk Access macOS hides the Trash contents, so the bin always looks empty.
 
+### Changed
+- The taskbar now uses the system's own glass, like the menu bar and Dock, on
+  macOS 26 and later, and a blurred menu-style backdrop on older versions. It
+  stays solid while "Replace the Mac Dock" is on.
+
 ## 0.2.2
 
 ### Note
