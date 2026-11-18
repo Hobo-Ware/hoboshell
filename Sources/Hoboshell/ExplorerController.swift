@@ -58,6 +58,9 @@ final class ExplorerController: NSObject {
         sidebar.onSelect = { [weak self] url in
             self?.navigate(to: url)
         }
+        sidebar.onTrashDrop = { [weak self] urls in
+            self?.trash(urls)
+        }
         let address = toolbar.addressBar
         address.onNavigate = { [weak self] url in
             self?.navigate(to: url)

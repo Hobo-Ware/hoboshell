@@ -42,6 +42,21 @@ public enum ExplorerFileOperations {
         return result
     }
 
+    public static func trash(
+        _ sources: [URL],
+        using trashItem: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }
+    ) -> [String] {
+        var failures: [String] = []
+        for source in sources {
+            do {
+                try trashItem(source)
+            } catch {
+                failures.append("\(source.lastPathComponent): \(error.localizedDescription)")
+            }
+        }
+        return failures
+    }
+
     public static func createFolder(in folder: URL) throws -> URL {
         let files = FileManager.default
         let name = ExplorerNaming.newFolderName { files.fileExists(atPath: folder.appendingPathComponent($0).path) }

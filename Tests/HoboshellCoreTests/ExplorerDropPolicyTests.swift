@@ -36,4 +36,20 @@ import Testing
         #expect(ExplorerDropPolicy.isAlreadyIn(URL(fileURLWithPath: "/a/x.txt"), folder: URL(fileURLWithPath: "/a")))
         #expect(!ExplorerDropPolicy.isAlreadyIn(URL(fileURLWithPath: "/a/b/x.txt"), folder: URL(fileURLWithPath: "/a")))
     }
+
+    @Test func itemInsideTheTrashCannotBeTrashedAgain() {
+        let trash = URL(fileURLWithPath: "/Users/me/.Trash")
+        #expect(!ExplorerDropPolicy.canTrash(URL(fileURLWithPath: "/Users/me/.Trash/a.txt"), trashFolder: trash))
+    }
+
+    @Test func theTrashFolderCannotBeTrashed() {
+        let trash = URL(fileURLWithPath: "/Users/me/.Trash")
+        #expect(!ExplorerDropPolicy.canTrash(trash, trashFolder: trash))
+    }
+
+    @Test func anythingOutsideTheTrashCanBeTrashed() {
+        let trash = URL(fileURLWithPath: "/Users/me/.Trash")
+        #expect(ExplorerDropPolicy.canTrash(URL(fileURLWithPath: "/Users/me/Desktop/a.txt"), trashFolder: trash))
+        #expect(ExplorerDropPolicy.canTrash(URL(fileURLWithPath: "/Users/me/.Trashed/a.txt"), trashFolder: trash))
+    }
 }

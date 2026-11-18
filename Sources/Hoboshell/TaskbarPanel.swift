@@ -4,7 +4,7 @@ import HoboshellCore
 final class TaskbarPanel: NSPanel, ShellChrome {
     private static let itemSpacing = DSSpacing.xs
     private static let showDesktopWidth = DSSpacing.s
-    private static let widthUsedByFixedControls: CGFloat = 380
+    private static let widthUsedByFixedControls: CGFloat = 380 + DSControlHeight.taskbar.value + itemSpacing
 
     var actions = ShellActions()
 
@@ -296,10 +296,15 @@ final class TaskbarPanel: NSPanel, ShellChrome {
             self?.actions.onShowDesktop?()
         }
 
+        let trashButton = TaskbarTrashButton()
+        trashButton.onDrop = { urls in
+            TrashActions.trash(urls, completion: TrashActions.showFailures)
+        }
+
         let group = NSStackView(views: [startButton, filesButton, previousButton, itemStack, nextButton])
         group.orientation = .horizontal
         group.spacing = Self.itemSpacing
-        let trail = NSStackView(views: [SystemTrayView(height: .regular), showDesktopButton])
+        let trail = NSStackView(views: [trashButton, SystemTrayView(height: .regular), showDesktopButton])
         trail.orientation = .horizontal
         trail.spacing = Self.itemSpacing
 

@@ -26,6 +26,15 @@ Record of work, newest first. Each entry says what a user would notice.
 - The "Folder style" menu and the four other icon styles. A saved folder
   style is ignored.
 
+### Added
+- A Trash button sits next to the tray on the taskbar. It shows a full bin
+  when the Trash has items, opens the Trash in the file explorer on click, and
+  moves files to the Trash when you drop them on it. Right-click offers
+  "Open Trash".
+- In the file explorer, Trash is now pinned under a divider at the bottom of
+  the sidebar, and dropping files on it moves them to the Trash. Without Full
+  Disk Access macOS hides the Trash contents, so the bin always looks empty.
+
 ## 0.2.2
 
 ### Note
