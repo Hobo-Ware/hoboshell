@@ -65,7 +65,10 @@ final class TaskbarPanel: NSPanel, ShellChrome {
     }
 
     func startMenuOrigin(menuSize: NSSize) -> NSPoint {
-        NSPoint(x: frame.minX + DSSpacing.s, y: frame.maxY + DSSpacing.s)
+        NSPoint(
+            x: StartMenuPlacement.originX(alignment: alignment, bar: frame, menuWidth: menuSize.width, inset: DSSpacing.s),
+            y: frame.maxY + DSSpacing.s
+        )
     }
 
     var shownButtons: [TaskbarButtonInfo] {

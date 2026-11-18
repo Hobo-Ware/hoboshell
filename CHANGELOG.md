@@ -4,6 +4,10 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+### Fixed
+- With centred taskbar buttons, the Start menu opens in the middle of the
+  screen instead of at the left edge.
+
 ## 0.2.2
 
 ### Note
