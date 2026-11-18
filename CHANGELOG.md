@@ -6,6 +6,11 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## 0.2.2
 
+### Note
+- Updates are signed with a new key, so 0.2.1 cannot update itself to this
+  version. Download it once from the release page. macOS also asks for
+  Accessibility again, because the signing certificate changed too.
+
 ### Fixed
 - Centred taskbar buttons no longer drift right of centre when a button
   grows to show its window title.
