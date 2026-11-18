@@ -4,6 +4,7 @@ final class ExplorerFolderWatcher {
     private static let settleDelay: TimeInterval = 0.2
 
     var onChange: (() -> Void)?
+    private(set) var lastEventAt: UInt64 = 0
 
     private var source: DispatchSourceFileSystemObject?
     private var pending: DispatchWorkItem?
@@ -18,6 +19,7 @@ final class ExplorerFolderWatcher {
             queue: .main
         )
         source.setEventHandler { [weak self] in
+            self?.lastEventAt = ShellClock.now()
             self?.scheduleChange()
         }
         source.setCancelHandler {

@@ -7,6 +7,9 @@ Record of work, newest first. Each entry says what a user would notice.
 ### Fixed
 - With centred taskbar buttons, the Start menu opens in the middle of the
   screen instead of at the left edge.
+- The file explorer no longer freezes while it reads a big folder or while
+  paste, drop, trash and new folder do their file work. The window stays
+  responsive and shows the result when it is ready.
 
 ### Removed
 - The second look (top bar with a side dock) and its right-click switch entry

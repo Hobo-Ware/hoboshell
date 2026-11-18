@@ -62,42 +62,53 @@ extension ExplorerController {
         let startedAt = ShellClock.now()
         let contents = clipboard.read()
         guard !contents.urls.isEmpty, canWriteHere else { return }
-        let result = ExplorerFileOperations.transfer(contents.urls, into: history.current, operation: contents.isCut ? .move : .copy)
-        if contents.isCut {
-            clipboard.finishCut(movedTo: result.created)
+        let folder = history.current
+        let operation: TransferOperation = contents.isCut ? .move : .copy
+        ioQueue.async { [weak self] in
+            let result = ExplorerFileOperations.transfer(contents.urls, into: folder, operation: operation)
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                if contents.isCut {
+                    self.clipboard.finishCut(movedTo: result.created)
+                }
+                self.finish(result, into: folder) {
+                    PerfLog.took("explorer paste of \(contents.urls.count) items", since: startedAt)
+                }
+            }
         }
-        finish(result, into: history.current)
-        PerfLog.took("explorer paste of \(contents.urls.count) items", since: startedAt)
     }
 
     @objc func trashSelection() {
         let startedAt = ShellClock.now()
         let targets = selectedEntries
         guard !targets.isEmpty else { return }
-        var failures: [String] = []
-        for entry in targets {
-            do {
-                try FileManager.default.trashItem(at: entry.url, resultingItemURL: nil)
-            } catch {
-                failures.append("\(entry.name): \(error.localizedDescription)")
+        ioQueue.async { [weak self] in
+            var failures: [String] = []
+            for entry in targets {
+                do {
+                    try FileManager.default.trashItem(at: entry.url, resultingItemURL: nil)
+                } catch {
+                    failures.append("\(entry.name): \(error.localizedDescription)")
+                }
+            }
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.reload(selecting: []) {
+                    PerfLog.took("explorer trash of \(targets.count) items", since: startedAt)
+                }
+                self.reportFailures(failures)
             }
         }
-        reload(selecting: [])
-        reportFailures(failures)
-        PerfLog.took("explorer trash of \(targets.count) items", since: startedAt)
     }
 
     @objc func newFolder() {
         let startedAt = ShellClock.now()
-        do {
-            let created = try ExplorerFileOperations.createFolder(in: history.current)
-            query = ""
-            toolbar.clearSearch()
-            reload(selecting: [created.path])
-            PerfLog.took("explorer new folder", since: startedAt)
-            beginRenaming(path: created.path)
-        } catch {
-            report(error)
+        let folder = history.current
+        ioQueue.async { [weak self] in
+            let result = Result { try ExplorerFileOperations.createFolder(in: folder) }
+            DispatchQueue.main.async { [weak self] in
+                self?.finishNewFolder(result, in: folder, startedAt: startedAt)
+            }
         }
     }
 
@@ -147,10 +158,28 @@ extension ExplorerController {
         showEntries(selecting: keep)
     }
 
-    func finish(_ result: ExplorerTransferResult, into folder: URL) {
+    func finish(_ result: ExplorerTransferResult, into folder: URL, then completion: (() -> Void)? = nil) {
         let isHere = folder.standardizedFileURL.path == history.current.path
-        reload(selecting: isHere ? Set(result.created.map(\.path)) : nil)
+        reload(selecting: isHere ? Set(result.created.map(\.path)) : nil, then: completion)
         reportFailures(result.failures)
+    }
+
+    private func finishNewFolder(_ result: Result<URL, Error>, in folder: URL, startedAt: UInt64) {
+        switch result {
+        case .failure(let error):
+            report(error)
+        case .success(let created):
+            guard folder == history.current else {
+                reload()
+                return
+            }
+            query = ""
+            toolbar.clearSearch()
+            reload(selecting: [created.path]) { [weak self] in
+                PerfLog.took("explorer new folder", since: startedAt)
+                self?.beginRenaming(path: created.path)
+            }
+        }
     }
 
     private func writeClipboard(cut: Bool) {
