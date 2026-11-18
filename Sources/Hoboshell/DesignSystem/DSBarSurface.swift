@@ -1,17 +1,21 @@
 import AppKit
+import HoboshellCore
 
 final class DSBarSurface: NSView {
     private static let hairlineHeight: CGFloat = 1
 
     private let forcesSolid: Bool
-    private let tint = NSView()
+    private let backdrop = DSBarSurface.makeBackdrop()
+    private let solidFill = NSView()
     private var observer: NSObjectProtocol?
 
     init(forcesSolid: Bool) {
         self.forcesSolid = forcesSolid
         super.init(frame: .zero)
-        tint.wantsLayer = true
-        DSPanelStyle.pin(tint, to: self)
+        solidFill.wantsLayer = true
+        solidFill.layer?.backgroundColor = DSBarColor.solid.cgColor
+        DSPanelStyle.pin(backdrop, to: self)
+        DSPanelStyle.pin(solidFill, to: self)
 
         let hairline = NSView()
         hairline.wantsLayer = true
@@ -44,8 +48,37 @@ final class DSBarSurface: NSView {
         }
     }
 
+    private static var hasSystemGlass: Bool {
+        #if compiler(>=6.2)
+        if #available(macOS 26, *) {
+            return true
+        }
+        #endif
+        return false
+    }
+
+    private static func makeBackdrop() -> NSView {
+        #if compiler(>=6.2)
+        if #available(macOS 26, *) {
+            let glass = NSGlassEffectView()
+            glass.style = .regular
+            return glass
+        }
+        #endif
+        let blur = NSVisualEffectView()
+        blur.material = .menu
+        blur.blendingMode = .behindWindow
+        blur.state = .active
+        return blur
+    }
+
     private func refresh() {
-        let isSolid = forcesSolid || NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
-        tint.layer?.backgroundColor = (isSolid ? DSBarColor.solid : DSBarColor.glass).cgColor
+        let kind = BarSurfaceKind.pick(
+            forcesSolid: forcesSolid,
+            reducesTransparency: NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency,
+            hasSystemGlass: Self.hasSystemGlass
+        )
+        solidFill.isHidden = kind != .solid
+        backdrop.isHidden = kind == .solid
     }
 }

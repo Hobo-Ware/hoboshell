@@ -30,7 +30,7 @@ final class TaskbarPanel: NSPanel, ShellChrome {
     init(layout: ShellLayout) {
         super.init(contentRect: layout.bar, styleMask: DSPanelStyle.styleMask, backing: .buffered, defer: false)
         buildContent(
-            in: DSPanelStyle.apply(to: self, kind: .bar),
+            in: DSPanelStyle.applyGlassBar(to: self),
             forcesSolid: layout.dockReservation.isOn
         )
         iconObserver = NotificationCenter.default.addObserver(
@@ -260,7 +260,7 @@ final class TaskbarPanel: NSPanel, ShellChrome {
         present()
     }
 
-    private func buildContent(in background: DSCard, forcesSolid: Bool) {
+    private func buildContent(in background: NSView, forcesSolid: Bool) {
         let logo = HobowareLogo.image(height: DSIconSize.startLogo, style: .official, ink: .forDarkBackground)
         let startButton = DSButton(title: logo == nil ? "⊞" : "", image: logo, height: .taskbar, tip: "Start")
         startButton.iconSide = DSIconSize.startLogo
