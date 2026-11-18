@@ -19,4 +19,10 @@ public enum ExplorerDropPolicy {
     public static func isAlreadyIn(_ source: URL, folder: URL) -> Bool {
         source.deletingLastPathComponent().standardizedFileURL.path == folder.standardizedFileURL.path
     }
+
+    public static func canTrash(_ source: URL, trashFolder: URL) -> Bool {
+        let sourcePath = source.standardizedFileURL.path
+        let trashPath = trashFolder.standardizedFileURL.path
+        return sourcePath != trashPath && !sourcePath.hasPrefix(trashPath + "/")
+    }
 }

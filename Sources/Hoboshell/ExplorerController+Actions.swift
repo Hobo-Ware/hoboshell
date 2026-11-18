@@ -101,6 +101,15 @@ extension ExplorerController {
         }
     }
 
+    func trash(_ urls: [URL]) {
+        let startedAt = ShellClock.now()
+        TrashActions.trash(urls) { [weak self] failures in
+            self?.reload(selecting: [])
+            self?.reportFailures(failures)
+            PerfLog.took("explorer drop of \(urls.count) items on Trash", since: startedAt)
+        }
+    }
+
     @objc func newFolder() {
         let startedAt = ShellClock.now()
         let folder = history.current

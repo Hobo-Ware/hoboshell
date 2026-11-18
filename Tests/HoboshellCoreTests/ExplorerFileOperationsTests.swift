@@ -170,4 +170,31 @@ import Testing
 
         #expect(throws: ExplorerFileError.invalidName("x/y")) { try ExplorerFileOperations.rename(source, to: "x/y") }
     }
+
+    private struct Refused: LocalizedError {
+        var errorDescription: String? { "refused" }
+    }
+
+    @Test func trashHandsEveryItemToTheTrashCall() {
+        var seen: [URL] = []
+        let urls = [URL(fileURLWithPath: "/a/one.txt"), URL(fileURLWithPath: "/a/two.txt")]
+
+        let failures = ExplorerFileOperations.trash(urls) { seen.append($0) }
+
+        #expect(failures.isEmpty)
+        #expect(seen == urls)
+    }
+
+    @Test func trashKeepsGoingAfterAFailureAndReportsIt() {
+        var seen: [String] = []
+        let urls = [URL(fileURLWithPath: "/a/one.txt"), URL(fileURLWithPath: "/a/two.txt")]
+
+        let failures = ExplorerFileOperations.trash(urls) { url in
+            seen.append(url.lastPathComponent)
+            if url.lastPathComponent == "one.txt" { throw Refused() }
+        }
+
+        #expect(failures == ["one.txt: refused"])
+        #expect(seen == ["one.txt", "two.txt"])
+    }
 }

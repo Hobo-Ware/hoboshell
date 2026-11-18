@@ -5,17 +5,21 @@ final class ExplorerSidebarView: NSScrollView, NSTableViewDataSource, NSTableVie
     private enum Row {
         case header(String)
         case place(ExplorerPlace)
+        case divider
     }
 
     private static let rowHeight = DSControlHeight.row.value
+    private static let dividerRowHeight = DSSpacing.m
 
     var onSelect: ((URL) -> Void)?
+    var onTrashDrop: (([URL]) -> Void)?
 
     private let table = NSTableView()
     private var rows: [Row] = []
     private var current: String?
     private var isSyncing = false
     private var observers: [NSObjectProtocol] = []
+    private var trashObserver: NSObjectProtocol?
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -27,11 +31,17 @@ final class ExplorerSidebarView: NSScrollView, NSTableViewDataSource, NSTableVie
         table.backgroundColor = .clear
         table.dataSource = self
         table.delegate = self
+        table.registerForDraggedTypes([.fileURL])
         documentView = table
         hasVerticalScroller = true
         drawsBackground = false
         reload()
         observeVolumes()
+        trashObserver = NotificationCenter.default.addObserver(
+            forName: TrashMonitor.didChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.refreshTrashRow()
+        }
     }
 
     @available(*, unavailable)
@@ -41,6 +51,9 @@ final class ExplorerSidebarView: NSScrollView, NSTableViewDataSource, NSTableVie
 
     deinit {
         observers.forEach { NSWorkspace.shared.notificationCenter.removeObserver($0) }
+        if let trashObserver {
+            NotificationCenter.default.removeObserver(trashObserver)
+        }
     }
 
     func highlight(_ folder: URL) {
@@ -57,9 +70,8 @@ final class ExplorerSidebarView: NSScrollView, NSTableViewDataSource, NSTableVie
         rows = [.header("Quick access")] + quickAccess.map(Row.place)
         rows.append(.header("Drives"))
         rows += Self.drives().map(Row.place)
-        if let trash = files.urls(for: .trashDirectory, in: .userDomainMask).first {
-            rows.append(.place(ExplorerPlace(name: "Trash", url: trash)))
-        }
+        rows.append(.divider)
+        rows.append(.place(ExplorerPlace(name: "Trash", url: TrashMonitor.folder)))
         table.reloadData()
         syncSelection()
     }
@@ -79,8 +91,11 @@ final class ExplorerSidebarView: NSScrollView, NSTableViewDataSource, NSTableVie
     }
 
     func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
-        if case .header = rows[row] { return DSSectionHeader.height }
-        return Self.rowHeight
+        switch rows[row] {
+        case .header: return DSSectionHeader.height
+        case .divider: return Self.dividerRowHeight
+        case .place: return Self.rowHeight
+        }
     }
 
     func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? {
@@ -95,7 +110,32 @@ final class ExplorerSidebarView: NSScrollView, NSTableViewDataSource, NSTableVie
             return DSSectionHeader(title)
         case .place(let place):
             return Self.placeCell(place)
+        case .divider:
+            return Self.dividerCell()
         }
+    }
+
+    func tableView(
+        _ tableView: NSTableView,
+        validateDrop info: NSDraggingInfo,
+        proposedRow row: Int,
+        proposedDropOperation dropOperation: NSTableView.DropOperation
+    ) -> NSDragOperation {
+        guard rows.indices.contains(row), isTrash(rows[row]), !TrashActions.droppedURLs(in: info).isEmpty else { return [] }
+        tableView.setDropRow(row, dropOperation: .on)
+        return .move
+    }
+
+    func tableView(
+        _ tableView: NSTableView,
+        acceptDrop info: NSDraggingInfo,
+        row: Int,
+        dropOperation: NSTableView.DropOperation
+    ) -> Bool {
+        let urls = TrashActions.droppedURLs(in: info)
+        guard rows.indices.contains(row), isTrash(rows[row]), !urls.isEmpty else { return false }
+        onTrashDrop?(urls)
+        return true
     }
 
     func tableViewSelectionDidChange(_ notification: Notification) {
@@ -114,10 +154,42 @@ final class ExplorerSidebarView: NSScrollView, NSTableViewDataSource, NSTableVie
         }
     }
 
+    private static func dividerCell() -> NSView {
+        let cell = NSView()
+        let line = DSDivider()
+        cell.addSubview(line)
+        NSLayoutConstraint.activate([
+            line.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: DSSpacing.s),
+            line.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -DSSpacing.s),
+            line.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
+        ])
+        return cell
+    }
+
+    private static func isTrash(_ place: ExplorerPlace) -> Bool {
+        place.url.standardizedFileURL.path == TrashMonitor.folder.standardizedFileURL.path
+    }
+
+    private static func icon(for place: ExplorerPlace) -> NSImage {
+        guard isTrash(place) else { return HoboIcon.image(forFile: place.url.path) }
+        let icon = TrashMonitor.shared.contents.isFull ? HoboIcon.trashFull : HoboIcon.trashEmpty
+        return icon.image(side: DSIconSize.grid) ?? HoboIcon.image(forFile: place.url.path)
+    }
+
+    private func isTrash(_ row: Row) -> Bool {
+        if case .place(let place) = row { return Self.isTrash(place) }
+        return false
+    }
+
+    private func refreshTrashRow() {
+        guard let index = rows.firstIndex(where: isTrash) else { return }
+        table.reloadData(forRowIndexes: IndexSet(integer: index), columnIndexes: IndexSet(integer: 0))
+    }
+
     private static func placeCell(_ place: ExplorerPlace) -> NSView {
         let cell = DSListRow(
             title: place.name,
-            image: HoboIcon.image(forFile: place.url.path),
+            image: icon(for: place),
             height: .row
         )
         cell.makeStatic()
