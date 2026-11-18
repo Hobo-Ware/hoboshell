@@ -17,6 +17,15 @@ Record of work, newest first. Each entry says what a user would notice.
   remembered choice of the old look is ignored, and the Mac Dock settings
   saved earlier still come back on quit or `--restore`.
 
+### Changed
+- All icons are now the Kraft box set: cardboard folders and places, a red
+  bindle sack for Files, a cardboard TV, drive box, tin-can phone and gear.
+  Small sizes use a simpler, bolder drawing so they stay readable.
+
+### Removed
+- The "Folder style" menu and the four other icon styles. A saved folder
+  style is ignored.
+
 ## 0.2.2
 
 ### Note

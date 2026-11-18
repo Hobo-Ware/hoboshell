@@ -68,9 +68,9 @@ Not yet confirmed on screen by anyone: the switcher's look and the Command+Tab t
 
 The private update signing key lives in the keychain of the Mac that cuts releases. To release from another Mac, export it with Sparkle's `generate_keys -x FILE` on the old one, import it with `generate_keys -f FILE` on the new one, and delete the file. `HOBOSHELL_ED_KEY_FILE=FILE ./scripts/release.sh VERSION` signs with a key file instead of the keychain. Sparkle's tools sit under `.build/artifacts/sparkle/Sparkle/bin` after `swift build`.
 
-## Folder styles
+## Icons
 
-Folders and places come in five styles, picked from the bar's right-click menu under "Folder style": tin folder (default), roped suitcase, bean can, patched sack, broken crate. The default set lives in `Design/icons`; the other four in `Design/icon-packs`, drawn by `generate.py` there. Run `scripts/embed-icons.py` after changing any of them. Home, drives, the Trash and the other icons are shared by all styles.
+Every icon is the Kraft box set in `Design/icons`: `<name>.svg` is the big drawing and `<name>-sm.svg` the small one, used at 24 pt and below (`IconVariant`). Run `scripts/embed-icons.py` after changing any of them.
 
 ## Known rough spots
 

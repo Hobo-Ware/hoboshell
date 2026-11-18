@@ -33,10 +33,6 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
     private var alignmentItems: [(TaskbarAlignment, DSMenuItem)] = []
     private var alignmentChoice: AlignmentChoice?
 
-    private let iconPackItems: [(IconPack, NSMenuItem)] = IconPack.allCases.map { pack in
-        (pack, DSMenuItem(pack.title) { IconPack.current = pack })
-    }
-
     init(
         grouping: GroupingChoice? = nil,
         alignment: AlignmentChoice? = nil
@@ -57,7 +53,6 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
             }
             addItem(DSMenu.submenu("Taskbar alignment", alignmentItems.map(\.1)))
         }
-        addItem(DSMenu.submenu("Folder style", iconPackItems.map(\.1)))
         addItem(commandTabItem)
         addItem(keepAboveBarItem)
         addItem(replaceDockItem)
@@ -84,9 +79,6 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
         checkForUpdatesItem.isEnabled = AppUpdater.shared.canCheckForUpdates
         automaticUpdatesItem.isEnabled = AppUpdater.shared.isRunning
         automaticUpdatesItem.state = AppUpdater.shared.checksAutomatically ? .on : .off
-        for (pack, item) in iconPackItems {
-            item.state = pack == IconPack.current ? .on : .off
-        }
         if let current = alignmentChoice?.current() {
             for (mode, item) in alignmentItems {
                 item.state = mode == current ? .on : .off
