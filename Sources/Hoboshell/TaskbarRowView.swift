@@ -4,46 +4,45 @@ import HoboshellCore
 final class TaskbarRowView: NSView {
     private static let gap = DSSpacing.s
     private static let leadingInset = DSSpacing.s
+    private static let centrePriority = NSLayoutConstraint.Priority(700)
+    private static let trayLimitPriority = NSLayoutConstraint.Priority(749)
 
     var alignment: TaskbarAlignment {
         didSet {
             guard oldValue != alignment else { return }
-            needsLayout = true
+            applyAlignment()
         }
     }
 
-    private let group: NSStackView
-    private let trail: NSStackView
-    private var leadingConstraint: NSLayoutConstraint?
-    private var observers: [NSObjectProtocol] = []
+    private var pinnedLeft: NSLayoutConstraint?
+    private var centred: NSLayoutConstraint?
 
     init(group: NSStackView, trail: NSStackView, alignment: TaskbarAlignment) {
-        self.group = group
-        self.trail = trail
         self.alignment = alignment
         super.init(frame: .zero)
         group.translatesAutoresizingMaskIntoConstraints = false
         trail.translatesAutoresizingMaskIntoConstraints = false
         addSubview(group)
         addSubview(trail)
-        let leading = group.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Self.leadingInset)
-        leadingConstraint = leading
+
+        let pinnedLeft = group.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Self.leadingInset)
+        let centred = group.centerXAnchor.constraint(equalTo: centerXAnchor)
+        centred.priority = Self.centrePriority
+        let trayLimit = group.trailingAnchor.constraint(lessThanOrEqualTo: trail.leadingAnchor, constant: -Self.gap)
+        trayLimit.priority = Self.trayLimitPriority
+        self.pinnedLeft = pinnedLeft
+        self.centred = centred
+
         NSLayoutConstraint.activate([
-            leading,
+            group.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: Self.leadingInset),
+            trayLimit,
             group.topAnchor.constraint(equalTo: topAnchor),
             group.bottomAnchor.constraint(equalTo: bottomAnchor),
             trail.trailingAnchor.constraint(equalTo: trailingAnchor),
             trail.topAnchor.constraint(equalTo: topAnchor),
             trail.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
-        for view in [group, trail] {
-            view.postsFrameChangedNotifications = true
-            observers.append(NotificationCenter.default.addObserver(
-                forName: NSView.frameDidChangeNotification, object: view, queue: .main
-            ) { [weak self] _ in
-                self?.needsLayout = true
-            })
-        }
+        applyAlignment()
     }
 
     @available(*, unavailable)
@@ -51,19 +50,8 @@ final class TaskbarRowView: NSView {
         fatalError("init(coder:) is not supported")
     }
 
-    deinit {
-        observers.forEach(NotificationCenter.default.removeObserver)
-    }
-
-    override func layout() {
-        leadingConstraint?.constant = TaskbarPlacement.groupOriginX(
-            alignment: alignment,
-            barWidth: bounds.width,
-            groupWidth: group.fittingSize.width,
-            trailWidth: trail.fittingSize.width,
-            leadingInset: Self.leadingInset,
-            gap: Self.gap
-        )
-        super.layout()
+    private func applyAlignment() {
+        pinnedLeft?.isActive = alignment == .left
+        centred?.isActive = alignment == .centred
     }
 }
