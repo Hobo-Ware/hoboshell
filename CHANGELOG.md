@@ -4,6 +4,8 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+## 0.2.2
+
 ### Fixed
 - Centred taskbar buttons no longer drift right of centre when a button
   grows to show its window title.
