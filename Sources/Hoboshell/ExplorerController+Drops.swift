@@ -12,10 +12,12 @@ extension ExplorerController {
     }
 
     func itemsAcceptDrop(_ urls: [URL], onto index: Int?, option: Bool, allowed: NSDragOperation) -> Bool {
+        let startedAt = ShellClock.now()
         let destination = dropDestination(index)
         guard let operation = transferOperation(for: urls, into: destination, option: option, allowed: allowed) else { return false }
         let result = ExplorerFileOperations.transfer(urls, into: destination, operation: operation)
         finish(result, into: destination)
+        PerfLog.took("explorer drop of \(urls.count) items", since: startedAt)
         return !result.created.isEmpty || result.failures.isEmpty
     }
 

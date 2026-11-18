@@ -50,13 +50,17 @@ extension ExplorerController {
             return
         }
         let keep = paths ?? selectedPaths
+        let startedAt = ShellClock.now()
         do {
             allEntries = try FileEntry.contents(of: history.current, showHidden: showsHidden, sort: sort)
         } catch {
             handleUnreadableFolder(error)
             return
         }
+        PerfLog.took("explorer folder read of \(allEntries.count) items", since: startedAt)
+        let shownAt = ShellClock.now()
         showEntries(selecting: keep)
+        PerfLog.took("explorer folder show of \(allEntries.count) items", since: shownAt)
     }
 
     func folderChangedOnDisk() {

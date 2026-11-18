@@ -48,6 +48,7 @@ final class StartMenuPanel: NSPanel {
     private var footerItems: [StartMenuItem] = []
     private var lit: [DSControl] = []
     private var pendingSearch: DispatchWorkItem?
+    private var typedAt: UInt64 = 0
     private var activationObserver: NSObjectProtocol?
     private var mouseMonitors: [Any] = []
 
@@ -135,6 +136,7 @@ final class StartMenuPanel: NSPanel {
     }
 
     func present(origin: (NSSize) -> NSPoint, opening: StartMenuOpening) {
+        let startedAt = ShellClock.now()
         DSTooltip.shared.dismiss()
         reset(for: opening)
         setFrameOrigin(origin(frame.size))
@@ -146,6 +148,7 @@ final class StartMenuPanel: NSPanel {
         startWatching()
         enter(.search)
         loadRecents()
+        PerfLog.took("start menu open", since: startedAt)
     }
 
     private func reset(for opening: StartMenuOpening) {
@@ -168,6 +171,7 @@ final class StartMenuPanel: NSPanel {
         rebuildPage(resetScroll: true)
         if mode == .search {
             highlight = defaultHighlight
+            typedAt = ShellClock.now()
             scheduleFileSearch(immediately: true)
         }
     }
@@ -419,6 +423,8 @@ final class StartMenuPanel: NSPanel {
     private func queryChanged(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespaces)
         guard trimmed != query else { return }
+        let startedAt = ShellClock.now()
+        typedAt = startedAt
         query = trimmed
         let previous = mode
         if trimmed.isEmpty {
@@ -436,6 +442,7 @@ final class StartMenuPanel: NSPanel {
         rebuildPage(resetScroll: true)
         highlight = hasMovedHighlight ? validHighlight : defaultHighlight
         refreshHighlight()
+        PerfLog.took("start search app results", since: startedAt)
     }
 
     private func scheduleFileSearch(immediately: Bool) {
@@ -460,6 +467,7 @@ final class StartMenuPanel: NSPanel {
         rebuildPage()
         highlight = hasMovedHighlight ? validHighlight : defaultHighlight
         refreshHighlight()
+        PerfLog.took("start search file results (\(urls.count) files) after typing", since: typedAt)
     }
 
     private func loadRecents() {
