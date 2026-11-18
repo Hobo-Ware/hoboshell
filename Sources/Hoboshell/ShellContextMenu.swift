@@ -38,16 +38,13 @@ final class ShellContextMenu: NSMenu, NSMenuDelegate {
     }
 
     init(
-        switchTitle: String,
         grouping: GroupingChoice? = nil,
-        alignment: AlignmentChoice? = nil,
-        onSwitchVariant: @escaping () -> Void
+        alignment: AlignmentChoice? = nil
     ) {
         super.init(title: "")
         DSMenu.style(self)
         groupingChoice = grouping
         alignmentChoice = alignment
-        addItem(DSMenuItem(switchTitle, handler: onSwitchVariant))
         if let grouping {
             groupingItems = TaskbarGrouping.allCases.map { mode in
                 (mode, DSMenuItem(mode.displayName) { grouping.choose(mode) })

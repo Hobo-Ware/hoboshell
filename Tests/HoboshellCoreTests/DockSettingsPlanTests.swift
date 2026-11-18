@@ -15,12 +15,6 @@ import Testing
         ])
     }
 
-    @Test func sideDockLookPutsTheDockOnTheLeft() {
-        let changes = DockSettingsPlan.changes(for: .left, tileSize: 42)
-        #expect(changes.contains(.write(DockSettingsPlan.orientation, "left")))
-        #expect(changes.contains(.write(DockSettingsPlan.tileSize, "42")))
-    }
-
     @Test func largeSizeIsSavedButNeverWritten() {
         let written = DockSettingsPlan.changes(for: .bottom, tileSize: 26).map { change -> String in
             switch change {
@@ -33,7 +27,7 @@ import Testing
 
     @Test func everyWrittenSettingIsAlsoSaved() {
         let saved = Set(DockSettingsPlan.saved.map(\.id))
-        for change in DockSettingsPlan.changes(for: .left, tileSize: 40) {
+        for change in DockSettingsPlan.changes(for: .bottom, tileSize: 40) {
             switch change {
             case let .write(setting, _), let .delete(setting): #expect(saved.contains(setting.id))
             }
@@ -78,10 +72,5 @@ import Testing
             .delete(DockSettingsPlan.autohideDelay),
             .write(DockSettingsPlan.createDesktop, "true"),
         ])
-    }
-
-    @Test func eachLookMapsToItsDockEdge() {
-        #expect(ShellVariant.bottomTaskbar.dockEdge == .bottom)
-        #expect(ShellVariant.topBarWithDock.dockEdge == .left)
     }
 }

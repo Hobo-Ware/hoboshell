@@ -133,5 +133,4 @@ it fails with `no such module 'Testing'`. The script adds the framework paths.
 ## Naming and branding
 
 No Microsoft or Canonical names, logos, icons or artwork anywhere in the code,
-the docs or the app. Describe looks in plain words ("bottom taskbar",
-"top bar with a side dock").
+the docs or the app. Describe looks in plain words ("bottom taskbar").

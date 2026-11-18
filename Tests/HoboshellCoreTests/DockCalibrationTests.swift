@@ -13,9 +13,8 @@ import Testing
         #expect(DockCalibration.startingTileSize(target: 400) == 128)
     }
 
-    @Test func targetsAreTheBarAndSideDockThickness() {
+    @Test func targetIsTheBarThickness() {
         #expect(DockCalibration.targetThickness(for: .bottom) == 48)
-        #expect(DockCalibration.targetThickness(for: .left) == 64)
     }
 
     @Test func finishesWhenWithinOnePoint() {
@@ -44,7 +43,6 @@ import Testing
 
     @Test func tileSizesAreStoredPerEdge() {
         #expect(DockCalibration.storageKey(for: .bottom) == "DockReserveTileSize.bottom")
-        #expect(DockCalibration.storageKey(for: .left) == "DockReserveTileSize.left")
     }
 
     @Test func bottomDockIsTheGapBetweenTheScreenBottomAndTheVisibleArea() {
@@ -53,16 +51,9 @@ import Testing
         #expect(DockCalibration.thickness(edge: .bottom, frame: frame, visibleFrame: visible) == 49)
     }
 
-    @Test func leftDockIsTheGapBetweenTheScreenLeftAndTheVisibleArea() {
-        let frame = CGRect(x: 0, y: 0, width: 1440, height: 900)
-        let visible = CGRect(x: 63, y: 0, width: 1377, height: 875)
-        #expect(DockCalibration.thickness(edge: .left, frame: frame, visibleFrame: visible) == 63)
-    }
-
     @Test func noDockMeansNoThickness() {
         let frame = CGRect(x: 0, y: 0, width: 1440, height: 900)
         let visible = CGRect(x: 0, y: 0, width: 1440, height: 875)
         #expect(DockCalibration.thickness(edge: .bottom, frame: frame, visibleFrame: visible) == nil)
-        #expect(DockCalibration.thickness(edge: .left, frame: frame, visibleFrame: visible) == nil)
     }
 }

@@ -3,7 +3,6 @@ import AppKit
 enum DSPanelStyle {
     enum Kind {
         case bar
-        case opaqueBar
         case flyout
     }
 
@@ -26,12 +25,6 @@ enum DSPanelStyle {
         let card = kind == .flyout
             ? DSCard(radius: DSRadius.card)
             : DSCard(radius: DSRadius.none, isBordered: false, isTinted: false)
-        if kind == .opaqueBar {
-            let fill = NSView()
-            fill.wantsLayer = true
-            fill.layer?.backgroundColor = DSColor.surface.cgColor
-            pin(fill, to: card)
-        }
         panel.contentView = card
         return card
     }

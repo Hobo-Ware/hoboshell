@@ -26,7 +26,6 @@ struct ShellActions {
     var onStart: (() -> Void)?
     var onFiles: (() -> Void)?
     var onShowDesktop: (() -> Void)?
-    var onSwitchVariant: (() -> Void)?
 }
 
 protocol ShellChrome: AnyObject {
@@ -44,18 +43,7 @@ extension ShellChrome {
 }
 
 extension ShellLayout {
-    init(variant: ShellVariant, screen: NSScreen, dockReservation: DockReservation = .off) {
-        self.init(
-            variant: variant,
-            screenFrame: screen.frame,
-            visibleFrame: screen.visibleFrame,
-            dockReservation: dockReservation
-        )
-    }
-}
-
-extension ShellVariant {
-    var desktopColor: NSColor {
-        DSColor.desktop(for: self)
+    init(screen: NSScreen, dockReservation: DockReservation = .off) {
+        self.init(screenFrame: screen.frame, dockReservation: dockReservation)
     }
 }

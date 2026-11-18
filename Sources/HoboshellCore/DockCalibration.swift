@@ -14,7 +14,6 @@ public enum DockCalibration {
     public static func targetThickness(for edge: DockEdge) -> CGFloat {
         switch edge {
         case .bottom: return ShellLayout.taskbarHeight
-        case .left: return ShellLayout.dockWidth
         }
     }
 
@@ -30,7 +29,6 @@ public enum DockCalibration {
         let measured: CGFloat
         switch edge {
         case .bottom: measured = visibleFrame.minY - frame.minY
-        case .left: measured = visibleFrame.minX - frame.minX
         }
         return measured > 0 ? measured : nil
     }
