@@ -4,6 +4,8 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+## 0.2.5
+
 ### Fixed
 - Opening the Trash no longer shows a permission error. When macOS keeps
   the Trash private from Hoboshell, it opens in Finder instead.
