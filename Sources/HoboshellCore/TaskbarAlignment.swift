@@ -6,6 +6,10 @@ public enum TaskbarAlignment: String, CaseIterable {
         self = stored.flatMap(Self.init(rawValue:)) ?? .centred
     }
 
+    public var showsWindowTitles: Bool {
+        self == .left
+    }
+
     public var displayName: String {
         switch self {
         case .left: return "Left"

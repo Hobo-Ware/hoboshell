@@ -17,7 +17,10 @@ final class TaskbarPanel: NSPanel, ShellChrome {
     private var specs: [String: TaskbarButtonSpec] = [:]
     private var grouping = TaskbarPinStore.loadGrouping()
     private var alignment = TaskbarPinStore.loadAlignment() {
-        didSet { row?.alignment = alignment }
+        didSet {
+            row?.alignment = alignment
+            present()
+        }
     }
     private var row: TaskbarRowView?
     private var firstIndex = 0
@@ -102,7 +105,7 @@ final class TaskbarPanel: NSPanel, ShellChrome {
             availableWidth: available - CGFloat(iconOnlyCount) * (TaskbarLayout.iconOnlyWidth + Self.itemSpacing),
             spacing: Self.itemSpacing
         )
-        let usesLabels = labelledCount > 0 && TaskbarLayout.showsTitle(atWidth: labelledWidth)
+        let usesLabels = alignment.showsWindowTitles && labelledCount > 0 && TaskbarLayout.showsTitle(atWidth: labelledWidth)
         let nextPage = usesLabels
             ? TaskbarPage(range: 0..<all.count, overflows: false, hasPrevious: false, hasNext: false)
             : TaskbarOverflow.page(

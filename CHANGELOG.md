@@ -4,6 +4,11 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+### Changed
+- With centred taskbar buttons, the taskbar shows app icons only, so the
+  row sits evenly in the middle of the bar. Left-aligned buttons keep their
+  window titles.
+
 ## 0.2.6
 
 ### Fixed
