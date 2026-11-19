@@ -2,11 +2,11 @@ import Testing
 @testable import HoboshellCore
 
 @Suite struct DockSettingsPlanTests {
-    @Test func bottomLookPutsTheDockAtTheBottomWithTheGivenTileSize() {
+    @Test func bottomLookHidesTheDockAtTheBottomSoItNeverPopsUp() {
         let changes = DockSettingsPlan.changes(for: .bottom, tileSize: 26)
         #expect(changes == [
-            .write(DockSettingsPlan.autohide, "false"),
-            .delete(DockSettingsPlan.autohideDelay),
+            .write(DockSettingsPlan.autohide, "true"),
+            .write(DockSettingsPlan.autohideDelay, "1000"),
             .write(DockSettingsPlan.magnification, "false"),
             .write(DockSettingsPlan.showRecents, "false"),
             .write(DockSettingsPlan.orientation, "bottom"),
