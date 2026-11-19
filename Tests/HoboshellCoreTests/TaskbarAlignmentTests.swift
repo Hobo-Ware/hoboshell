@@ -13,4 +13,12 @@ import Testing
     @Test func aStoredLeftComesBack() {
         #expect(TaskbarAlignment(stored: "left") == .left)
     }
+
+    @Test func centredButtonsShowIconsOnly() {
+        #expect(!TaskbarAlignment.centred.showsWindowTitles)
+    }
+
+    @Test func leftButtonsShowWindowTitles() {
+        #expect(TaskbarAlignment.left.showsWindowTitles)
+    }
 }
