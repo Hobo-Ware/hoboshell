@@ -19,6 +19,9 @@ enum HoboIcon: String {
     case applications
     case drive
     case network
+    case finder
+
+    private static let finderPath = "/System/Library/CoreServices/Finder.app"
 
     private static let cacheLock = NSLock()
     private static var rendered: [String: NSImage] = [:]
@@ -33,7 +36,10 @@ enum HoboIcon: String {
             (.musicDirectory, .music),
             (.moviesDirectory, .movies),
         ]
-        var places: [String: HoboIcon] = [files.homeDirectoryForCurrentUser.standardizedFileURL.path: .home]
+        var places: [String: HoboIcon] = [
+            files.homeDirectoryForCurrentUser.standardizedFileURL.path: .home,
+            finderPath: .finder,
+        ]
         for (directory, icon) in known {
             if let url = files.urls(for: directory, in: .userDomainMask).first {
                 places[url.standardizedFileURL.path] = icon
