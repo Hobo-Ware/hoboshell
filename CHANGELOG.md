@@ -4,6 +4,8 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+## 0.2.8
+
 ### Changed
 - Finder has its own Kraft box icon, a box with eyes peeking out, in the
   Start menu, on the taskbar and in the switcher.
