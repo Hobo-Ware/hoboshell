@@ -13,7 +13,6 @@ final class TaskbarTrashButton: DSButton {
         onPress = {
             TrashActions.open()
         }
-        menu = DSMenu.make([DSMenuItem("Open Trash") { TrashActions.open() }])
         observer = NotificationCenter.default.addObserver(
             forName: TrashMonitor.didChange, object: nil, queue: .main
         ) { [weak self] _ in
@@ -62,5 +61,9 @@ final class TaskbarTrashButton: DSButton {
         let contents = TrashMonitor.shared.contents
         image = (contents.isFull ? HoboIcon.trashFull : HoboIcon.trashEmpty).image(side: DSIconSize.startLogo)
         setAccessibilityValue(contents.countText)
+        menu = DSMenu.make([
+            DSMenuItem("Open Trash") { TrashActions.open() },
+            DSMenuItem("Empty Trash", isEnabled: contents != .empty) { TrashActions.confirmAndEmpty() },
+        ])
     }
 }

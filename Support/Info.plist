@@ -26,6 +26,8 @@
     <string>https://github.com/Hobo-Ware/hoboshell/releases/latest/download/appcast.xml</string>
     <key>SUPublicEDKey</key>
     <string>sy+xTby3x1JyOOHxz63yr3yezI/RIq6jy4GvljDEQZs=</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Hoboshell asks Finder to empty the Trash when you choose Empty Trash.</string>
     <key>NSDesktopFolderUsageDescription</key>
     <string>Hoboshell shows the files on your Desktop.</string>
     <key>NSDocumentsFolderUsageDescription</key>
