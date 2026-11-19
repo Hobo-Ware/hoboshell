@@ -4,7 +4,6 @@ enum DSPanelStyle {
     enum Kind {
         case bar
         case flyout
-        case glassFlyout
     }
 
     static let styleMask: NSWindow.StyleMask = [.borderless, .nonactivatingPanel]
@@ -12,12 +11,16 @@ enum DSPanelStyle {
     @discardableResult
     static func apply(to panel: NSPanel, kind: Kind, level: NSWindow.Level = .statusBar) -> DSCard {
         configure(panel, kind: kind, level: level)
-        let card: DSCard
-        switch kind {
-        case .bar: card = DSCard(radius: DSRadius.none, isBordered: false, isTinted: false)
-        case .flyout: card = DSCard(radius: DSRadius.card)
-        case .glassFlyout: card = DSCard(radius: DSRadius.card, tint: DSColor.glassTint)
-        }
+        let card = kind == .flyout
+            ? DSCard(radius: DSRadius.card)
+            : DSCard(radius: DSRadius.none, isBordered: false, isTinted: false)
+        panel.contentView = card
+        return card
+    }
+
+    static func applyGlassFlyout(to panel: NSPanel) -> NSView {
+        configure(panel, kind: .flyout, level: .statusBar)
+        let card = DSGlassCard()
         panel.contentView = card
         return card
     }
@@ -39,7 +42,7 @@ enum DSPanelStyle {
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
         panel.isMovable = false
-        panel.hasShadow = kind != .bar
+        panel.hasShadow = kind == .flyout
         panel.isOpaque = false
         panel.backgroundColor = .clear
     }

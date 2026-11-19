@@ -23,7 +23,6 @@ enum DSColor {
     static let focusRing = accent
     static let disabledAlpha = CGFloat(ShellPalette.disabledAlpha)
     static let flyoutTint = raisedSurface.withAlphaComponent(CGFloat(ShellPalette.flyoutTintAlpha))
-    static let glassTint = color(ShellPalette.glassSurface).withAlphaComponent(CGFloat(ShellPalette.glassTintAlpha))
 
     private static func color(_ rgb: RGB) -> NSColor {
         NSColor(srgbRed: rgb.red, green: rgb.green, blue: rgb.blue, alpha: 1)

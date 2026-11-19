@@ -63,7 +63,7 @@ final class StartMenuPanel: NSPanel {
             backing: .buffered,
             defer: false
         )
-        buildContent(in: DSPanelStyle.apply(to: self, kind: .glassFlyout))
+        buildContent(in: DSPanelStyle.applyGlassFlyout(to: self))
         warmIcons()
     }
 
@@ -176,7 +176,7 @@ final class StartMenuPanel: NSPanel {
         }
     }
 
-    private func buildContent(in background: DSCard) {
+    private func buildContent(in background: NSView) {
         search.onChange = { [weak self] text in
             self?.queryChanged(text)
         }

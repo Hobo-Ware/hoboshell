@@ -7,6 +7,8 @@ Record of work, newest first. Each entry says what a user would notice.
 ### Changed
 - The Files button on the taskbar shows the peeking box instead of the red
   bindle. Finder uses the same icon.
+- The Start menu sits on the same system glass as the taskbar on macOS 26
+  and later. Older versions and Reduce Transparency keep the tinted surface.
 
 ## 0.2.8
 
