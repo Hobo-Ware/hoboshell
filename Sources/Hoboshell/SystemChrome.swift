@@ -6,8 +6,6 @@ enum SystemChrome {
 
     private static let savedValuesKey = "SystemChromeSavedValues"
     private static let wantedKey = "HideSystemUI"
-    private static var generation = 0
-    private static var measurer: DockMeasurer?
 
     static var isActive: Bool {
         UserDefaults.standard.dictionary(forKey: savedValuesKey) != nil
@@ -23,63 +21,21 @@ enum SystemChrome {
     }
 
     static func engage(completion: @escaping (DockReservation) -> Void) {
-        generation += 1
         let edge = DockEdge.bottom
-        let target = DockCalibration.targetThickness(for: edge)
         let tileSize = UserDefaults.standard.object(forKey: DockCalibration.storageKey(for: edge)) as? Int
-            ?? DockCalibration.startingTileSize(target: target)
+            ?? DockCalibration.startingTileSize(target: DockCalibration.targetThickness(for: edge))
         let isFirstEngage = saveCurrentValues()
         apply(DockSettingsPlan.changes(for: edge, tileSize: tileSize))
-        calibrate(
-            Calibration(edge: edge, target: target, generation: generation),
-            tileSize: tileSize,
-            round: 1,
-            restartsFinder: isFirstEngage,
-            completion: completion
-        )
+        restartOwners(includingFinder: isFirstEngage)
+        completion(.off)
     }
 
     static func restore() {
-        generation += 1
-        measurer?.cancel()
-        measurer = nil
         guard let saved = UserDefaults.standard.dictionary(forKey: savedValuesKey) as? [String: String] else { return }
         apply(DockSettingsPlan.restoreChanges(saved: saved))
         UserDefaults.standard.removeObject(forKey: savedValuesKey)
         UserDefaults.standard.synchronize()
         restartOwners(includingFinder: true)
-    }
-
-    private struct Calibration {
-        let edge: DockEdge
-        let target: CGFloat
-        let generation: Int
-    }
-
-    private static func calibrate(
-        _ calibration: Calibration,
-        tileSize: Int,
-        round: Int,
-        restartsFinder: Bool,
-        completion: @escaping (DockReservation) -> Void
-    ) {
-        measurer = DockMeasurer(edge: calibration.edge) { measured in
-            guard calibration.generation == generation else { return }
-            measurer = nil
-            guard let measured else {
-                completion(.off)
-                return
-            }
-            let step = DockCalibration.next(measured: measured, target: calibration.target, tileSize: tileSize)
-            if case let .adjust(adjusted) = step, round < DockCalibration.maxRounds {
-                apply([DockSettingsPlan.tileSizeChange(adjusted)])
-                calibrate(calibration, tileSize: adjusted, round: round + 1, restartsFinder: false, completion: completion)
-                return
-            }
-            UserDefaults.standard.set(tileSize, forKey: DockCalibration.storageKey(for: calibration.edge))
-            completion(.on(thickness: measured))
-        }
-        restartOwners(includingFinder: restartsFinder)
     }
 
     private static func saveCurrentValues() -> Bool {
@@ -139,63 +95,5 @@ enum SystemChrome {
         process.waitUntilExit()
         let output = String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
         return (process.terminationStatus, output)
-    }
-}
-
-private final class DockMeasurer {
-    private static let timeout: TimeInterval = 5
-    private static let settleDelay: TimeInterval = 0.5
-
-    private let edge: DockEdge
-    private var completion: ((CGFloat?) -> Void)?
-    private var observer: NSObjectProtocol?
-    private var timeoutTimer: Timer?
-    private var settleTimer: Timer?
-
-    init(edge: DockEdge, completion: @escaping (CGFloat?) -> Void) {
-        self.edge = edge
-        self.completion = completion
-        observer = NotificationCenter.default.addObserver(
-            forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
-        ) { [weak self] _ in
-            self?.screenChanged()
-        }
-        timeoutTimer = Timer.scheduledTimer(withTimeInterval: Self.timeout, repeats: false) { [weak self] _ in
-            guard let self else { return }
-            self.finish(with: self.measure())
-        }
-    }
-
-    func cancel() {
-        completion = nil
-        stop()
-    }
-
-    private func screenChanged() {
-        settleTimer?.invalidate()
-        settleTimer = Timer.scheduledTimer(withTimeInterval: Self.settleDelay, repeats: false) { [weak self] _ in
-            guard let self, let measured = self.measure() else { return }
-            self.finish(with: measured)
-        }
-    }
-
-    private func finish(with measured: CGFloat?) {
-        let completion = completion
-        cancel()
-        completion?(measured)
-    }
-
-    private func stop() {
-        if let observer {
-            NotificationCenter.default.removeObserver(observer)
-        }
-        observer = nil
-        timeoutTimer?.invalidate()
-        settleTimer?.invalidate()
-    }
-
-    private func measure() -> CGFloat? {
-        guard let screen = NSScreen.screens.first else { return nil }
-        return DockCalibration.thickness(edge: edge, frame: screen.frame, visibleFrame: screen.visibleFrame)
     }
 }

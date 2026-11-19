@@ -29,6 +29,7 @@ public enum DockSettingChange: Equatable {
 
 public enum DockSettingsPlan {
     public static let absent = ""
+    public static let neverRevealDelay = "1000"
 
     public static let autohide = DockSetting(domain: "com.apple.dock", key: "autohide", kind: .bool)
     public static let autohideDelay = DockSetting(domain: "com.apple.dock", key: "autohide-delay", kind: .float)
@@ -45,18 +46,14 @@ public enum DockSettingsPlan {
 
     public static func changes(for edge: DockEdge, tileSize size: Int) -> [DockSettingChange] {
         [
-            .write(autohide, "false"),
-            .delete(autohideDelay),
+            .write(autohide, "true"),
+            .write(autohideDelay, neverRevealDelay),
             .write(magnification, "false"),
             .write(showRecents, "false"),
             .write(orientation, edge.rawValue),
             .write(tileSize, "\(size)"),
             .write(createDesktop, "false"),
         ]
-    }
-
-    public static func tileSizeChange(_ size: Int) -> DockSettingChange {
-        .write(tileSize, "\(size)")
     }
 
     public static func restoreChanges(saved values: [String: String]) -> [DockSettingChange] {
