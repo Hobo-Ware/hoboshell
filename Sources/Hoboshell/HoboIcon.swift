@@ -19,7 +19,6 @@ enum HoboIcon: String {
     case applications
     case drive
     case network
-    case finder
 
     private static let finderPath = "/System/Library/CoreServices/Finder.app"
 
@@ -38,7 +37,7 @@ enum HoboIcon: String {
         ]
         var places: [String: HoboIcon] = [
             files.homeDirectoryForCurrentUser.standardizedFileURL.path: .home,
-            finderPath: .finder,
+            finderPath: .files,
         ]
         for (directory, icon) in known {
             if let url = files.urls(for: directory, in: .userDomainMask).first {
