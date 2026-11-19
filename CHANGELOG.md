@@ -13,6 +13,10 @@ Record of work, newest first. Each entry says what a user would notice.
   row sits evenly in the middle of the bar. Left-aligned buttons keep their
   window titles.
 
+### Fixed
+- The taskbar Trash shows a full bin when it has items, even while macOS
+  keeps the Trash private from Hoboshell.
+
 ## 0.2.6
 
 ### Fixed

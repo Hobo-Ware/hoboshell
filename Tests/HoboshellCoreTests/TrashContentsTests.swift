@@ -42,4 +42,25 @@ import Testing
         #expect(!contents.isFull)
         #expect(contents.countText == nil)
     }
+
+    @Test func aPrivateTrashCountsItsEntriesFromTheFolderLinkCount() {
+        let contents = TrashContents(folderLinkCount: 9, hiddenEntryCount: 1)
+        #expect(contents == .privateItems(6))
+        #expect(contents.isFull)
+        #expect(contents.countText == "6 items")
+    }
+
+    @Test func aPrivateTrashWithOnlyHiddenEntriesIsNotFull() {
+        let contents = TrashContents(folderLinkCount: 3, hiddenEntryCount: 1)
+        #expect(contents == .unreadable)
+        #expect(!contents.isFull)
+    }
+
+    @Test func aPrivateTrashWithNoEntriesIsNotFull() {
+        #expect(!TrashContents(folderLinkCount: 2, hiddenEntryCount: 0).isFull)
+    }
+
+    @Test func aPrivateTrashCannotBeBrowsedEvenWhenFull() {
+        #expect(!TrashContents(folderLinkCount: 5, hiddenEntryCount: 0).canBrowse)
+    }
 }
