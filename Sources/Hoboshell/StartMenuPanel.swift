@@ -63,7 +63,7 @@ final class StartMenuPanel: NSPanel {
             backing: .buffered,
             defer: false
         )
-        buildContent(in: DSPanelStyle.apply(to: self, kind: .flyout))
+        buildContent(in: DSPanelStyle.apply(to: self, kind: .glassFlyout))
         warmIcons()
     }
 

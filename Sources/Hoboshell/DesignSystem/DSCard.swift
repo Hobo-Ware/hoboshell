@@ -3,7 +3,7 @@ import AppKit
 final class DSCard: NSVisualEffectView {
     private static let borderWidth: CGFloat = 1
 
-    init(radius: CGFloat = DSRadius.card, isBordered: Bool = true, isTinted: Bool = true) {
+    init(radius: CGFloat = DSRadius.card, isBordered: Bool = true, isTinted: Bool = true, tint: NSColor = DSColor.flyoutTint) {
         super.init(frame: .zero)
         material = .hudWindow
         blendingMode = .behindWindow
@@ -12,10 +12,10 @@ final class DSCard: NSVisualEffectView {
         layer?.cornerRadius = radius
         layer?.masksToBounds = true
         if isTinted {
-            let tint = NSView()
-            tint.wantsLayer = true
-            tint.layer?.backgroundColor = DSColor.flyoutTint.cgColor
-            DSPanelStyle.pin(tint, to: self)
+            let tintView = NSView()
+            tintView.wantsLayer = true
+            tintView.layer?.backgroundColor = tint.cgColor
+            DSPanelStyle.pin(tintView, to: self)
         }
         if isBordered {
             layer?.borderWidth = Self.borderWidth

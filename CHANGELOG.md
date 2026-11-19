@@ -5,6 +5,8 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Changed
+- The Start menu is see-through glass with a darker tint, so the desktop
+  shows through while its text keeps the same tested contrast.
 - Finder is pinned first in the Start menu, also for people who already
   have a saved pin list.
 - With centred taskbar buttons, the taskbar shows app icons only, so the

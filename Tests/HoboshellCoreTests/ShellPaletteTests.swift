@@ -51,4 +51,36 @@ import Testing
             #expect(Contrast.ratio(ShellPalette.onAccent, fill) >= 4.5)
         }
     }
+
+    private var glassSurfaces: [RGB] {
+        ShellPalette.backdrops.map(ShellPalette.glassSurface(over:))
+    }
+
+    @Test func theGlassTintLetsMoreOfTheBackdropThroughThanAFlyout() {
+        #expect(ShellPalette.glassTintAlpha < ShellPalette.flyoutTintAlpha)
+    }
+
+    @Test func bodyTextReadsAtSevenToOneOnTheGlassSurfaceOverAnyBackdrop() {
+        for surface in glassSurfaces {
+            #expect(Contrast.ratio(ShellPalette.text, surface) >= 7)
+        }
+    }
+
+    @Test func dimTextReadsAtFourPointFiveToOneOnTheGlassSurfaceOverAnyBackdrop() {
+        for surface in glassSurfaces {
+            #expect(Contrast.ratio(ShellPalette.dimText, surface) >= 4.5)
+        }
+    }
+
+    @Test func disabledTextReadsAtThreeToOneOnTheGlassSurfaceOverAnyBackdrop() {
+        for surface in glassSurfaces {
+            #expect(Contrast.ratio(ShellPalette.disabled(ShellPalette.text, over: surface), surface) >= 3)
+        }
+    }
+
+    @Test func theAccentReadsAtThreeToOneOnTheGlassSurfaceOverAnyBackdrop() {
+        for surface in glassSurfaces {
+            #expect(Contrast.ratio(ShellPalette.accent, surface) >= 3)
+        }
+    }
 }
