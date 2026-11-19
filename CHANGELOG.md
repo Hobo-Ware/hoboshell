@@ -4,6 +4,8 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+## 0.2.9
+
 ### Changed
 - The Files button on the taskbar shows the peeking box instead of the red
   bindle. Finder uses the same icon.
