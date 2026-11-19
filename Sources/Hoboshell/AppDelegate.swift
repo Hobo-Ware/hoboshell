@@ -11,8 +11,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let showDesktop = TaskbarShowDesktop()
     private var dockCover: DockCoverPanel?
     private let nudger = WindowNudger()
+    private let fullScreen = FullScreenWatcher()
     private let hidesSystemUI = ProcessInfo.processInfo.environment["HOBOSHELL_HIDE_SYSTEM_UI"] == "1"
     private var dockReservation = DockReservation.off
+    private var builtScreenFrames: [CGRect] = []
     private var chrome: ShellChrome?
     private var desktop: DesktopWindow?
     private var startMenu: StartMenuPanel?
@@ -41,6 +43,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         engine.windowEvents.onGeometryChange = { [weak self] window in
             self?.nudger.windowChanged(window)
         }
+        fullScreen.onChange = { [weak self] hides in
+            self?.showBar(!hides)
+        }
+        fullScreen.start()
         engine.store.subscribe { [weak self] update in
             self?.render(update.state)
         }
@@ -85,6 +91,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         desktop?.orderOut(nil)
         startMenu?.orderOut(nil)
 
+        builtScreenFrames = NSScreen.screens.map(\.frame)
         let layout = ShellLayout(screen: screen, dockReservation: reservation(on: screen))
         nudger.barFrame = layout.bar
         let desktop = DesktopWindow(screen: screen, reserved: layout.reserved, color: DSColor.desktop)
@@ -113,7 +120,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             dockCover = cover
         }
         self.chrome = chrome
+        fullScreen.barScreen = screen.frame
+        if fullScreen.hidesBar {
+            showBar(false)
+        }
+        fullScreen.check()
         refreshTaskbar()
+    }
+
+    private func showBar(_ shown: Bool) {
+        if shown {
+            chrome?.show()
+            dockCover?.orderFrontRegardless()
+        } else {
+            chrome?.dismiss()
+            dockCover?.orderOut(nil)
+        }
     }
 
     private var shellScreen: NSScreen? {
@@ -232,6 +254,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func screensChanged() {
+        guard NSScreen.screens.map(\.frame) != builtScreenFrames else { return }
         buildShell()
     }
 
