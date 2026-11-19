@@ -17,6 +17,10 @@ Record of work, newest first. Each entry says what a user would notice.
 - The taskbar Trash shows a full bin when it has items, even while macOS
   keeps the Trash private from Hoboshell.
 
+### Added
+- Right-click the taskbar Trash and choose "Empty Trash" to empty it.
+  Hoboshell asks first, then asks Finder to do it.
+
 ## 0.2.6
 
 ### Fixed
