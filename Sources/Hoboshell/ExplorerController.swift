@@ -56,6 +56,10 @@ final class ExplorerController: NSObject {
         details.itemsDelegate = self
         icons.itemsDelegate = self
         sidebar.onSelect = { [weak self] url in
+            guard !TrashActions.needsFinder(for: url) else {
+                TrashActions.open()
+                return
+            }
             self?.navigate(to: url)
         }
         sidebar.onTrashDrop = { [weak self] urls in

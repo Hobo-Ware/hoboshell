@@ -14,6 +14,10 @@ public enum TrashContents: Equatable {
         self = count == 0 ? .empty : .items(count)
     }
 
+    public var canBrowse: Bool {
+        self != .unreadable
+    }
+
     public var isFull: Bool {
         if case .items = self { return true }
         return false

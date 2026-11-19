@@ -9,7 +9,16 @@ enum TrashActions {
     }
 
     static func open() {
+        guard TrashMonitor.shared.contents.canBrowse else {
+            NSWorkspace.shared.open(TrashMonitor.folder)
+            return
+        }
         ExplorerWindow.open(at: TrashMonitor.folder)
+    }
+
+    static func needsFinder(for url: URL) -> Bool {
+        url.standardizedFileURL.path == TrashMonitor.folder.standardizedFileURL.path
+            && !TrashMonitor.shared.contents.canBrowse
     }
 
     static func trash(_ urls: [URL], completion: @escaping ([String]) -> Void) {

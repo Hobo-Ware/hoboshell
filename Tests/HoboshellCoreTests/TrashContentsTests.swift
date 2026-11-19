@@ -20,6 +20,14 @@ import Testing
         #expect(TrashContents(entryNames: ["a.txt"]).countText == "1 item")
     }
 
+    @Test func anUnreadableTrashCannotBeBrowsed() {
+        #expect(!TrashContents(entryNames: nil).canBrowse)
+    }
+
+    @Test func aReadableEmptyTrashCanBeBrowsed() {
+        #expect(TrashContents(entryNames: []).canBrowse)
+    }
+
     @Test func hiddenEntriesDoNotMakeTheTrashFull() {
         #expect(TrashContents(entryNames: [".DS_Store"]) == .empty)
     }
