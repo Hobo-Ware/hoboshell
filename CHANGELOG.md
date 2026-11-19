@@ -5,6 +5,8 @@ Record of work, newest first. Each entry says what a user would notice.
 ## Unreleased
 
 ### Changed
+- Finder is pinned first in the Start menu, also for people who already
+  have a saved pin list.
 - With centred taskbar buttons, the taskbar shows app icons only, so the
   row sits evenly in the middle of the bar. Left-aligned buttons keep their
   window titles.
