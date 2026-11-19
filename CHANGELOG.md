@@ -4,6 +4,9 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+### Fixed
+- The Trash icon sits in the middle of its button instead of low.
+
 ## 0.2.3
 
 ### Added
