@@ -4,6 +4,25 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+## 0.2.3
+
+### Added
+- A Trash button sits next to the tray on the taskbar. It shows a full bin
+  when the Trash has items, opens the Trash in the file explorer on click, and
+  moves files to the Trash when you drop them on it. Right-click offers
+  "Open Trash".
+- In the file explorer, Trash is now pinned under a divider at the bottom of
+  the sidebar, and dropping files on it moves them to the Trash. Without Full
+  Disk Access macOS hides the Trash contents, so the bin always looks empty.
+
+### Changed
+- All icons are now the Kraft box set: cardboard folders and places, a red
+  bindle sack for Files, a cardboard TV, drive box, tin-can phone and gear.
+  Small sizes use a simpler, bolder drawing so they stay readable.
+- The taskbar now uses the system's own glass, like the menu bar and Dock, on
+  macOS 26 and later, and a blurred menu-style backdrop on older versions. It
+  stays solid while "Replace the Mac Dock" is on.
+
 ### Fixed
 - With centred taskbar buttons, the Start menu opens in the middle of the
   screen instead of at the left edge.
@@ -16,29 +35,8 @@ Record of work, newest first. Each entry says what a user would notice.
   and `--variant` flag are gone; Hoboshell always shows the bottom taskbar. A
   remembered choice of the old look is ignored, and the Mac Dock settings
   saved earlier still come back on quit or `--restore`.
-
-### Changed
-- All icons are now the Kraft box set: cardboard folders and places, a red
-  bindle sack for Files, a cardboard TV, drive box, tin-can phone and gear.
-  Small sizes use a simpler, bolder drawing so they stay readable.
-
-### Removed
 - The "Folder style" menu and the four other icon styles. A saved folder
   style is ignored.
-
-### Added
-- A Trash button sits next to the tray on the taskbar. It shows a full bin
-  when the Trash has items, opens the Trash in the file explorer on click, and
-  moves files to the Trash when you drop them on it. Right-click offers
-  "Open Trash".
-- In the file explorer, Trash is now pinned under a divider at the bottom of
-  the sidebar, and dropping files on it moves them to the Trash. Without Full
-  Disk Access macOS hides the Trash contents, so the bin always looks empty.
-
-### Changed
-- The taskbar now uses the system's own glass, like the menu bar and Dock, on
-  macOS 26 and later, and a blurred menu-style backdrop on older versions. It
-  stays solid while "Replace the Mac Dock" is on.
 
 ## 0.2.2
 
