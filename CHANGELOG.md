@@ -4,6 +4,8 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+## 0.2.6
+
 ### Fixed
 - With "Replace the Mac Dock" on, the Mac Dock's app name labels no longer
   pop up above the taskbar. The Dock is now fully hidden instead of sitting
