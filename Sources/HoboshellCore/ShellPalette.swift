@@ -53,8 +53,6 @@ public enum ShellPalette {
     public static let accentFillHover = accentFill.blended(over: .black, alpha: 0.9)
     public static let accentFillPressed = accentFill.blended(over: .black, alpha: 0.8)
     public static let flyoutTintAlpha = 0.94
-    public static let glassSurface = RGB(white: 0.10)
-    public static let glassTintAlpha = 0.85
     public static let disabledAlpha = 0.5
     public static let backdrops = [RGB.white, RGB.black]
     public static let barGlass = RGB(red: 24.0 / 255, green: 27.0 / 255, blue: 33.0 / 255)
@@ -68,10 +66,6 @@ public enum ShellPalette {
 
     public static func flyoutSurface(over backdrop: RGB) -> RGB {
         raisedSurface.blended(over: backdrop, alpha: flyoutTintAlpha)
-    }
-
-    public static func glassSurface(over backdrop: RGB) -> RGB {
-        glassSurface.blended(over: backdrop, alpha: glassTintAlpha)
     }
 
     public static func disabled(_ color: RGB, over surface: RGB) -> RGB {

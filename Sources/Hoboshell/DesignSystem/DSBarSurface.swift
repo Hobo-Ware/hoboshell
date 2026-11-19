@@ -5,7 +5,7 @@ final class DSBarSurface: NSView {
     private static let hairlineHeight: CGFloat = 1
 
     private let forcesSolid: Bool
-    private let backdrop = DSBarSurface.makeBackdrop()
+    private let backdrop = DSGlass.makeBackdrop()
     private let solidFill = NSView()
     private var observer: NSObjectProtocol?
 
@@ -48,35 +48,11 @@ final class DSBarSurface: NSView {
         }
     }
 
-    private static var hasSystemGlass: Bool {
-        #if compiler(>=6.2)
-        if #available(macOS 26, *) {
-            return true
-        }
-        #endif
-        return false
-    }
-
-    private static func makeBackdrop() -> NSView {
-        #if compiler(>=6.2)
-        if #available(macOS 26, *) {
-            let glass = NSGlassEffectView()
-            glass.style = .regular
-            return glass
-        }
-        #endif
-        let blur = NSVisualEffectView()
-        blur.material = .menu
-        blur.blendingMode = .behindWindow
-        blur.state = .active
-        return blur
-    }
-
     private func refresh() {
         let kind = BarSurfaceKind.pick(
             forcesSolid: forcesSolid,
             reducesTransparency: NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency,
-            hasSystemGlass: Self.hasSystemGlass
+            hasSystemGlass: DSGlass.isAvailable
         )
         solidFill.isHidden = kind != .solid
         backdrop.isHidden = kind == .solid
