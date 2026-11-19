@@ -41,7 +41,7 @@ final class PreviewCardView: DSControl {
         NSLayoutConstraint.activate([
             preview.widthAnchor.constraint(equalToConstant: previewSize.width),
             preview.heightAnchor.constraint(equalToConstant: previewSize.height),
-            header.widthAnchor.constraint(equalTo: column.widthAnchor),
+            header.widthAnchor.constraint(equalTo: preview.widthAnchor),
             header.heightAnchor.constraint(greaterThanOrEqualToConstant: DSControlHeight.compact.value),
             column.leadingAnchor.constraint(equalTo: leadingAnchor, constant: DSSpacing.m),
             column.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -DSSpacing.m),

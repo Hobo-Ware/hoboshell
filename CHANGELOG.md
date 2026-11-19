@@ -14,6 +14,8 @@ Record of work, newest first. Each entry says what a user would notice.
   window titles.
 
 ### Fixed
+- A window preview with a long title stays centred over its taskbar
+  button. The title is cut short instead of stretching the card.
 - The taskbar Trash shows a full bin when it has items, even while macOS
   keeps the Trash private from Hoboshell.
 
