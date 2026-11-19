@@ -6,7 +6,7 @@ final class DockCoverPanel: NSPanel {
         super.init(contentRect: strip, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         // The overview hides ordinary panels, the taskbar included, and would leave the real Dock showing.
         // A stationary window stays put there, so this plain strip keeps the Dock covered.
-        collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle, .fullScreenAuxiliary]
+        collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.dockWindow)) + 1)
         isOpaque = false
         backgroundColor = DSColor.surface.withAlphaComponent(SolidSurfaceLook.alpha)

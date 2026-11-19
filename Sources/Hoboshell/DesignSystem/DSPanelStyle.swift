@@ -37,7 +37,9 @@ enum DSPanelStyle {
         // Turning a panel into a floating panel resets its level, so the level is set after it.
         panel.isFloatingPanel = true
         panel.level = level
-        panel.collectionBehavior = [.canJoinAllSpaces, .ignoresCycle, .fullScreenAuxiliary]
+        panel.collectionBehavior = kind == .bar
+            ? [.canJoinAllSpaces, .ignoresCycle]
+            : [.canJoinAllSpaces, .ignoresCycle, .fullScreenAuxiliary]
         panel.appearance = NSAppearance(named: .darkAqua)
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false

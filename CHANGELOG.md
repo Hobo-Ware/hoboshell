@@ -4,6 +4,10 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+### Fixed
+- The taskbar no longer covers full-screen apps, such as a video played
+  full screen in a browser. It comes back when you leave full screen.
+
 ## 0.2.9
 
 ### Changed
