@@ -83,8 +83,9 @@ it fails with `no such module 'Testing'`. The script adds the framework paths.
 - A heuristic delay needs a written reason next to it. Current ones: launch
   snapshot retries at 0.1, 0.3 and 1 s (an app has no windows for a moment after
   it starts), a second desktop snapshot 0.25 s after a desktop change (the window
-  list lags the switch), and a 0.5 s Accessibility trust recheck (macOS flips
-  trust a moment after it announces it).
+  list lags the switch), a full-screen recheck 0.25 s after a space switch or app
+  switch (the focused window reports full screen a moment late), and a 0.5 s
+  Accessibility trust recheck (macOS flips trust a moment after it announces it).
 
 ## System safety
 
