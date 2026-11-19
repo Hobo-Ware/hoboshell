@@ -4,6 +4,8 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+## 0.2.7
+
 ### Changed
 - The Start menu is see-through glass with a darker tint, so the desktop
   shows through while its text keeps the same tested contrast.
