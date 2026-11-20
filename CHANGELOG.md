@@ -4,6 +4,8 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+## 0.2.11
+
 ### Fixed
 - The taskbar no longer jumps back over a full-screen app, such as a video
   played full screen in a browser, a moment after it goes full screen. It
