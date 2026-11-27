@@ -62,4 +62,27 @@ import Testing
         let chosen = ExplorerSort(column: .size, ascending: false).choosing(.name)
         #expect(chosen == ExplorerSort(column: .name, ascending: true))
     }
+
+    @Test func storedSortReadsBackTheSameColumnAndDirection() {
+        for column in ExplorerSortColumn.allCases {
+            for ascending in [true, false] {
+                let sort = ExplorerSort(column: column, ascending: ascending)
+                #expect(ExplorerSort(stored: sort.stored) == sort)
+            }
+        }
+    }
+
+    @Test func storedSortIsReadableText() {
+        #expect(ExplorerSort(column: .modified, ascending: false).stored == "modified:descending")
+    }
+
+    @Test func missingStoredSortFallsBackToNameAscending() {
+        #expect(ExplorerSort(stored: nil) == .standard)
+    }
+
+    @Test func damagedStoredSortFallsBackToNameAscending() {
+        for text in ["", "modified", "colour:ascending", "size:sideways", "size:ascending:extra"] {
+            #expect(ExplorerSort(stored: text) == .standard)
+        }
+    }
 }

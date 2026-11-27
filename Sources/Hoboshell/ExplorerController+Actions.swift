@@ -139,6 +139,7 @@ extension ExplorerController {
 
     @objc func toggleHidden() {
         showsHidden.toggle()
+        ExplorerSettings.showsHidden = showsHidden
         reload()
     }
 
@@ -163,6 +164,7 @@ extension ExplorerController {
     func applySort(_ newSort: ExplorerSort) {
         let keep = selectedPaths
         sort = newSort
+        ExplorerSettings.sort = newSort
         allEntries = newSort.apply(to: allEntries)
         showEntries(selecting: keep)
     }
