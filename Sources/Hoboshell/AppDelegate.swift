@@ -106,6 +106,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onFiles: {
                 ExplorerWindow.open(at: FileManager.default.homeDirectoryForCurrentUser)
             },
+            onDownloads: {
+                let home = FileManager.default.homeDirectoryForCurrentUser
+                let downloads = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
+                ExplorerWindow.open(at: downloads ?? home.appendingPathComponent("Downloads"))
+            },
             onShowDesktop: { [weak self] in
                 guard let self else { return }
                 self.showDesktop.toggle(apps: self.engine.tracker.taskbarApps)

@@ -25,6 +25,7 @@ struct TaskbarButtonInfo {
 struct ShellActions {
     var onStart: (() -> Void)?
     var onFiles: (() -> Void)?
+    var onDownloads: (() -> Void)?
     var onShowDesktop: (() -> Void)?
 }
 

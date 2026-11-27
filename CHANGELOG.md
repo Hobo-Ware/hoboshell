@@ -8,6 +8,11 @@ Record of work, newest first. Each entry says what a user would notice.
 - The file explorer remembers how you sorted it (column and direction) and
   whether hidden files are shown. New windows and restarts keep your choice.
 
+### Added
+- A Downloads button can sit next to the Files button on the taskbar. Turn it
+  on with "Show Downloads on the taskbar" in the taskbar's right-click menu.
+  It is off by default.
+
 ## 0.2.11
 
 ### Fixed
