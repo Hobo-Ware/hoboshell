@@ -11,6 +11,7 @@ final class TaskbarPanel: NSPanel, ShellChrome {
     private let itemStack = NSStackView()
     private let previousButton = DSButton(symbol: "chevron.left", tip: "Previous windows", height: .taskbar)
     private let nextButton = DSButton(symbol: "chevron.right", tip: "Next windows", height: .taskbar)
+    private let downloadsButton = DSButton(image: HoboIcon.downloads.image(side: DSIconSize.startLogo), height: .taskbar, tip: "Downloads")
     private lazy var buttons = KeyedStack<TaskbarButton>(stack: itemStack)
     private var state = ShellState()
     private var isTrusted = true
@@ -90,7 +91,8 @@ final class TaskbarPanel: NSPanel, ShellChrome {
 
     private func present() {
         guard !isReordering else { return }
-        let available = frame.width - Self.widthUsedByFixedControls
+        let downloadsWidth = downloadsButton.isHidden ? 0 : DSControlHeight.taskbar.value + Self.itemSpacing
+        let available = frame.width - Self.widthUsedByFixedControls - downloadsWidth
         let all = TaskbarModel.make(
             state,
             grouping: grouping,
@@ -277,6 +279,12 @@ final class TaskbarPanel: NSPanel, ShellChrome {
             self?.actions.onFiles?()
         }
 
+        downloadsButton.iconSide = DSIconSize.startLogo
+        downloadsButton.isHidden = !TaskbarPinStore.loadShowsDownloads()
+        downloadsButton.onPress = { [weak self] in
+            self?.actions.onDownloads?()
+        }
+
         previousButton.onPress = { [weak self] in
             guard let self else { return }
             self.scroll(to: TaskbarOverflow.previousFirstIndex(of: self.page))
@@ -304,7 +312,7 @@ final class TaskbarPanel: NSPanel, ShellChrome {
             TrashActions.trash(urls, completion: TrashActions.showFailures)
         }
 
-        let group = NSStackView(views: [startButton, filesButton, previousButton, itemStack, nextButton])
+        let group = NSStackView(views: [startButton, filesButton, downloadsButton, previousButton, itemStack, nextButton])
         group.orientation = .horizontal
         group.spacing = Self.itemSpacing
         let trail = NSStackView(views: [trashButton, SystemTrayView(height: .regular), showDesktopButton])
@@ -330,7 +338,19 @@ final class TaskbarPanel: NSPanel, ShellChrome {
                     self?.alignment = choice
                     TaskbarPinStore.save(choice)
                 }
-            )
+            ),
+            toggles: [
+                ShellContextMenu.ToggleChoice(
+                    title: "Show Downloads on the taskbar",
+                    isOn: { [weak self] in self.map { !$0.downloadsButton.isHidden } ?? false },
+                    toggle: { [weak self] in
+                        guard let self else { return }
+                        self.downloadsButton.isHidden.toggle()
+                        TaskbarPinStore.save(showsDownloads: !self.downloadsButton.isHidden)
+                        self.present()
+                    }
+                ),
+            ]
         )
     }
 }

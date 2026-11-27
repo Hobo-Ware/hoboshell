@@ -7,6 +7,7 @@ enum TaskbarPinStore {
 
     private static let groupingKey = "TaskbarGrouping"
     private static let alignmentKey = "TaskbarAlignment"
+    private static let showsDownloadsKey = "TaskbarShowsDownloads"
 
     static func loadPins() -> TaskbarPins {
         TaskbarPins(UserDefaults.standard.stringArray(forKey: pinsKey) ?? [])
@@ -32,5 +33,13 @@ enum TaskbarPinStore {
 
     static func save(_ alignment: TaskbarAlignment) {
         UserDefaults.standard.set(alignment.rawValue, forKey: alignmentKey)
+    }
+
+    static func loadShowsDownloads() -> Bool {
+        UserDefaults.standard.bool(forKey: showsDownloadsKey)
+    }
+
+    static func save(showsDownloads: Bool) {
+        UserDefaults.standard.set(showsDownloads, forKey: showsDownloadsKey)
     }
 }
