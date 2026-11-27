@@ -4,6 +4,10 @@ Record of work, newest first. Each entry says what a user would notice.
 
 ## Unreleased
 
+### Changed
+- The file explorer remembers how you sorted it (column and direction) and
+  whether hidden files are shown. New windows and restarts keep your choice.
+
 ## 0.2.11
 
 ### Fixed

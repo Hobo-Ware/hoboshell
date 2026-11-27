@@ -7,9 +7,9 @@ final class ExplorerController: NSObject {
     var history: NavigationHistory
     var allEntries: [FileEntry] = []
     var visibleEntries: [FileEntry] = []
-    var sort = ExplorerSort.standard
+    var sort = ExplorerSettings.sort
     var query = ""
-    var showsHidden = false
+    var showsHidden = ExplorerSettings.showsHidden
     var mode = ExplorerViewMode.saved
     var typeAhead = ExplorerTypeAhead()
     var isRenaming = false

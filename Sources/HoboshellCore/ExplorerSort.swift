@@ -22,9 +22,28 @@ public struct ExplorerSort: Equatable {
 
     public static let standard = ExplorerSort(column: .name, ascending: true)
 
+    private static let ascendingWord = "ascending"
+    private static let descendingWord = "descending"
+    private static let separator: Character = ":"
+
     public init(column: ExplorerSortColumn, ascending: Bool) {
         self.column = column
         self.ascending = ascending
+    }
+
+    public init(stored: String?) {
+        let parts = stored?.split(separator: Self.separator).map(String.init) ?? []
+        guard parts.count == 2,
+              let column = ExplorerSortColumn(rawValue: parts[0]),
+              [Self.ascendingWord, Self.descendingWord].contains(parts[1]) else {
+            self = .standard
+            return
+        }
+        self.init(column: column, ascending: parts[1] == Self.ascendingWord)
+    }
+
+    public var stored: String {
+        "\(column.rawValue)\(Self.separator)\(ascending ? Self.ascendingWord : Self.descendingWord)"
     }
 
     public func choosing(_ chosen: ExplorerSortColumn) -> ExplorerSort {
